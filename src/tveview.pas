@@ -65,8 +65,6 @@ type
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
     function GetDoc: TTveDoc;
-    function ViewToLine(V: Int64): Int64;
-    function LineToView(L: Int64): Int64;
     function GetFolds: TTveFolds;
     procedure MoveVertical(Down: Boolean; Pages: Boolean);
     function GutterWidth: Integer;
@@ -133,6 +131,9 @@ type
     function ReplaceAll(const Repl: AnsiString): Integer;
     { The text of the status line: "line:column  offset  INS  modified". }
     function StatusText: AnsiString;
+    // Line numbers and the numbers of the rows (the lines that are not hidden by a fold), 0-based.
+    function ViewToLine(V: Int64): Int64;
+    function LineToView(L: Int64): Int64;
     procedure JumpToLine(L: Int64);
     procedure ScrollLines(N: Integer);
     { After the host changed the cursor or the text: scroll to the cursor, redraw, tell the owner. }

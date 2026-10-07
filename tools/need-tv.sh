@@ -1,7 +1,9 @@
-# Sourced by the scripts: sets TVSRC to the src/ directory of tv3. TV=/path/to/tv3 picks a checkout; else ./tv; else one is cloned into ./tv (the branch TV_REF, default main).
+# Sourced by the scripts: sets TVSRC to the src/ directory of tv3. TV=/path/to/tv3 picks a checkout; else ../tv3 next to this checkout; else ./tv; else one is cloned into ./tv (the branch TV_REF, default main).
 here=${here:-$(cd "$(dirname "$0")/.." && pwd)}
 if [ -n "${TV:-}" ] && [ -f "$TV/src/tvgeom.pas" ]; then
     TVSRC=$TV/src
+elif [ -f "$here/../tv3/src/tvgeom.pas" ]; then
+    TVSRC=$here/../tv3/src
 elif [ -f "$here/tv/src/tvgeom.pas" ]; then
     TVSRC=$here/tv/src
 else

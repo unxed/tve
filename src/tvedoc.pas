@@ -116,6 +116,7 @@ type
     function Undo(out Cursor: Int64): Boolean;
     function Redo(out Cursor: Int64): Boolean;
     function UndoCount: Integer;
+    function RedoCount: Integer;
 
     { Anchors: an id (>= 0) to ask for the position later. A removed anchor is not counted. }
     function AddAnchor(Pos: Int64; Sticky: Boolean = False): Integer;
@@ -442,6 +443,11 @@ end;
 function TTveDoc.CanRedo: Boolean;
 begin
   Result := FRedoCount > 0;
+end;
+
+function TTveDoc.RedoCount: Integer;
+begin
+  Result := FRedoCount;
 end;
 
 function TTveDoc.UndoCount: Integer;

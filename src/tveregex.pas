@@ -3,9 +3,9 @@
   MIT; a backtracking machine of the usual kind, with an explicit stack (so a long line does not use the stack of the program) and a limit
   of steps (so a pattern that backtracks without end gives up, Aborted tells it).
 
-  Syntax: literals and \ escapes (\n \t \r \f \v \e \xHH \x{H..} \uHHHH and any sign after a backslash is itself); . (any character except the line end); classes [abc] [a-z]
+  Syntax: literals and \ escapes (\n \t \r \f \v \e \xHH \x[H..] \uHHHH and any sign after a backslash is itself); . (any character except the line end); classes [abc] [a-z]
   [^...] with \d \w \s \D \W \S and [:alpha:] [:digit:] [:alnum:] [:upper:] [:lower:] [:space:] [:punct:] [:word:]; anchors ^ $ (of a line) \A \z \b \B; groups (...) (?:...);
-  alternation |; quantifiers * + ? {n} {n,} {n,m} and the lazy ones (*? +? ?? {n,m}?); back references \1 .. \9; the flag (?i) at the start of the pattern.
+  alternation |; quantifiers * + ? [n] [n,] [n,m] and the lazy ones (*? +? ?? [n,m]?); back references \1 .. \9; the flag (?i) at the start of the pattern.
   Characters are code points of UTF-8 (a stray byte is itself). \d is 0-9, \w is a word character of TveLayout.IsWordCp, \s is a blank, a line end or U+00A0.
 
   Exec looks for the first match that starts at or after an index; Caps[0..1] are the start and the end (exclusive) byte indexes (1-based, the end is the index after the

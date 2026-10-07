@@ -986,7 +986,7 @@ begin
   begin
     FEditor.ClearSelection;
     FEditor.GotoLineCell(L, C);
-    if (Event.ControlKeyState and kbAltShift) <> 0 then
+    if ((Event.ControlKeyState and kbAltShift) <> 0) or FEditor.Opt.ColumnBlocks then
       FEditor.StartSelection(skColumn)
     else
       FEditor.StartSelection(skStream);
@@ -994,7 +994,12 @@ begin
   else
   begin
     if not FEditor.HasSelection then
-      FEditor.StartSelection(skStream);
+    begin
+      if FEditor.Opt.ColumnBlocks then
+        FEditor.StartSelection(skColumn)
+      else
+        FEditor.StartSelection(skStream);
+    end;
     FEditor.GotoLineCell(L, C);
   end;
   Sync;

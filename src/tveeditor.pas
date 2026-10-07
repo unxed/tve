@@ -34,6 +34,7 @@ type
     BracketPairs: AnsiString;       { opening and closing characters in pairs: '()[]{}' }
     SmartHome: Boolean;             { Home goes to the first non-blank first }
     UnlimitedUnindent: Boolean;     { unindent the lines that can, even when some cannot }
+    ColumnBlocks: Boolean;          { a selection made by Shift and the arrows or by the mouse is a column block }
     WrapColumn: Integer;            { > 0: a word that goes past this cell moves to the next line while typing }
   end;
 
@@ -181,6 +182,7 @@ begin
   Result.BracketPairs := '()[]{}';
   Result.SmartHome := True;
   Result.UnlimitedUnindent := False;
+  Result.ColumnBlocks := False;
   Result.WrapColumn := 0;
 end;
 
@@ -512,7 +514,12 @@ begin
   if Extend then
   begin
     if (FSelKind = skNone) or (FEndId >= 0) then
-      StartSelection(skStream);
+    begin
+      if Opt.ColumnBlocks then
+        StartSelection(skColumn)
+      else
+        StartSelection(skStream);
+    end;
   end
   else if not Opt.PersistentBlocks then
     ClearSelection;

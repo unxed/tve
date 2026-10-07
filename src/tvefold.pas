@@ -31,6 +31,8 @@ type
     constructor Create(ADoc: TTveDoc);
     destructor Destroy; override;
     function Count: Integer;
+    // Changes with every change of the folds (collapsing, adding, removing).
+    property Stamp: LongWord read FStamp;
     function Add(L1, L2: Int64; Collapsed: Boolean): Integer;
     procedure Remove(I: Integer);
     procedure Clear;

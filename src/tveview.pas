@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvObjs, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -65,6 +65,15 @@ type
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
+    FWrap: Boolean;
+    FWrapMap: TTveWrapMap;
+    procedure SetWrap(V: Boolean);
+    procedure EnsureWrap;
+    function CursorRow: Int64;
+    function RowPlace(Row: Int64; out L: Int64; out A, B: Integer; out Last: Boolean): Boolean;
+    procedure MoveToRow(Row: Int64; Extend: Boolean);
+    function WrapMove(Cmd: Integer): Boolean;
+    function TotalRows: Int64;
     function GetDoc: TTveDoc;
     function GetFolds: TTveFolds;
     procedure MoveVertical(Down: Boolean; Pages: Boolean);
@@ -106,6 +115,8 @@ type
     // True (the default): a double click selects a word and a triple click a line.
     property MultiClick: Boolean read FMultiClick write FMultiClick;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
+    // Soft wrap: a long line is shown as several rows (no horizontal scrolling); the text is not changed.
+    property Wrap: Boolean read FWrap write SetWrap;
     // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
     property MessageText: AnsiString read FMessage write FMessage;
     // The highlighted range (offsets), drawn in the colour 3 of the palette of the view (or as a selection); A = B clears it.
@@ -176,6 +187,7 @@ begin
   FKeymap := TveKeymapA;
   FSearch := TveDefaultSearch;
   FSearcher := TTveSearcher.Create(ADoc.Buffer);
+  FWrapMap := TTveWrapMap.Create(ADoc.Buffer);
   FShowCurrentLine := False;
   FWheelStep := 3;
   FMarkA := -1;
@@ -199,6 +211,7 @@ begin
   FHl.Free;
   FFolds.Free;
   FSearcher.Free;
+  FWrapMap.Free;
   FEditor.Free;
   if FOwnDoc then
     D.Free;
@@ -286,6 +299,127 @@ begin
   AttrSetFg(Result, Fg);
 end;
 
+procedure TTveView.SetWrap(V: Boolean);
+begin
+  if V = FWrap then
+    Exit;
+  FWrap := V;
+  if V then
+    ScrollTo(0, Delta.Y);
+  Sync;
+end;
+
+procedure TTveView.EnsureWrap;
+begin
+  if FWrap and not FWrapMap.Valid(TextWidth, FEditor.Opt.TabSize, FFolds) then
+    FWrapMap.Build(TextWidth, FEditor.Opt.TabSize, FFolds);
+end;
+
+function TTveView.TotalRows: Int64;
+begin
+  if FWrap then
+  begin
+    EnsureWrap;
+    Result := FWrapMap.TotalRows;
+  end
+  else if FFolds <> nil then
+    Result := FFolds.VisibleCount
+  else
+    Result := FEditor.Doc.Buffer.LineCount;
+end;
+
+function TTveView.CursorRow: Int64;
+begin
+  if FWrap then
+  begin
+    EnsureWrap;
+    Result := FWrapMap.RowOf(FEditor.Line, FEditor.Cell);
+  end
+  else
+    Result := LineToView(FEditor.Line);
+end;
+
+{ The line, and the cells of the segment, that a row shows (wrap on). False for a row past the end. }
+function TTveView.RowPlace(Row: Int64; out L: Int64; out A, B: Integer; out Last: Boolean): Boolean;
+var
+  Seg: Integer;
+begin
+  EnsureWrap;
+  Result := (Row >= 0) and (Row < FWrapMap.TotalRows);
+  L := FWrapMap.RowToLine(Row, Seg);
+  FWrapMap.SegBounds(L, Seg, A, B);
+  Last := Seg = FWrapMap.RowsOf(L) - 1;
+end;
+
+procedure TTveView.MoveToRow(Row: Int64; Extend: Boolean);
+var
+  L, CL: Int64;
+  A, B, CA, CB, Off: Integer;
+  Last: Boolean;
+begin
+  EnsureWrap;
+  RowPlace(CursorRow, CL, CA, CB, Last);
+  Off := FEditor.Cell - CA;
+  if Row < 0 then Row := 0;
+  if Row >= FWrapMap.TotalRows then Row := FWrapMap.TotalRows - 1;
+  RowPlace(Row, L, A, B, Last);
+  if A + Off >= B then
+    Off := B - A - 1;
+  if Extend then
+  begin
+    if not FEditor.HasSelection then
+      FEditor.StartSelection(skStream);
+  end
+  else if not FEditor.Opt.PersistentBlocks then
+    FEditor.ClearSelection;
+  FEditor.GotoLineCell(L, A + Off);
+end;
+
+{ The commands that move by rows when the lines are wrapped. }
+function TTveView.WrapMove(Cmd: Integer): Boolean;
+var
+  L: Int64;
+  A, B: Integer;
+  Last: Boolean;
+  Ext: Boolean;
+begin
+  Result := True;
+  Ext := (Cmd = tcSelUp) or (Cmd = tcSelDown) or (Cmd = tcSelPageUp) or (Cmd = tcSelPageDown) or (Cmd = tcSelHome) or (Cmd = tcSelEnd);
+  case Cmd of
+    tcUp, tcSelUp: MoveToRow(CursorRow - 1, Ext);
+    tcDown, tcSelDown: MoveToRow(CursorRow + 1, Ext);
+    tcPageUp, tcSelPageUp: MoveToRow(CursorRow - (Size.Y - 1), Ext);
+    tcPageDown, tcSelPageDown: MoveToRow(CursorRow + (Size.Y - 1), Ext);
+    tcHome, tcSelHome:
+    begin
+      RowPlace(CursorRow, L, A, B, Last);
+      if Ext then
+      begin
+        if not FEditor.HasSelection then FEditor.StartSelection(skStream);
+      end
+      else if not FEditor.Opt.PersistentBlocks then
+        FEditor.ClearSelection;
+      FEditor.GotoLineCell(L, A);
+    end;
+    tcEnd, tcSelEnd:
+    begin
+      RowPlace(CursorRow, L, A, B, Last);
+      if Ext then
+      begin
+        if not FEditor.HasSelection then FEditor.StartSelection(skStream);
+      end
+      else if not FEditor.Opt.PersistentBlocks then
+        FEditor.ClearSelection;
+      if Last then
+        FEditor.GotoLineCell(L, B - 1)
+      else
+        FEditor.GotoLineCell(L, B - 1);
+    end;
+  else
+    Result := False;
+  end;
+end;
+
 function TTveView.GutterWidth: Integer;
 begin
   if FGutter then
@@ -319,7 +453,9 @@ begin
     W := FEditor.Cell + 2;
   if Delta.X + Size.X > W then
     W := Delta.X + Size.X;
-  if FFolds <> nil then
+  if FWrap then
+    SetLimit(Size.X, TotalRows)
+  else if FFolds <> nil then
     SetLimit(W, FFolds.VisibleCount)
   else
     SetLimit(W, FEditor.Doc.Buffer.LineCount);
@@ -381,12 +517,14 @@ begin
   TX := TextWidth;
   X := Delta.X;
   Y := Delta.Y;
-  CV := LineToView(FEditor.Line);
+  CV := CursorRow;
   if CV < Y then
     Y := CV
   else if CV >= Y + Size.Y then
     Y := CV - Size.Y + 1;
-  if FEditor.Cell < X then
+  if FWrap then
+    X := 0
+  else if FEditor.Cell < X then
     X := FEditor.Cell
   else if FEditor.Cell >= X + TX then
     X := FEditor.Cell - TX + 1;
@@ -431,6 +569,10 @@ var
   N, MsgRow: Integer;
   HlAttr: TColorAttr;
   COff: Int64;
+  SegEnd: Integer;
+  CL: Int64;
+  IsLast, InText: Boolean;
+  TX0: Integer;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -473,7 +615,11 @@ begin
   SelAttr := SelectedAttr;
   HlAttr := HighlightAttr;
   TX := TextWidth;
+  TX0 := TX;
   X0 := Delta.X;
+  IsLast := True;
+  if FWrap then
+    EnsureWrap;
   HasSel := FEditor.HasSelection;
   IsCol := False;
   SelLo := 0; SelHi := 0; CL1 := 0; CL2 := -1; ColC1 := 0; ColC2 := 0;
@@ -490,7 +636,7 @@ begin
   MsgRow := -1;
   if FMessage <> '' then
   begin
-    if LineToView(FEditor.Line) - Delta.Y < Size.Y div 2 then
+    if CursorRow - Delta.Y < Size.Y div 2 then
       MsgRow := Size.Y - 1
     else
       MsgRow := 0;
@@ -506,7 +652,15 @@ begin
         WriteLineD(0, Y, Size.X, 1, B);
         Continue;
       end;
-      L := ViewToLine(Delta.Y + Y);
+      if FWrap then
+      begin
+        InText := RowPlace(Delta.Y + Y, L, X0, SegEnd, IsLast);
+        TX := SegEnd - X0;
+        if not InText then
+          L := FEditor.Doc.Buffer.LineCount;
+      end
+      else
+        L := ViewToLine(Delta.Y + Y);
       B.MoveChar(0, Ord(' '), Normal, Size.X);
       if L < FEditor.Doc.Buffer.LineCount then
       begin
@@ -591,7 +745,7 @@ begin
           Inc(Cell, GrpCells);
           Inc(Idx, Grp);
         end;
-        if FFolds <> nil then
+        if (FFolds <> nil) and IsLast then
         begin
           N := FFolds.FoldAt(L, True);
           if (N >= 0) and FFolds.Collapsed(N) then
@@ -628,7 +782,13 @@ begin
       NormalCursor
     else
       BlockCursor;
-    SetCursor(GutterWidth + FEditor.Cell - Delta.X, LineToView(FEditor.Line) - Delta.Y);
+    if FWrap then
+    begin
+      RowPlace(CursorRow, CL, X0, SegEnd, IsLast);
+      SetCursor(GutterWidth + FEditor.Cell - X0, CursorRow - Delta.Y);
+    end
+    else
+      SetCursor(GutterWidth + FEditor.Cell - Delta.X, LineToView(FEditor.Line) - Delta.Y);
     ShowCursor;
   end;
 end;
@@ -701,17 +861,21 @@ procedure TTveView.ScrollLines(N: Integer);
 var
   Y, Total, CV: Int64;
 begin
-  if FFolds <> nil then
-    Total := FFolds.VisibleCount
-  else
-    Total := FEditor.Doc.Buffer.LineCount;
+  Total := TotalRows;
   Y := Delta.Y + N;
   if Y > Total - 1 then Y := Total - 1;
   if Y < 0 then Y := 0;
   ScrollTo(Delta.X, Y);
   { the cursor follows when it left the window }
-  CV := LineToView(FEditor.Line);
-  if CV < Y then
+  CV := CursorRow;
+  if FWrap then
+  begin
+    if CV < Y then
+      MoveToRow(Y, False)
+    else if CV >= Y + Size.Y then
+      MoveToRow(Y + Size.Y - 1, False);
+  end
+  else if CV < Y then
     FEditor.GotoLineCell(ViewToLine(Y), FEditor.Cell)
   else if CV >= Y + Size.Y then
     FEditor.GotoLineCell(ViewToLine(Y + Size.Y - 1), FEditor.Cell);
@@ -812,7 +976,13 @@ begin
     Sync;
     Exit;
   end;
+  if FWrap and WrapMove(Cmd) then
+  begin
+    Sync;
+    Exit;
+  end;
   case Cmd of
+    tcWrap: begin SetWrap(not FWrap); Exit; end;
     tcDrawMode: FDrawMode := (FDrawMode + 1) mod 3;
     tcLeft: E.MoveLeft;
     tcRight: E.MoveRight;
@@ -826,8 +996,8 @@ begin
     tcWordRight: E.MoveWordRight;
     tcTextStart: begin Remember; E.MoveTextStart; end;
     tcTextEnd: begin Remember; E.MoveTextEnd; end;
-    tcWindowTop: E.GotoLineCell(Delta.Y, E.Cell);
-    tcWindowBottom: E.GotoLineCell(Delta.Y + Size.Y - 1, E.Cell);
+    tcWindowTop: if FWrap then MoveToRow(Delta.Y, False) else E.GotoLineCell(ViewToLine(Delta.Y), E.Cell);
+    tcWindowBottom: if FWrap then MoveToRow(Delta.Y + Size.Y - 1, False) else E.GotoLineCell(ViewToLine(Delta.Y + Size.Y - 1), E.Cell);
     tcScrollUp: begin ScrollLines(-1); Exit; end;
     tcScrollDown: begin ScrollLines(1); Exit; end;
     tcSelLeft: E.MoveLeft(True);
@@ -949,10 +1119,21 @@ end;
 function TTveView.Hit(Where: TPoint; out L: Int64; out C: Integer): Boolean;
 var
   P: TPoint;
+  A, B2: Integer;
+  Last: Boolean;
 begin
   P := MakeLocal(Where);
-  L := ViewToLine(Delta.Y + P.Y);
-  C := Delta.X + P.X - GutterWidth;
+  if FWrap then
+  begin
+    RowPlace(Delta.Y + P.Y, L, A, B2, Last);
+    C := A + P.X - GutterWidth;
+    if C >= B2 then C := B2 - 1;
+  end
+  else
+  begin
+    L := ViewToLine(Delta.Y + P.Y);
+    C := Delta.X + P.X - GutterWidth;
+  end;
   if L < 0 then L := 0;
   if L >= FEditor.Doc.Buffer.LineCount then
     L := FEditor.Doc.Buffer.LineCount - 1;

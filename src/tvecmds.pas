@@ -107,7 +107,7 @@ const
     'GotoMark0', 'GotoMark1', 'GotoMark2', 'GotoMark3', 'GotoMark4', 'GotoMark5', 'GotoMark6', 'GotoMark7', 'GotoMark8', 'GotoMark9',
     'ClearMarks', '', '', '', '', '', '', '', '', '',
     'InsertDate', 'InsertTime', 'InsertChar', 'Completion', 'Template', 'MacroRecord', 'MacroPlay', 'DrawMode', 'OpenAtCursor', '',
-    '', '', '', '', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', '', '',
+    '', '', '', '', '', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', '',
     'Save', 'SaveAs', 'Reload', 'Close', 'CursorBack', '', '', '', '', '');
 
 function TveCommandName(Cmd: Integer): AnsiString;
@@ -332,7 +332,7 @@ const
     'Ctrl+L = FindNext' + LF + 'Ctrl+V = ToggleInsert' + LF +
     'Ctrl+K B = BlockBegin' + LF + 'Ctrl+K K = BlockEnd' + LF + 'Ctrl+K L = LineBlock' + LF + 'Ctrl+K T = SelectWord' + LF +
     'Ctrl+K H = HideBlock' + LF + 'Ctrl+K C = CopyBlockHere' + LF + 'Ctrl+K V = MoveBlockHere' + LF + 'Ctrl+K Y = DeleteBlock' + LF +
-    'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
+    'Ctrl+K Z = FoldToggle' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
     'Ctrl+Q B = GotoBlockBegin' + LF + 'Ctrl+Q K = GotoBlockEnd' + LF + 'Ctrl+Q F = Find' + LF + 'Ctrl+Q A = Replace' + LF +
     'Ctrl+Q G = GotoLine' + LF + 'Ctrl+Q Y = DeleteToEol' + LF + 'Ctrl+Q [ = MatchBracket' + LF + 'Ctrl+Q ] = MatchBracket' + LF +
     'Ctrl+Q S = Home' + LF + 'Ctrl+Q D = End' + LF + 'Ctrl+Q R = TextStart' + LF + 'Ctrl+Q C = TextEnd' + LF +

@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -49,7 +49,12 @@ type
     FWheelStep: Integer;
     FLastVersion: LongWord;
     FMarkA, FMarkB: Int64;
+    FFolds: TTveFolds;
     function GetDoc: TTveDoc;
+    function ViewToLine(V: Int64): Int64;
+    function LineToView(L: Int64): Int64;
+    function GetFolds: TTveFolds;
+    procedure MoveVertical(Down: Boolean; Pages: Boolean);
     function ClassAttr(C: Integer): TColorAttr;
     function GutterWidth: Integer;
     function TextWidth: Integer;
@@ -65,6 +70,8 @@ type
     property Editor: TTveEditor read FEditor;
     property Doc: TTveDoc read GetDoc;
     property Highlighter: TTveHighlighter read FHl;
+    { Folds are created on first use. }
+    property Folds: TTveFolds read GetFolds;
     property Keymap: TTveKeymap read FKeymap write FKeymap;
     property OnHostCommand: TTveHostCommand read FOnHost write FOnHost;
     property OnLineAttr: TTveLineAttr read FOnLineAttr write FOnLineAttr;
@@ -132,11 +139,35 @@ begin
   D := FEditor.Doc;
   D.RemoveObserver(@DocChanged);
   FHl.Free;
+  FFolds.Free;
   FSearcher.Free;
   FEditor.Free;
   if FOwnDoc then
     D.Free;
   inherited Destroy;
+end;
+
+function TTveView.GetFolds: TTveFolds;
+begin
+  if FFolds = nil then
+    FFolds := TTveFolds.Create(FEditor.Doc);
+  Result := FFolds;
+end;
+
+function TTveView.ViewToLine(V: Int64): Int64;
+begin
+  if FFolds = nil then
+    Result := V
+  else
+    Result := FFolds.ViewToLine(V);
+end;
+
+function TTveView.LineToView(L: Int64): Int64;
+begin
+  if FFolds = nil then
+    Result := L
+  else
+    Result := FFolds.LineToView(L);
 end;
 
 function TTveView.GetDoc: TTveDoc;
@@ -222,13 +253,18 @@ var
   W: Int64;
 begin
   FEditor.Rows := Size.Y;
+  if FFolds <> nil then
+    FFolds.Reveal(FEditor.Line);
   KeepCursorVisible;
   W := Size.X;
   if FEditor.Cell + 2 > W then
     W := FEditor.Cell + 2;
   if Delta.X + Size.X > W then
     W := Delta.X + Size.X;
-  SetLimit(W, FEditor.Doc.Buffer.LineCount);
+  if FFolds <> nil then
+    SetLimit(W, FFolds.VisibleCount)
+  else
+    SetLimit(W, FEditor.Doc.Buffer.LineCount);
   DrawView;
   Message(Owner, evBroadcast, cmTveStatus, Self);
 end;
@@ -236,14 +272,16 @@ end;
 procedure TTveView.KeepCursorVisible;
 var
   X, Y, TX: Integer;
+  CV: Int64;
 begin
   TX := TextWidth;
   X := Delta.X;
   Y := Delta.Y;
-  if FEditor.Line < Y then
-    Y := FEditor.Line
-  else if FEditor.Line >= Y + Size.Y then
-    Y := FEditor.Line - Size.Y + 1;
+  CV := LineToView(FEditor.Line);
+  if CV < Y then
+    Y := CV
+  else if CV >= Y + Size.Y then
+    Y := CV - Size.Y + 1;
   if FEditor.Cell < X then
     X := FEditor.Cell
   else if FEditor.Cell >= X + TX then
@@ -346,7 +384,7 @@ begin
   try
     for Y := 0 to Size.Y - 1 do
     begin
-      L := Delta.Y + Y;
+      L := ViewToLine(Delta.Y + Y);
       B.MoveChar(0, Ord(' '), Normal, Size.X);
       if L < FEditor.Doc.Buffer.LineCount then
       begin
@@ -423,6 +461,17 @@ begin
           Inc(Cell, GrpCells);
           Inc(Idx, Grp);
         end;
+        if FFolds <> nil then
+        begin
+          N := FFolds.FoldAt(L, True);
+          if (N >= 0) and FFolds.Collapsed(N) then
+          begin
+            Cells := LayoutCells(Text, FEditor.Opt.TabSize) + 1 - X0;
+            if Cells < 0 then Cells := 0;
+            if GutterWidth + Cells < Size.X then
+              B.MoveStrS(GutterWidth + Cells, '[+' + IntToStr(FFolds.EndLine(N) - L) + ' lines]', ClassAttr(hcComment), Size.X - GutterWidth - Cells);
+          end;
+        end;
         { selected blanks past the end of the line (the line end itself, or the column block) }
         if HasSel then
         begin
@@ -449,7 +498,7 @@ begin
       NormalCursor
     else
       BlockCursor;
-    SetCursor(GutterWidth + FEditor.Cell - Delta.X, FEditor.Line - Delta.Y);
+    SetCursor(GutterWidth + FEditor.Cell - Delta.X, LineToView(FEditor.Line) - Delta.Y);
     ShowCursor;
   end;
 end;
@@ -485,18 +534,38 @@ end;
 
 procedure TTveView.ScrollLines(N: Integer);
 var
-  Y: Int64;
+  Y, Total, CV: Int64;
 begin
+  if FFolds <> nil then
+    Total := FFolds.VisibleCount
+  else
+    Total := FEditor.Doc.Buffer.LineCount;
   Y := Delta.Y + N;
+  if Y > Total - 1 then Y := Total - 1;
   if Y < 0 then Y := 0;
-  if Y > FEditor.Doc.Buffer.LineCount - 1 then Y := FEditor.Doc.Buffer.LineCount - 1;
   ScrollTo(Delta.X, Y);
   { the cursor follows when it left the window }
-  if FEditor.Line < Y then
-    FEditor.GotoLineCell(Y, FEditor.Cell)
-  else if FEditor.Line >= Y + Size.Y then
-    FEditor.GotoLineCell(Y + Size.Y - 1, FEditor.Cell);
+  CV := LineToView(FEditor.Line);
+  if CV < Y then
+    FEditor.GotoLineCell(ViewToLine(Y), FEditor.Cell)
+  else if CV >= Y + Size.Y then
+    FEditor.GotoLineCell(ViewToLine(Y + Size.Y - 1), FEditor.Cell);
   DrawView;
+end;
+
+procedure TTveView.MoveVertical(Down: Boolean; Pages: Boolean);
+var
+  L: Int64;
+  I, Count: Integer;
+begin
+  L := FEditor.Line;
+  if Pages then
+    Count := Size.Y - 1
+  else
+    Count := 1;
+  for I := 1 to Count do
+    L := FFolds.NextVisible(L, Down);
+  FEditor.GotoLineCell(L, FEditor.Cell);
 end;
 
 function TTveView.FindNext(Backward: Boolean): TTveFindStatus;
@@ -568,10 +637,10 @@ begin
   case Cmd of
     tcLeft: E.MoveLeft;
     tcRight: E.MoveRight;
-    tcUp: E.MoveUp;
-    tcDown: E.MoveDown;
-    tcPageUp: E.MovePageUp;
-    tcPageDown: E.MovePageDown;
+    tcUp: if (FFolds <> nil) and (FFolds.Count > 0) then MoveVertical(False, False) else E.MoveUp;
+    tcDown: if (FFolds <> nil) and (FFolds.Count > 0) then MoveVertical(True, False) else E.MoveDown;
+    tcPageUp: if (FFolds <> nil) and (FFolds.Count > 0) then MoveVertical(False, True) else E.MovePageUp;
+    tcPageDown: if (FFolds <> nil) and (FFolds.Count > 0) then MoveVertical(True, True) else E.MovePageDown;
     tcHome: E.MoveHome;
     tcEnd: E.MoveEnd;
     tcWordLeft: E.MoveWordLeft;
@@ -639,6 +708,15 @@ begin
     tcTrimTrailing: TrimTrailing(E);
     tcExpandTabs: ExpandTabs(E);
     tcTabify: TabifyIndent(E);
+    tcFoldToggle: Folds.Toggle(E.Line);
+    tcFoldCollapse: Folds.CollapseAt(E.Line);
+    tcFoldExpand: Folds.ExpandAt(E.Line);
+    tcFoldFromBlock:
+      if E.AffectedLines(Back, Fwd) and (Fwd > Back) then
+      begin
+        Folds.Add(Back, Fwd, False);
+        E.ClearSelection;
+      end;
     tcFindNext: FindNext(False);
     tcFindPrev: FindNext(True);
     tcMatchBracket: E.GotoMatchingBracket;
@@ -690,7 +768,7 @@ var
   P: TPoint;
 begin
   P := MakeLocal(Where);
-  L := Delta.Y + P.Y;
+  L := ViewToLine(Delta.Y + P.Y);
   C := Delta.X + P.X - GutterWidth;
   if L < 0 then L := 0;
   if L >= FEditor.Doc.Buffer.LineCount then

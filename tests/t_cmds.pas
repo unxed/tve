@@ -23,6 +23,16 @@ begin
   Check(TveCommandByName('nosuch') = -1, 'unknown name');
   Check(TveCommandName(tcGotoMark0 + 3) = 'GotoMark3', 'mark names');
   Check(TveCommandByName('SetMark9') = tcSetMark0 + 9, 'SetMark9');
+  Check(TveCommandByName('FoldToggle') = tcFoldToggle, 'fold toggle index');
+  Check(TveCommandByName('FoldFromBlock') = tcFoldFromBlock, 'fold from block index');
+  Check(TveCommandByName('Save') = tcSave, 'save index');
+  Check(TveCommandByName('CursorBack') = tcCursorBack, 'cursor back index');
+  Check(TveCommandByName('InsertDate') = tcInsertDate, 'insert date index');
+  Check(TveCommandByName('FindInAllCodePages') = tcFindInAllCodePages, 'find in all code pages index');
+  Check(TveCommandByName('ClearMarks') = tcClearMarks, 'clear marks index');
+  Check(TveCommandByName('Calculate') = tcCalculate, 'calculate index');
+  Check(TveCommandByName('SelTextEnd') = tcSelTextEnd, 'sel text end index');
+  Check(TveCommandByName('DeleteBlock') = tcDeleteBlock, 'delete block index');
   Bad := 0;
   for I := 1 to tcCommandCount - 1 do
     if (TveCommandName(I) <> '') and (TveCommandByName(TveCommandName(I)) <> I) then

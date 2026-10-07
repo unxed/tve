@@ -1,0 +1,16 @@
+name: ci
+
+on:
+  workflow_dispatch: {}
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Free Pascal
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fp-compiler fp-units-rtl fp-units-base fp-units-misc fp-units-fcl
+      - name: Unit tests
+        run: tools/test.sh

@@ -1,0 +1,7 @@
+build/
+out/
+tv/
+*.o
+*.ppu
+*.a
+__pycache__/

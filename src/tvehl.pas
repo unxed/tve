@@ -130,6 +130,8 @@ type
     // Fills the language from the text of a grammar; False (and Err) if it is wrong.
     function Load(const Text: AnsiString; out Err: AnsiString): Boolean;
     function MatchesFile(const FileName: AnsiString): Boolean;
+    // All the keywords (the words of the classes keyword, type and builtin), blank separated: for completion.
+    function KeywordText: AnsiString;
     // The classes of the bytes of Text, from a state; EndState is the state after it. State 0 is the start of a text.
     procedure Classify(const Text: AnsiString; StartState: LongInt; out Cls: TByteClasses; out EndState: LongInt);
     property Name: AnsiString read FName;
@@ -776,6 +778,18 @@ end;
 function TTveLanguage.MatchesFile(const FileName: AnsiString): Boolean;
 begin
   Result := (FMasks <> '') and WildMatchList(ExtractFileName(FileName), StringReplace(Trim(FMasks), ' ', ';', [rfReplaceAll]));
+end;
+
+function TTveLanguage.KeywordText: AnsiString;
+var
+  I, J, K: Integer;
+begin
+  Result := '';
+  for I := 0 to High(FCtx) do
+    for J := 0 to High(FCtx[I].Words) do
+      if FCtx[I].Words[J].Cls in [hcKeyword, hcType, hcBuiltin] then
+        for K := 0 to High(FCtx[I].Words[J].Words) do
+          Result := Result + FCtx[I].Words[J].Words[K] + ' ';
 end;
 
 function TTveLanguage.Intern(const Key: AnsiString): LongInt;

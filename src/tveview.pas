@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -50,6 +50,15 @@ type
     FLastVersion: LongWord;
     FMarkA, FMarkB: Int64;
     FFolds: TTveFolds;
+    FTemplates: TTveTemplates;
+    FCompletion: TTveCompletion;
+    FOnPrompt: TTvePrompt;
+    FComplItems: TTveWords;
+    FComplIdx: Integer;
+    FComplStart: Int64;
+    FComplEnd: Int64;
+    FComplActive: Boolean;
+    FComplFragment: AnsiString;
     function GetDoc: TTveDoc;
     function ViewToLine(V: Int64): Int64;
     function LineToView(L: Int64): Int64;
@@ -64,6 +73,7 @@ type
     function Hit(Where: TPoint; out L: Int64; out C: Integer): Boolean;
     procedure DoMouse(var Event: TEvent);
     procedure Remember;
+    procedure Complete;
   public
     constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False);
     destructor Destroy; override;
@@ -72,6 +82,9 @@ type
     property Highlighter: TTveHighlighter read FHl;
     { Folds are created on first use. }
     property Folds: TTveFolds read GetFolds;
+    property Templates: TTveTemplates read FTemplates write FTemplates;
+    property Completion: TTveCompletion read FCompletion write FCompletion;
+    property OnPrompt: TTvePrompt read FOnPrompt write FOnPrompt;
     property Keymap: TTveKeymap read FKeymap write FKeymap;
     property OnHostCommand: TTveHostCommand read FOnHost write FOnHost;
     property OnLineAttr: TTveLineAttr read FOnLineAttr write FOnLineAttr;
@@ -517,6 +530,41 @@ begin
   end;
 end;
 
+procedure TTveView.Complete;
+var
+  Fragment: AnsiString;
+  FragStart: Int64;
+  Items: TTveWords;
+begin
+  if FCompletion = nil then
+    Exit;
+  if FComplActive and (FEditor.Offset = FComplEnd) then
+  begin
+    FComplIdx := (FComplIdx + 1) mod (Length(FComplItems) + 1);
+  end
+  else
+  begin
+    if not FCompletion.Candidates(FEditor, Fragment, FragStart, Items) then
+      Exit;
+    FComplItems := Items;
+    FComplStart := FragStart;
+    FComplIdx := 0;
+    FComplActive := True;
+    FComplEnd := FEditor.Offset;
+    SetLength(Fragment, Length(Fragment));
+    SetLength(FComplItems, Length(Items) + 0);
+    FComplFragment := Fragment;
+  end;
+  // the candidate number FComplIdx (the last one is the fragment typed by the user, to get back to it)
+  if FComplIdx < Length(FComplItems) then
+    Fragment := FComplItems[FComplIdx]
+  else
+    Fragment := FComplFragment;
+  FEditor.Doc.Replace(FComplStart, FComplEnd - FComplStart, Fragment);
+  FComplEnd := FComplStart + Length(Fragment);
+  FEditor.GotoOffset(FComplEnd);
+end;
+
 procedure TTveView.GotoLine(L: Int64);
 begin
   Remember;
@@ -629,6 +677,8 @@ begin
   if (FOnHost <> nil) and FOnHost(Self, Cmd) then
     Exit;
   E := FEditor;
+  if Cmd <> tcCompletion then
+    FComplActive := False;
   if FRecording and (Cmd <> tcMacroRecord) and (Cmd <> tcMacroPlay) then
   begin
     SetLength(FMacro, Length(FMacro) + 1);
@@ -708,6 +758,8 @@ begin
     tcTrimTrailing: TrimTrailing(E);
     tcExpandTabs: ExpandTabs(E);
     tcTabify: TabifyIndent(E);
+    tcTemplate: if FTemplates <> nil then TveExpandShortcut(E, FTemplates, FOnPrompt);
+    tcCompletion: Complete;
     tcFoldToggle: Folds.Toggle(E.Line);
     tcFoldCollapse: Folds.CollapseAt(E.Line);
     tcFoldExpand: Folds.ExpandAt(E.Line);

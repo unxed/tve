@@ -18,6 +18,7 @@ var
   Err: AnsiString;
   Z: TKey;
   I, Bad: Integer;
+  OkA: Boolean;
 begin
   Check(TveCommandByName('find') = tcFind, 'name lookup is not case sensitive');
   Check(TveCommandByName('nosuch') = -1, 'unknown name');
@@ -57,6 +58,13 @@ begin
   Check(TveKeymapA.Lookup(K('Ctrl+Home')) = tcTextStart, 'A: Ctrl+Home');
   Check(TveKeymapB.Lookup(K('Ctrl+Home')) = tcWindowTop, 'B: Ctrl+Home');
   Check(TveKeymapB.LookupChord(K('Ctrl+Q'), K('F')) = tcFind, 'B: Ctrl+Q F');
+  M := TTveKeymap.Create;
+  OkA := M.LoadText(TveKeymapAText, Err);
+  Check(OkA, 'map A has no bad line: ' + Err);
+  M.Clear;
+  OkA := M.LoadText(TveKeymapBText, Err);
+  Check(OkA, 'map B has no bad line: ' + Err);
+  M.Free;
   M := TTveKeymap.Create;
   Check(M.LoadText(TveKeymapA.SaveText, Err) and (M.Count = TveKeymapA.Count), 'save and load again');
   M.Free;

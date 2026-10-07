@@ -329,7 +329,7 @@ const
     'Ctrl+S = Left' + LF + 'Ctrl+D = Right' + LF + 'Ctrl+E = Up' + LF + 'Ctrl+X = Down' + LF + 'Ctrl+R = PageUp' + LF + 'Ctrl+C = PageDown' + LF +
     'Ctrl+A = WordLeft' + LF + 'Ctrl+F = WordRight' + LF + 'Ctrl+G = Delete' + LF + 'Ctrl+H = Backspace' + LF +
     'Ctrl+Y = DeleteLine' + LF + 'Ctrl+T = DeleteWordRight' + LF + 'Ctrl+Backspace = DeleteWordLeft' + LF +
-    'Ctrl+L = FindNext' + LF + 'Ctrl+V = ToggleInsert' + LF +
+    'Ctrl+L = FindNext' + LF + 'Ctrl+Space = Completion' + LF + 'Ctrl+@ = Completion' + LF + 'Ctrl+V = ToggleInsert' + LF +
     'Ctrl+K B = BlockBegin' + LF + 'Ctrl+K K = BlockEnd' + LF + 'Ctrl+K L = LineBlock' + LF + 'Ctrl+K T = SelectWord' + LF +
     'Ctrl+K H = HideBlock' + LF + 'Ctrl+K C = CopyBlockHere' + LF + 'Ctrl+K V = MoveBlockHere' + LF + 'Ctrl+K Y = DeleteBlock' + LF +
     'Ctrl+K Z = FoldToggle' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
@@ -357,8 +357,8 @@ const
     'Ctrl+Home = WindowTop' + LF + 'Ctrl+End = WindowBottom' + LF + 'Ctrl+Q E = WindowTop' + LF + 'Ctrl+Q X = WindowBottom' + LF +
     'Ctrl+Q P = CursorBack' + LF + 'Ctrl+Q H = DeleteToBol' + LF + 'Ctrl+Q L = Undo' + LF +
     'Ctrl+K N = UpperCase' + LF + 'Ctrl+K O = LowerCase' + LF + 'Ctrl+K A = FoldFromBlock' + LF + 'Ctrl+K S = Save' + LF +
-    'Ctrl+J = Template' + LF + 'Ctrl+Space = Completion' + LF + 'Ctrl+Enter = OpenAtCursor' + LF +
-    'F7 = Find' + LF + 'F2 = Save' + LF + 'Ctrl+Gray* = FoldToggle' + LF + 'Ctrl+Gray- = FoldCollapse' + LF + 'Ctrl+Gray+ = FoldExpand' + LF;
+    'Ctrl+J = Template' + LF + 'Ctrl+Enter = OpenAtCursor' + LF +
+    'F7 = Find' + LF + 'F2 = Save' + LF + 'Ctrl+Num- = FoldCollapse' + LF + 'Ctrl+Num+ = FoldExpand' + LF;
 
 var
   MapA, MapB: TTveKeymap;

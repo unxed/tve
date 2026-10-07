@@ -4,7 +4,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete;
 
 const
   cmSaveFile = 200;
@@ -15,6 +15,7 @@ type
     View: TTveView;
     Doc: TTveDoc;
     Name: AnsiString;
+    Compl: TTveCompletion;
     procedure InitMenuBar; override;
     procedure InitStatusLine; override;
     procedure HandleEvent(var Event: TEvent); override;
@@ -71,6 +72,10 @@ begin
   View.OnHostCommand := @Host;
   Lang := TveLangForFile(FileName);
   View.SetLanguage(Lang);
+  Compl := TTveCompletion.Create;
+  if Lang <> nil then
+    Compl.SetKeywords(Lang.KeywordText);
+  View.Completion := Compl;
   Win.Insert(View);
   InsertWindow(Win);
 end;

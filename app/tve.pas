@@ -4,7 +4,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs;
 
 const
   cmSaveFile = 200;
@@ -18,6 +18,7 @@ type
     procedure InitMenuBar; override;
     procedure InitStatusLine; override;
     procedure HandleEvent(var Event: TEvent); override;
+    function Host(Sender: TObject; Cmd: Integer): Boolean;
     procedure OpenFile(const FileName: AnsiString; MapB: Boolean);
   end;
 
@@ -67,10 +68,62 @@ begin
   if MapB then
     View.Keymap := TveKeymapB;
   View.Gutter := True;
+  View.OnHostCommand := @Host;
   Lang := TveLangForFile(FileName);
   View.SetLanguage(Lang);
   Win.Insert(View);
   InsertWindow(Win);
+end;
+
+function TTveApp.Host(Sender: TObject; Cmd: Integer): Boolean;
+var
+  O: TTveSearchOptions;
+  Repl, T: AnsiString;
+  All: Boolean;
+  L, Ofs: Int64;
+  C: Integer;
+  IsOfs: Boolean;
+begin
+  Result := True;
+  case Cmd of
+    tcFind:
+      begin
+        O := View.SearchOptions;
+        if TveFindDialog(O) then
+        begin
+          View.SearchOptions := O;
+          View.FindNext;
+          View.Refresh;
+        end;
+      end;
+    tcReplace:
+      begin
+        O := View.SearchOptions;
+        Repl := '';
+        if TveReplaceDialog(O, Repl, All) then
+        begin
+          View.SearchOptions := O;
+          if All then
+            View.ReplaceAll(Repl)
+          else
+            View.ReplaceNext(Repl);
+        end;
+      end;
+    tcGotoLine:
+      begin
+        T := '';
+        if TveGotoDialog(T) and TveParseGoto(T, L, C, Ofs, IsOfs) then
+        begin
+          if IsOfs then
+            View.Editor.GotoOffset(Ofs)
+          else
+            View.Editor.GotoLineCell(L, C);
+          View.Refresh;
+        end;
+      end;
+  else
+    Result := False;
+  end;
 end;
 
 procedure TTveApp.HandleEvent(var Event: TEvent);

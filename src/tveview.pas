@@ -85,10 +85,15 @@ type
     { Runs a command (the host's first). True if something was done. }
     function Execute(Cmd: Integer): Boolean;
     function FindNext(Backward: Boolean = False): TTveFindStatus;
+    { Finds the next match and replaces it (the new text is selected); the number of replacements (0 or 1). }
+    function ReplaceNext(const Repl: AnsiString): Integer;
+    function ReplaceAll(const Repl: AnsiString): Integer;
     { The text of the status line: "line:column  offset  INS  modified". }
     function StatusText: AnsiString;
     procedure GotoLine(L: Int64);
     procedure ScrollLines(N: Integer);
+    { After the host changed the cursor or the text: scroll to the cursor, redraw, tell the owner. }
+    procedure Refresh;
   end;
 
 implementation
@@ -462,6 +467,11 @@ begin
   Sync;
 end;
 
+procedure TTveView.Refresh;
+begin
+  Sync;
+end;
+
 procedure TTveView.ScrollLines(N: Integer);
 var
   Y: Int64;
@@ -503,6 +513,31 @@ begin
     FEditor.GotoOffset(M.Stop);
     Sync;
   end;
+end;
+
+function TTveView.ReplaceNext(const Repl: AnsiString): Integer;
+var
+  O: TTveSearchOptions;
+  M: TTveMatch;
+  New_: AnsiString;
+begin
+  Result := 0;
+  O := FSearch;
+  O.Backward := False;
+  if FSearcher.Find(O, FEditor.Offset, M) <> fsFound then
+    Exit;
+  New_ := FSearcher.ReplacementFor(M, Repl);
+  FEditor.Doc.Replace(M.Start, M.Stop - M.Start, New_);
+  FEditor.SetSelection(skStream, M.Start);
+  FEditor.GotoOffset(M.Start + Length(New_));
+  Result := 1;
+  Sync;
+end;
+
+function TTveView.ReplaceAll(const Repl: AnsiString): Integer;
+begin
+  Result := FSearcher.ReplaceAll(FEditor.Doc, FSearch, Repl);
+  Sync;
 end;
 
 function TTveView.Execute(Cmd: Integer): Boolean;

@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -59,6 +59,7 @@ type
     FComplEnd: Int64;
     FComplActive: Boolean;
     FComplFragment: AnsiString;
+    FDrawMode: Integer;               // 0 off, 1 single lines, 2 double
     function GetDoc: TTveDoc;
     function ViewToLine(V: Int64): Int64;
     function LineToView(L: Int64): Int64;
@@ -84,6 +85,7 @@ type
     property Folds: TTveFolds read GetFolds;
     property Templates: TTveTemplates read FTemplates write FTemplates;
     property Completion: TTveCompletion read FCompletion write FCompletion;
+    property DrawMode: Integer read FDrawMode write FDrawMode;
     property OnPrompt: TTvePrompt read FOnPrompt write FOnPrompt;
     property Keymap: TTveKeymap read FKeymap write FKeymap;
     property OnHostCommand: TTveHostCommand read FOnHost write FOnHost;
@@ -684,7 +686,19 @@ begin
     SetLength(FMacro, Length(FMacro) + 1);
     FMacro[High(FMacro)] := Cmd;
   end;
+  if (FDrawMode > 0) and (Cmd >= tcLeft) and (Cmd <= tcDown) then
+  begin
+    case Cmd of
+      tcLeft: TveDrawStep(E, dirLeft, TTveDrawStyle(FDrawMode - 1));
+      tcRight: TveDrawStep(E, dirRight, TTveDrawStyle(FDrawMode - 1));
+      tcUp: TveDrawStep(E, dirUp, TTveDrawStyle(FDrawMode - 1));
+      tcDown: TveDrawStep(E, dirDown, TTveDrawStyle(FDrawMode - 1));
+    end;
+    Sync;
+    Exit;
+  end;
   case Cmd of
+    tcDrawMode: FDrawMode := (FDrawMode + 1) mod 3;
     tcLeft: E.MoveLeft;
     tcRight: E.MoveRight;
     tcUp: if (FFolds <> nil) and (FFolds.Count > 0) then MoveVertical(False, False) else E.MoveUp;
@@ -811,6 +825,8 @@ begin
     Result := Result + ' OVR';
   if FRecording then
     Result := Result + ' REC';
+  if FDrawMode > 0 then
+    Result := Result + ' DRAW';
 end;
 
 { --- the mouse --- }

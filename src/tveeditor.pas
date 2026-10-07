@@ -34,6 +34,7 @@ type
     BracketPairs: AnsiString;       { opening and closing characters in pairs: '()[]{}' }
     SmartHome: Boolean;             { Home goes to the first non-blank first }
     UnlimitedUnindent: Boolean;     { unindent the lines that can, even when some cannot }
+    WrapColumn: Integer;            { > 0: a word that goes past this cell moves to the next line while typing }
   end;
 
   TTveClipSet = procedure(const Text: AnsiString; Column: Boolean) of object;
@@ -65,6 +66,7 @@ type
     procedure AfterEdit;
     procedure BeginMove(Extend: Boolean);
     function IndentOf(const S: AnsiString): AnsiString;
+    procedure WrapAtCursor;
     function FillCells(FromCell, ToCell: Integer): AnsiString;
     function PrevIndentCell(L: Int64; Cell: Integer): Integer;
     procedure SelBounds(out A, B: Int64);
@@ -179,6 +181,7 @@ begin
   Result.BracketPairs := '()[]{}';
   Result.SmartHome := True;
   Result.UnlimitedUnindent := False;
+  Result.WrapColumn := 0;
 end;
 
 constructor TTveEditor.Create(ADoc: TTveDoc);
@@ -1018,6 +1021,46 @@ begin
   Result := True;
 end;
 
+procedure TTveEditor.WrapAtCursor;
+var
+  LineS, Ins: AnsiString;
+  CurIdx, I, BP, BE, IndentLen: Integer;
+  LS, CurOff, NewCur: Int64;
+begin
+  LineS := GetLineText(FLine);
+  if LayoutCells(LineS, Opt.TabSize) <= Opt.WrapColumn then
+    Exit;
+  CurIdx := LayoutCellToIndex(LineS, FCell, Opt.TabSize);
+  if CurIdx <= Length(LineS) then
+    Exit;                                   // only at the end of the line
+  IndentLen := Length(IndentOf(LineS));
+  BP := 0;
+  for I := Length(LineS) downto IndentLen + 1 do
+    if (LineS[I] in [' ', #9]) and (LayoutIndexToCell(LineS, I, Opt.TabSize) <= Opt.WrapColumn) then
+    begin
+      BP := I;
+      Break;
+    end;
+  if BP = 0 then
+    Exit;
+  while (BP > IndentLen + 1) and (LineS[BP - 1] in [' ', #9]) do
+    Dec(BP);
+  BE := BP;
+  while (BE <= Length(LineS)) and (LineS[BE] in [' ', #9]) do
+    Inc(BE);
+  if BE > Length(LineS) then
+    Exit;
+  if Opt.AutoIndent then
+    Ins := #10 + IndentOf(LineS)
+  else
+    Ins := #10;
+  LS := FDoc.Buffer.LineStart(FLine);
+  CurOff := CursorOffset;
+  FDoc.Replace(LS + BP - 1, BE - BP, Ins);
+  NewCur := CurOff - (BE - BP) + Length(Ins);
+  PlaceAtOffset(NewCur);
+end;
+
 function TTveEditor.TypeText(const S: AnsiString): Boolean;
 var
   Off: Int64;
@@ -1070,6 +1113,8 @@ begin
     else
       FDoc.Insert(Off, Ins);
     PlaceAtOffset(Off + Length(Ins));
+    if (Opt.WrapColumn > 0) and (Length(S) = 1) and not (S[1] in [' ', #9]) then
+      WrapAtCursor;
     if Opt.AutoBrackets and (Length(S) = 1) then
     begin
       K := Pos(S, Opt.BracketPairs);

@@ -306,6 +306,15 @@ begin
   Check((Txt = '()') and At(0, 1), 'auto bracket');
   E.TypeText(')');
   Check((Txt = '()') and At(0, 2), 'the closing bracket is skipped');
+  { hard wrap while typing }
+  D.LoadText('');
+  E.Opt := TveDefaultEditorOptions;
+  E.Opt.WrapColumn := 10;
+  E.GotoOffset(0);
+  for I := 1 to Length('aaa bbb ccc ddd') do
+    E.TypeText(Copy('aaa bbb ccc ddd', I, 1));
+  Check(D.Buffer.AsString = 'aaa bbb' + #10 + 'ccc ddd', 'wrap: ' + D.Buffer.AsString);
+  E.Opt.WrapColumn := 0;
   E.Free;
   D.Free;
   Clip.Free;

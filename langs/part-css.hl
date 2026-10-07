@@ -1,0 +1,55 @@
+# CSS (also the body of <style> and of the style attributes)
+context css
+  match '/*' => comment push css_comment
+  match /@[A-Za-z-]+/ => keyword
+  match '{' => normal push css_block
+  match /#[\w-]+/ => selector
+  match /\.[\w-]+/ => selector
+  match /::?[A-Za-z-]+/ => selector
+  match /\[[^\]]*\]/ => attr
+  match /"(?:[^"\\]|\\.)*"/ => string
+  match /'(?:[^'\\]|\\.)*'/ => string
+  match /[A-Za-z][\w-]*/ => tag
+  ops >+~*,
+context css_comment default comment noinject
+  match '*/' => comment pop
+context css_decls
+  match '/*' => comment push css_comment
+  match /([\w-]+)(\s*)(:)/ => property normal operator push css_value
+context css_block
+  match '}' => normal pop
+  include css_decls
+context css_value_common
+  match '/*' => comment push css_comment
+  match /"(?:[^"\\]|\\.)*"/ => string
+  match /'(?:[^'\\]|\\.)*'/ => string
+  match /#[0-9A-Fa-f]+\b/ => number
+  match /[+-]?(?:\d+\.?\d*|\.\d+)(?:%|[A-Za-z]+)?/ => number
+  match /!\s*important/i => keyword
+  match /([\w-]+)(\()/ => function normal
+  match /[\w-]+/ => value
+context css_value default value
+  match ';' => normal pop
+  match /(?=\})/ => normal pop
+  include css_value_common
+# the declarations of a style="..." or style='...'
+context css_decls_dq
+  match '/*' => comment push css_comment
+  match /([\w-]+)(\s*)(:)/ => property normal operator push css_value_dq
+context css_value_dq default value
+  match ';' => normal pop
+  match /(?=")/ => normal pop
+  include css_value_common
+context css_attr_dq
+  match '"' => string pop
+  include css_decls_dq
+context css_decls_sq
+  match '/*' => comment push css_comment
+  match /([\w-]+)(\s*)(:)/ => property normal operator push css_value_sq
+context css_value_sq default value
+  match ';' => normal pop
+  match /(?=')/ => normal pop
+  include css_value_common
+context css_attr_sq
+  match "'" => string pop
+  include css_decls_sq

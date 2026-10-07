@@ -1,0 +1,5 @@
+language SQL
+masks *.sql
+start sql
+ident _
+%include part-sql

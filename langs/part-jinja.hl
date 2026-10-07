@@ -1,0 +1,21 @@
+# Jinja2 / Twig / Django templates; use with: inject jinja
+context jinja noinject
+  match '{#' => comment push jinja_comment
+  match '{%' => delimiter push jinja_stmt
+  match '{{' => delimiter push jinja_expr
+context jinja_comment default comment noinject
+  match '#}' => comment pop
+context jinja_code
+  match /"(?:[^"\\]|\\.)*"/ => string
+  match /'(?:[^'\\]|\\.)*'/ => string
+  match /\|\s*[A-Za-z_]\w*/ => function
+  match /===?|!==?|<=|>=|<|>|~|\+|-|\*|\/|%|=/ => operator
+  words keyword if elif elseif else endif for endfor in not and or is block endblock extends include set endset macro endmacro call endcall filter endfilter with endwith import from as raw endraw autoescape endautoescape trans endtrans load url csrf_token
+  words builtin true false none null True False None
+  number c
+context jinja_stmt noinject
+  match '%}' => delimiter pop
+  include jinja_code
+context jinja_expr noinject
+  match '}}' => delimiter pop
+  include jinja_code

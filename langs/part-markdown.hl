@@ -1,0 +1,52 @@
+# Markdown with fenced code in the other languages (needs the parts of those languages)
+context md
+  match /^(#{1,6})(\s.*)$/ => delimiter keyword
+  match /^(```|~~~)\s*(?:pascal|delphi|pas|fpc)\s*$/i => delimiter push md_pascal
+  match /^(```|~~~)\s*(?:go|golang)\s*$/i => delimiter push md_go
+  match /^(```|~~~)\s*(?:c|cpp|c\+\+|h|hpp|cc)\s*$/i => delimiter push md_c
+  match /^(```|~~~)\s*(?:js|javascript|jsx|ts|typescript)\s*$/i => delimiter push md_js
+  match /^(```|~~~)\s*css\s*$/i => delimiter push md_css
+  match /^(```|~~~)\s*(?:html|htm)\s*$/i => delimiter push md_html
+  match /^(```|~~~)\s*(?:sh|bash|shell|zsh)\s*$/i => delimiter push md_sh
+  match /^(```|~~~)\s*(?:py|python)\s*$/i => delimiter push md_py
+  match /^(```|~~~)\s*json\s*$/i => delimiter push md_json
+  match /^(```|~~~)\s*sql\s*$/i => delimiter push md_sql
+  match /^(```|~~~).*$/ => delimiter push md_code
+  match /`[^`]+`/ => string
+  match /\*\*[^*]+\*\*/ => special
+  match /\*[^*\s][^*]*\*/ => special
+  match /(\[)([^\]]*)(\]\()([^)]*)(\))/ => delimiter keyword delimiter string delimiter
+  match /^\s*(?:[-*+]|\d+\.)\s/ => delimiter
+  match /^>.*/ => comment
+context md_code default string
+  match /^(```|~~~)\s*$/ => delimiter pop
+context md_pascal
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include pascal
+context md_go
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include go
+context md_c
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include c
+context md_js
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include js
+context md_css
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include css
+context md_html
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include html
+context md_sh
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include sh
+context md_py
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include py
+context md_json
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include json
+context md_sql
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include sql

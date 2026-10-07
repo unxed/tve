@@ -1,0 +1,4 @@
+language XML
+masks *.xml *.xsd *.xsl *.svg
+start xml
+%include part-xml

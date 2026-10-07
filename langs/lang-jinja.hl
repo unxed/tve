@@ -1,0 +1,9 @@
+language Jinja/Twig/Django (HTML, CSS, JavaScript)
+masks *.j2 *.jinja *.twig
+start html
+inject jinja
+ident _$
+%include part-html
+%include part-js
+%include part-css
+%include part-jinja

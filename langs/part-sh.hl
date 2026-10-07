@@ -1,0 +1,17 @@
+context sh
+  match /^#!.*/ => preproc
+  match /#.*/ => comment
+  match '"' => string push sh_dq
+  match "'" => string push sh_sq
+  match /\$(?:\{[^}]*\}|[A-Za-z_]\w*|[0-9@*#?$!-])/ => variable
+  match /\$\(/ => delimiter
+  words keyword if then else elif fi for while until do done case esac in function select time
+  words builtin echo cd exit export local read return set shift test unset eval exec source printf true false trap
+  number c
+  ops |&;<>=
+context sh_dq default string
+  match /\\./ => escape
+  match /\$(?:\{[^}]*\}|[A-Za-z_]\w*)/ => variable
+  match '"' => string pop
+context sh_sq default string
+  match "'" => string pop

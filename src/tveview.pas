@@ -180,6 +180,17 @@ begin
     hcPreproc: Fg := ColorBIOS($0C);
     hcOperator: Fg := ColorBIOS($07);
     hcEscape: Fg := ColorBIOS($0D);
+    hcTag: Fg := ColorBIOS($0A);
+    hcAttr: Fg := ColorBIOS($0E);
+    hcEntity: Fg := ColorBIOS($0D);
+    hcVariable: Fg := ColorBIOS($0B);
+    hcDelimiter: Fg := ColorBIOS($0F);
+    hcFunction: Fg := ColorBIOS($0E);
+    hcProperty: Fg := ColorBIOS($0B);
+    hcSelector: Fg := ColorBIOS($0A);
+    hcValue: Fg := ColorBIOS($0B);
+    hcAsm: Fg := ColorBIOS($0C);
+    hcSpecial: Fg := ColorBIOS($0D);
   else
     Fg := AttrFg(Result);
   end;

@@ -1,0 +1,33 @@
+# Smarty tags; use with: inject smarty
+context smarty noinject
+  match '{*' => comment push smarty_comment
+  match /(\{)(literal)(\})/ => delimiter keyword delimiter literal on always
+  match /(\{\/)(literal)(\})/ => delimiter keyword delimiter literal off always
+  match /\{(?=[^\s}])/ => delimiter push smarty_open
+context smarty_comment default comment noinject
+  match '*}' => comment pop
+context smarty_open noinject
+  match '}' => delimiter pop
+  match /\/?(?:if|elseif|else|foreach|foreachelse|for|forelse|while|break|continue|section|sectionelse|include|include_php|extends|block|capture|function|strip|nocache|setfilter|assign|config_load|debug|insert|call)\b/ => keyword switch smarty_code
+  match /\/?[A-Za-z_]\w*/ => function switch smarty_code
+  match /(?=[\s\S])/ => normal switch smarty_code
+context smarty_code noinject
+  match '}' => delimiter pop
+  match /\$[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\]]*\]|->[A-Za-z_]\w*)*/ => variable
+  match '"' => string push smarty_dq
+  match "'" => string push smarty_sq
+  match /\|[A-Za-z_]\w*/ => function
+  match /([A-Za-z_]\w*)(\s*)(=)(?!=)/ => attr normal operator
+  match /(?:eq|ne|neq|gt|lt|gte|lte|ge|le|not|and|or|mod|is|in|as)\b/ => operator
+  match /===?|!==?|<=|>=|&&|\|\||<|>|!|=|\+|-|\*|\/|%|\?|:/ => operator
+  words keyword if
+  words builtin true false null
+  number c
+context smarty_dq default string noinject
+  match /\\./ => escape
+  match '"' => string pop
+  match /\{(?=\$)/ => delimiter push smarty_code
+  match /\$[A-Za-z_]\w*/ => variable
+context smarty_sq default string noinject
+  match /\\./ => escape
+  match "'" => string pop

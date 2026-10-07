@@ -1,0 +1,5 @@
+language C/C++
+masks *.c *.h *.cpp *.hpp *.cc *.cxx
+start c
+ident _
+%include part-c

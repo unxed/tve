@@ -1,0 +1,27 @@
+# JavaScript (also the body of <script> and of the on... attributes)
+context js
+  match /\/\/.*/ => comment
+  match '/*' => comment push js_comment
+  match '"' => string push js_dq
+  match "'" => string push js_sq
+  match '`' => string push js_tpl
+  words keyword break case catch class const continue debugger default delete do else export extends finally for function if import in instanceof let new return super switch this throw try typeof var void while with yield async await of static get set
+  words builtin true false null undefined NaN Infinity
+  words type Object Array String Number Boolean Date Math JSON Promise Map Set RegExp Error Symbol window document console
+  number c
+  ops +-*/%=<>!&|^~?:
+context js_comment default comment noinject
+  match '*/' => comment pop
+context js_dq default string eolpop
+  match /\\./ => escape
+  match '"' => string pop
+context js_sq default string eolpop
+  match /\\./ => escape
+  match "'" => string pop
+context js_tpl default string
+  match /\\./ => escape
+  match '${' => escape push js_tpl_expr
+  match '`' => string pop
+context js_tpl_expr
+  match '}' => escape pop
+  include js

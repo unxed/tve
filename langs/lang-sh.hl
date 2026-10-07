@@ -1,0 +1,5 @@
+language Shell
+masks *.sh *.bash
+start sh
+ident _
+%include part-sh

@@ -1,0 +1,9 @@
+language PHP (HTML, CSS, JavaScript)
+masks *.php *.phtml
+start html
+inject php
+ident _$
+%include part-html
+%include part-js
+%include part-css
+%include part-php

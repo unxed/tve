@@ -1,0 +1,18 @@
+context xml
+  match '<!--' => comment push xml_comment
+  match '<![CDATA[' => preproc push xml_cdata
+  match /<\?[\s\S]*?\?>/ => preproc
+  match /<![A-Za-z]+[^>]*>/ => preproc
+  match /(<\/?)([A-Za-z_][\w:.-]*)/ => delimiter tag push xml_tag
+  match /&(?:#\d+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);/ => entity
+context xml_comment default comment
+  match '-->' => comment pop
+context xml_cdata default string
+  match ']]>' => preproc pop
+context xml_tag
+  match '/>' => delimiter pop
+  match '>' => delimiter pop
+  match /([\w:.-]+)(\s*)(=)/ => attr normal operator
+  match /"[^"]*"/ => value
+  match /'[^']*'/ => value
+  match /[\w:.-]+/ => attr

@@ -1,0 +1,4 @@
+language JSON
+masks *.json
+start json
+%include part-json

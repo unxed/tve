@@ -1,0 +1,25 @@
+# PHP islands; use with: inject php
+context php noinject
+  match /<\?(?:php\b|=)/i => preproc push php_code
+  match /<\?(?=\s)/ => preproc push php_code
+context php_code noinject nocase
+  match '?>' => preproc pop
+  match /(?:\/\/|#).*/ => comment
+  match '/*' => comment push php_comment
+  match '"' => string push php_dq
+  match "'" => string push php_sq
+  match /\$[A-Za-z_]\w*/ => variable
+  words keyword abstract and as break case catch class clone const continue declare default do echo else elseif empty endfor endforeach endif endswitch endwhile extends final finally fn for foreach function global if implements include include_once instanceof interface isset list namespace new or print private protected public require require_once return static switch throw trait try unset use var while xor yield
+  words builtin true false null array
+  words type int float string bool void mixed object self parent
+  number c
+  ops +-*/%=<>!&|^~?:.
+context php_comment default comment noinject
+  match '*/' => comment pop
+context php_dq default string noinject
+  match /\\./ => escape
+  match /\$[A-Za-z_]\w*/ => variable
+  match '"' => string pop
+context php_sq default string noinject
+  match /\\./ => escape
+  match "'" => string pop

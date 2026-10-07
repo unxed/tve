@@ -1,0 +1,5 @@
+language JavaScript
+masks *.js *.mjs *.ts
+start js
+ident _$
+%include part-js

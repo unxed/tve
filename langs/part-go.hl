@@ -1,0 +1,18 @@
+context go
+  match /\/\/.*/ => comment
+  match '/*' => comment push go_comment
+  match '"' => string push go_str
+  match '`' => string push go_raw
+  match /'(?:[^'\\]|\\[^']*)'/ => string
+  words keyword break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var
+  words type bool byte complex64 complex128 error float32 float64 int int8 int16 int32 int64 rune string uint uint8 uint16 uint32 uint64 uintptr any comparable
+  words builtin append cap clear close copy delete imag len make max min new panic print println real recover true false nil iota
+  number c
+  ops +-*/<>=!&|^%:.
+context go_comment default comment
+  match '*/' => comment pop
+context go_str default string eolpop
+  match /\\./ => escape
+  match '"' => string pop
+context go_raw default string
+  match '`' => string pop

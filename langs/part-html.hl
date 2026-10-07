@@ -1,0 +1,53 @@
+# HTML; needs part-js and part-css
+context html
+  match '<!--' => comment push html_comment
+  match /<![A-Za-z]+[^>]*>/ => preproc
+  match /(<)(script)(?=[\s>\/])/i => delimiter tag push html_tag_script
+  match /(<)(style)(?=[\s>\/])/i => delimiter tag push html_tag_style
+  match /(<\/?)([A-Za-z][\w:.-]*)/ => delimiter tag push html_tag
+  match /&(?:#\d+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);/ => entity
+context html_comment default comment
+  match '-->' => comment pop
+context html_attrs
+  match /(on[\w-]+)(\s*)(=)(\s*)(")/i => attr normal operator normal string push js_attr_dq
+  match /(on[\w-]+)(\s*)(=)(\s*)(')/i => attr normal operator normal string push js_attr_sq
+  match /(style)(\s*)(=)(\s*)(")/i => attr normal operator normal string push css_attr_dq
+  match /(style)(\s*)(=)(\s*)(')/i => attr normal operator normal string push css_attr_sq
+  match /([\w:.@-]+)(\s*)(=)/ => attr normal operator push html_value
+  match /[\w:.@-]+/ => attr
+context html_tag
+  match '/>' => delimiter pop
+  match '>' => delimiter pop
+  include html_attrs
+context html_tag_script
+  match '/>' => delimiter pop
+  match '>' => delimiter switch html_script_body
+  include html_attrs
+context html_tag_style
+  match '/>' => delimiter pop
+  match '>' => delimiter switch html_style_body
+  include html_attrs
+context html_script_body
+  match /(<\/)(script)(\s*)(>)/i => delimiter tag normal delimiter pop
+  include js
+context html_style_body
+  match /(<\/)(style)(\s*)(>)/i => delimiter tag normal delimiter pop
+  include css
+context html_value
+  match /\s+/ => normal
+  match '"' => string switch html_dq
+  match "'" => string switch html_sq
+  match /(?=>)/ => normal pop
+  match /(?=[^\s"'>])/ => normal switch html_unq
+context html_dq default value
+  match '"' => string pop
+context html_sq default value
+  match "'" => string pop
+context html_unq default value
+  match /(?=[\s>])/ => normal pop
+context js_attr_dq
+  match '"' => string pop
+  include js
+context js_attr_sq
+  match "'" => string pop
+  include js

@@ -1,0 +1,20 @@
+context sql nocase
+  match /--.*/ => comment
+  match '/*' => comment push sql_comment
+  match "'" => string push sql_str
+  match '"' => property push sql_ident
+  match '`' => property push sql_bt
+  words keyword select from where and or not insert into values update set delete create table drop alter add column index primary key foreign references join inner left right outer full cross on as group by order having limit offset union all distinct case when then else end null is in like between exists asc desc begin commit rollback transaction view trigger default unique check constraint with returning using
+  words type int integer bigint smallint tinyint serial varchar char text boolean bool date time timestamp datetime float double decimal numeric blob json uuid
+  words builtin count sum avg min max coalesce now true false cast
+  number c
+  ops +-*/<>=!%
+context sql_comment default comment
+  match '*/' => comment pop
+context sql_str default string
+  match "''" => escape
+  match "'" => string pop
+context sql_ident default property eolpop
+  match '"' => property pop
+context sql_bt default property eolpop
+  match '`' => property pop

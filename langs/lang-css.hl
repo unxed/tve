@@ -1,0 +1,4 @@
+language CSS
+masks *.css
+start css
+%include part-css

@@ -1,0 +1,7 @@
+language HTML
+masks *.html *.htm
+start html
+ident _$
+%include part-html
+%include part-js
+%include part-css

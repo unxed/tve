@@ -1,0 +1,5 @@
+language Go
+masks *.go go.mod
+start go
+ident _
+%include part-go

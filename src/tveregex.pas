@@ -20,6 +20,7 @@ const
   MaxGroups = 9;
 
 type
+  TByteSet = array[0..255] of Boolean;
   TCaps = array[0..2 * (MaxGroups + 1) - 1] of Integer;
 
   TRange = record
@@ -65,6 +66,8 @@ type
     FPos: Integer;
     FSteps: Int64;
     FLiteral: AnsiString;           { the pattern is a plain text (first-character shortcut) }
+    FRoot: Integer;
+    function FirstOf(N: Integer; var B: TByteSet): Boolean;
     function Emit(Op: TOp; X: Integer = 0; Y: Integer = 0): Integer;
     function NewNode(K: TNodeKind; Value: Integer = 0): Integer;
     function ParseAlt: Integer;
@@ -83,6 +86,8 @@ type
     property Groups: Integer read FGroups;
     property Aborted: Boolean read FAborted;
     { The first match at or after StartIdx (1-based). }
+    { The bytes that a match can start with; False when any byte can (or the pattern can match the empty text). }
+    function FirstBytes(out B: TByteSet): Boolean;
     function Exec(const S: AnsiString; StartIdx: Integer; out Caps: TCaps): Boolean;
     { A match that starts exactly at StartIdx. }
     function ExecAt(const S: AnsiString; StartIdx: Integer; out Caps: TCaps): Boolean;
@@ -203,6 +208,7 @@ begin
     FPos := 5;
   end;
   Root := ParseAlt;
+  FRoot := Root;
   if (FError = '') and (FPos <= Length(FPat)) then
     SetError('unmatched )');
   if FError = '' then
@@ -1062,6 +1068,108 @@ begin
     if L = 0 then L := 1;
     Inc(I, L);
   end;
+end;
+
+function TTveRegex.FirstOf(N: Integer; var B: TByteSet): Boolean;
+var
+  I: Integer;
+  Nullable: Boolean;
+  CP: LongWord;
+  Nd: TNode;
+  Buf: array[0..3] of Byte;
+begin
+  { returns True when the node can match the empty text }
+  Nd := FNodes[N];
+  Result := False;
+  case Nd.Kind of
+    nkEmpty, nkBol, nkEol, nkBegin, nkEnd, nkWordB, nkNotWordB:
+      Result := True;
+    nkChar:
+      begin
+        CP := Nd.Value;
+        if CP < 128 then
+        begin
+          B[CP] := True;
+          if FIgnoreCase then
+          begin
+            if Chr(CP) in ['a'..'z'] then B[CP - 32] := True;
+            if Chr(CP) in ['A'..'Z'] then B[CP + 32] := True;
+          end;
+        end
+        else if CP < $800 then
+        begin
+          B[$C0 or (CP shr 6)] := True;
+          if FIgnoreCase then
+            for I := $C0 to $DF do B[I] := True;
+        end
+        else if CP < $10000 then
+        begin
+          B[$E0 or (CP shr 12)] := True;
+          if FIgnoreCase then
+            for I := $E0 to $EF do B[I] := True;
+        end
+        else
+          for I := $F0 to $F7 do B[I] := True;
+        if (CP >= 128) and FIgnoreCase then
+          for I := 128 to 255 do B[I] := True;
+      end;
+    nkAny:
+      for I := 0 to 255 do
+        if I <> 10 then B[I] := True;
+    nkClass:
+      begin
+        for I := 0 to 127 do
+          if MatchesClass(FClasses[Nd.Value], I) then
+            B[I] := True
+          else if FIgnoreCase and (Chr(I) in ['a'..'z']) and MatchesClass(FClasses[Nd.Value], I - 32) then
+            B[I] := True
+          else if FIgnoreCase and (Chr(I) in ['A'..'Z']) and MatchesClass(FClasses[Nd.Value], I + 32) then
+            B[I] := True;
+        for I := 128 to 255 do
+          B[I] := True;
+      end;
+    nkBackRef:
+      begin
+        for I := 0 to 255 do B[I] := True;
+        Result := True;
+      end;
+    nkSeq:
+      begin
+        Result := True;
+        for I := 0 to High(Nd.Kids) do
+          if not FirstOf(Nd.Kids[I], B) then
+          begin
+            Result := False;
+            Break;
+          end;
+      end;
+    nkAlt:
+      begin
+        Nullable := False;
+        for I := 0 to High(Nd.Kids) do
+          if FirstOf(Nd.Kids[I], B) then
+            Nullable := True;
+        Result := Nullable;
+      end;
+    nkGroup:
+      Result := (Length(Nd.Kids) = 0) or FirstOf(Nd.Kids[0], B);
+    nkRepeat:
+      begin
+        Result := FirstOf(Nd.Kids[0], B);
+        if Nd.Min = 0 then Result := True;
+      end;
+  end;
+end;
+
+function TTveRegex.FirstBytes(out B: TByteSet): Boolean;
+begin
+  FillChar(B, SizeOf(B), 0);
+  Result := False;
+  if (FError <> '') or (Length(FNodes) = 0) then
+    Exit;
+  if FirstOf(FRoot, B) then
+    Exit;
+  Result := True;
 end;
 
 function TTveRegex.ExecAt(const S: AnsiString; StartIdx: Integer; out Caps: TCaps): Boolean;

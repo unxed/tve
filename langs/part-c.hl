@@ -1,0 +1,20 @@
+context c
+  match /^\s*#\s*include\b/ => preproc push c_include
+  match /^\s*#.*/ => preproc
+  match /\/\/.*/ => comment
+  match '/*' => comment push c_comment
+  match '"' => string push c_str
+  match /'(?:[^'\\]|\\[^']*)'/ => string
+  words keyword auto break case const continue default do else enum extern for goto if inline register return sizeof static struct switch typedef union volatile while class namespace new delete template this throw try catch public private protected virtual using operator typename constexpr override final explicit friend mutable
+  words type char double float int long short signed unsigned void bool size_t int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t uint64_t string vector map
+  words builtin NULL true false nullptr
+  number c
+  ops +-*/<>=!&|^~%?:.
+context c_include default preproc eolpop
+  match /<[^>]*>/ => string
+  match /"[^"]*"/ => string
+context c_comment default comment
+  match '*/' => comment pop
+context c_str default string eolpop
+  match /\\./ => escape
+  match '"' => string pop

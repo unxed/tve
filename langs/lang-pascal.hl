@@ -1,0 +1,5 @@
+language Pascal
+masks *.pas *.pp *.inc *.lpr *.dpr *.p
+start pascal
+ident _
+%include part-pascal

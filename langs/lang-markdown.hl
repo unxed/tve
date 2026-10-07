@@ -1,0 +1,15 @@
+language Markdown
+masks *.md *.markdown
+start md
+ident _$
+%include part-markdown
+%include part-pascal
+%include part-go
+%include part-c
+%include part-js
+%include part-css
+%include part-html
+%include part-sh
+%include part-python
+%include part-json
+%include part-sql

@@ -1,0 +1,5 @@
+language Python
+masks *.py
+start py
+ident _
+%include part-python

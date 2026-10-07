@@ -1,0 +1,6 @@
+context json
+  match /"(?:[^"\\]|\\.)*"(?=\s*:)/ => property
+  match /"(?:[^"\\]|\\.)*"/ => string
+  words builtin true false null
+  number c
+  ops :,

@@ -1,0 +1,9 @@
+language Smarty (HTML, CSS, JavaScript)
+masks *.tpl
+start html
+inject smarty
+ident _$
+%include part-html
+%include part-js
+%include part-css
+%include part-smarty

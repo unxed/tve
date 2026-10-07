@@ -61,6 +61,7 @@ type
     FComplFragment: AnsiString;
     FDrawMode: Integer;               // 0 off, 1 single lines, 2 double
     FKeysEnabled: Boolean;
+    FMultiClick: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
@@ -99,6 +100,8 @@ type
     property DrawMode: Integer read FDrawMode write FDrawMode;
     // False: the view does not handle keys by its key map (a host that has its own key handling uses the commands of the view and the mouse of it).
     property KeysEnabled: Boolean read FKeysEnabled write FKeysEnabled;
+    // True (the default): a double click selects a word and a triple click a line.
+    property MultiClick: Boolean read FMultiClick write FMultiClick;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
     // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
     property MessageText: AnsiString read FMessage write FMessage;
@@ -164,6 +167,7 @@ begin
   FMarkA := -1;
   FMarkB := -1;
   FKeysEnabled := True;
+  FMultiClick := True;
   FHlA := -1;
   FHlB := -1;
   FEditor.Rows := Size.Y;
@@ -950,14 +954,14 @@ var
 begin
   Extend := (Event.ControlKeyState and kbShift) <> 0;
   Hit(Event.Where, L, C);
-  if (Event.EventFlags and meTripleClick) <> 0 then
+  if FMultiClick and ((Event.EventFlags and meTripleClick) <> 0) then
   begin
     FEditor.GotoLineCell(L, C);
     FEditor.SelectLine;
     Sync;
     Exit;
   end;
-  if (Event.EventFlags and meDoubleClick) <> 0 then
+  if FMultiClick and ((Event.EventFlags and meDoubleClick) <> 0) then
   begin
     FEditor.GotoLineCell(L, C);
     FEditor.SelectWord;

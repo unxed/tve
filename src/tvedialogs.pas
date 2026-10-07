@@ -55,12 +55,14 @@ function MakeBoxes(D: TDialog; X, Y: Integer; Three: Boolean): TView;
 var
   R: TRect;
 begin
-  R.Assign(X, Y, X + 36, Y + 4);
+  R.Assign(X, Y, X + 36, Y + 6);
   Result := TCheckBoxes.Create(R,
     NewSItem('~C~ase sensitive',
     NewSItem('~W~hole words only',
     NewSItem('~R~egular expression',
-    NewSItem('~B~ackward', nil)))));
+    NewSItem('~B~ackward',
+    NewSItem('He~x~ bytes',
+    NewSItem('~A~ll code pages', nil)))))));
   D.Insert(Result);
 end;
 
@@ -71,6 +73,8 @@ begin
   if O.WholeWord then Result := Result or 2;
   if O.UseRegex then Result := Result or 4;
   if O.Backward then Result := Result or 8;
+  if O.Hex then Result := Result or 16;
+  if O.AllCodePages then Result := Result or 32;
 end;
 
 procedure FlagsTo(F: Word; var O: TTveSearchOptions);
@@ -79,6 +83,8 @@ begin
   O.WholeWord := (F and 2) <> 0;
   O.UseRegex := (F and 4) <> 0;
   O.Backward := (F and 8) <> 0;
+  O.Hex := (F and 16) <> 0;
+  O.AllCodePages := (F and 32) <> 0;
 end;
 
 function TveFindDialog(var Opt: TTveSearchOptions): Boolean;
@@ -88,7 +94,7 @@ var
   I: TInputLine;
   Rec: TFindRec;
 begin
-  R.Assign(0, 0, 52, 13);
+  R.Assign(0, 0, 52, 15);
   D := TDialog.Create(R, 'Find');
   D.Options := D.Options or ofCentered;
   R.Assign(3, 3, 46, 4);
@@ -99,9 +105,9 @@ begin
   R.Assign(46, 3, 49, 4);
   D.Insert(THistory.Create(R, I, HistFind));
   MakeBoxes(D, 3, 5, False);
-  R.Assign(14, 10, 24, 12);
+  R.Assign(14, 12, 24, 14);
   D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
-  R.Assign(26, 10, 36, 12);
+  R.Assign(26, 12, 36, 14);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Pattern := Copy(Opt.Pattern, 1, 80);
@@ -126,7 +132,7 @@ var
   Boxes: TView;
   K: Word;
 begin
-  R.Assign(0, 0, 52, 16);
+  R.Assign(0, 0, 52, 18);
   D := TDialog.Create(R, 'Replace');
   D.Options := D.Options or ofCentered;
   R.Assign(3, 3, 46, 4);
@@ -144,11 +150,11 @@ begin
   R.Assign(46, 6, 49, 7);
   D.Insert(THistory.Create(R, J, HistRepl));
   Boxes := MakeBoxes(D, 3, 8, False);
-  R.Assign(4, 13, 20, 15);
+  R.Assign(4, 15, 20, 17);
   D.Insert(TButton.Create(R, '~R~eplace', cmOK, bfDefault));
-  R.Assign(21, 13, 35, 15);
+  R.Assign(21, 15, 35, 17);
   D.Insert(TButton.Create(R, 'Replace ~a~ll', cmYes, bfNormal));
-  R.Assign(36, 13, 48, 15);
+  R.Assign(36, 15, 48, 17);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Pattern := Copy(Opt.Pattern, 1, 80);

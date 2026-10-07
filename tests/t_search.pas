@@ -145,6 +145,20 @@ begin
   Setup(StringOfChar('x', 50000) + 'NEEDLE' + StringOfChar('y', 50000));
   O.Pattern := 'NEEDLE';
   Check(F('NEEDLE', 0) = 50000, 'a long line');
+  { hexadecimal search }
+  Setup('ab' + #$DE#$AD#$BE#$EF + 'cd');
+  O.Hex := True;
+  Check(F('de ad Be EF', 0) = 2, 'hex search');
+  Check(F('dead', 0) = 2, 'hex without blanks');
+  Check(F('zz', 0) = -1, 'bad hex is no match');
+  O.Hex := False;
+  { all code pages: the text typed in UTF-8, the file has it in CP1251 }
+  Setup('x ' + #$CF#$F0#$E8#$E2#$E5#$F2 + ' y');
+  O.AllCodePages := False;
+  Check(F(Privet, 0) = -1, 'not found as UTF-8');
+  O.AllCodePages := True;
+  Check(F(Privet, 0) = 2, 'found in another code page');
+  O.AllCodePages := False;
   S.Free;
   D.Free;
   Finish;

@@ -23,6 +23,8 @@ type
     CaseSensitive: Boolean;
     WholeWord: Boolean;
     UseRegex: Boolean;
+    Hex: Boolean;                   // the pattern is bytes in hexadecimal ("DE AD be ef"), searched as they are
+    AllCodePages: Boolean;          // a plain pattern is searched in every single-byte code page as well as in UTF-8
     Backward: Boolean;
     ScopeFrom, ScopeTo: Int64;      { the range that a match must lie in; ScopeTo < 0: the whole text }
   end;
@@ -52,6 +54,7 @@ type
     function FindForward(From: Int64; out M: TTveMatch; out Aborted: Boolean): Boolean;
     function FindBackward(From: Int64; out M: TTveMatch; out Aborted: Boolean): Boolean;
     function WholeText: AnsiString;
+    function FindOne(const Opt: TTveSearchOptions; From: Int64; out M: TTveMatch): TTveFindStatus;
   public
     constructor Create(ABuf: TTveBuffer);
     destructor Destroy; override;
@@ -69,7 +72,36 @@ function TveDefaultSearch: TTveSearchOptions;
 implementation
 
 uses
-  SysUtils, TvUtf8, TveLayout;
+  SysUtils, TvCharset, TvUtf8, TveLayout;
+
+function HexToBytes(const S: AnsiString; out Bytes: AnsiString): Boolean;
+var
+  I, Hi: Integer;
+  V: Integer;
+begin
+  Bytes := '';
+  Hi := -1;
+  Result := False;
+  for I := 1 to Length(S) do
+  begin
+    case S[I] of
+      '0'..'9': V := Ord(S[I]) - 48;
+      'a'..'f': V := Ord(S[I]) - 87;
+      'A'..'F': V := Ord(S[I]) - 55;
+      ' ', #9, ',': Continue;
+    else
+      Exit;
+    end;
+    if Hi < 0 then
+      Hi := V
+    else
+    begin
+      Bytes := Bytes + Chr(Hi * 16 + V);
+      Hi := -1;
+    end;
+  end;
+  Result := Hi < 0;
+end;
 
 function TveDefaultSearch: TTveSearchOptions;
 begin
@@ -77,6 +109,8 @@ begin
   Result.CaseSensitive := False;
   Result.WholeWord := False;
   Result.UseRegex := False;
+  Result.Hex := False;
+  Result.AllCodePages := False;
   Result.Backward := False;
   Result.ScopeFrom := 0;
   Result.ScopeTo := -1;
@@ -108,18 +142,30 @@ var
 begin
   FOpt := Opt;
   FError := '';
-  FCross := PatternCrossesLines(Opt.Pattern, Opt.UseRegex);
+  if Opt.Hex then
+  begin
+    if not HexToBytes(Opt.Pattern, Pat) or (Pat = '') then
+    begin
+      FError := 'bad hexadecimal pattern';
+      Exit(False);
+    end;
+    FOpt.Pattern := Pat;
+    FOpt.UseRegex := False;
+    FOpt.CaseSensitive := True;
+    FOpt.WholeWord := False;
+  end;
+  FCross := PatternCrossesLines(FOpt.Pattern, FOpt.UseRegex);
   FreeAndNil(FRegex);
-  if Opt.Pattern = '' then
+  if FOpt.Pattern = '' then
   begin
     FError := 'empty pattern';
     Exit(False);
   end;
-  if Opt.UseRegex then
-    Pat := Opt.Pattern
+  if FOpt.UseRegex then
+    Pat := FOpt.Pattern
   else
-    Pat := RegexEscape(Opt.Pattern);
-  FRegex := TTveRegex.Create(Pat, not Opt.CaseSensitive);
+    Pat := RegexEscape(FOpt.Pattern);
+  FRegex := TTveRegex.Create(Pat, not FOpt.CaseSensitive);
   if FRegex.Error <> '' then
   begin
     FError := FRegex.Error;
@@ -357,7 +403,7 @@ begin
   end;
 end;
 
-function TTveSearcher.Find(const Opt: TTveSearchOptions; From: Int64; out M: TTveMatch): TTveFindStatus;
+function TTveSearcher.FindOne(const Opt: TTveSearchOptions; From: Int64; out M: TTveMatch): TTveFindStatus;
 var
   Aborted, Ok: Boolean;
 begin
@@ -374,6 +420,53 @@ begin
     Result := fsAborted
   else
     Result := fsNotFound;
+end;
+
+function TTveSearcher.Find(const Opt: TTveSearchOptions; From: Int64; out M: TTveMatch): TTveFindStatus;
+var
+  Variants: array of AnsiString;
+  I, J: Integer;
+  O: TTveSearchOptions;
+  M2: TTveMatch;
+  R: TTveFindStatus;
+  Lost: Integer;
+  Conv: AnsiString;
+  Dup: Boolean;
+begin
+  Result := FindOne(Opt, From, M);
+  if not Opt.AllCodePages or Opt.UseRegex or Opt.Hex or (Result = fsBadPattern) or IsPlainAscii(Opt.Pattern) then
+    Exit;
+  // the same text in the other code pages
+  SetLength(Variants, 0);
+  for I := 0 to CharsetListCount - 1 do
+  begin
+    Conv := CharsetFromUtf8(CharsetListId(I), Opt.Pattern, Lost);
+    if (Lost > 0) or (Conv = '') or (Conv = Opt.Pattern) then
+      Continue;
+    Dup := False;
+    for J := 0 to High(Variants) do
+      if Variants[J] = Conv then
+        Dup := True;
+    if not Dup then
+    begin
+      SetLength(Variants, Length(Variants) + 1);
+      Variants[High(Variants)] := Conv;
+    end;
+  end;
+  for I := 0 to High(Variants) do
+  begin
+    O := Opt;
+    O.Pattern := Variants[I];
+    O.CaseSensitive := True;
+    R := FindOne(O, From, M2);
+    if R <> fsFound then
+      Continue;
+    if (Result <> fsFound) or (Opt.Backward and (M2.Start > M.Start)) or (not Opt.Backward and (M2.Start < M.Start)) then
+    begin
+      M := M2;
+      Result := fsFound;
+    end;
+  end;
 end;
 
 function TTveSearcher.ReplacementFor(const M: TTveMatch; const Repl: AnsiString): AnsiString;

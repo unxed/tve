@@ -60,12 +60,14 @@ type
     FComplActive: Boolean;
     FComplFragment: AnsiString;
     FDrawMode: Integer;               // 0 off, 1 single lines, 2 double
+    FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
+    FHighlightColumn: Boolean;
+    FMessage: AnsiString;
     function GetDoc: TTveDoc;
     function ViewToLine(V: Int64): Int64;
     function LineToView(L: Int64): Int64;
     function GetFolds: TTveFolds;
     procedure MoveVertical(Down: Boolean; Pages: Boolean);
-    function ClassAttr(C: Integer): TColorAttr;
     function GutterWidth: Integer;
     function TextWidth: Integer;
     procedure DocChanged(Doc: TTveDoc; Offset, Removed, Inserted: Int64);
@@ -75,6 +77,14 @@ type
     procedure DoMouse(var Event: TEvent);
     procedure Remember;
     procedure Complete;
+  protected
+    // The colour of a class of the highlighter. A host that has its own palette overrides it.
+    function ClassAttr(C: Integer): TColorAttr; virtual;
+    // Called at the end of every change of the cursor, the selection or the text (after the view is redrawn): the place for a host to update its own state.
+    procedure Changed; virtual;
+    // The colours of the message row and of the highlighted range (the selection colours reversed by default).
+    function MessageAttr: TColorAttr; virtual;
+    function HighlightAttr: TColorAttr; virtual;
   public
     constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False);
     destructor Destroy; override;
@@ -86,6 +96,12 @@ type
     property Templates: TTveTemplates read FTemplates write FTemplates;
     property Completion: TTveCompletion read FCompletion write FCompletion;
     property DrawMode: Integer read FDrawMode write FDrawMode;
+    property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
+    // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
+    property MessageText: AnsiString read FMessage write FMessage;
+    // The highlighted range (offsets), drawn in the colour 3 of the palette of the view (or as a selection); A = B clears it.
+    procedure SetHighlightRange(A, B: Int64);
+    procedure GetHighlightRange(out A, B: Int64);
     property OnPrompt: TTvePrompt read FOnPrompt write FOnPrompt;
     property Keymap: TTveKeymap read FKeymap write FKeymap;
     property OnHostCommand: TTveHostCommand read FOnHost write FOnHost;
@@ -141,6 +157,8 @@ begin
   FWheelStep := 3;
   FMarkA := -1;
   FMarkB := -1;
+  FHlA := -1;
+  FHlB := -1;
   FEditor.Rows := Size.Y;
   FLastVersion := ADoc.Buffer.Version;
   ADoc.AddObserver(@DocChanged);
@@ -282,6 +300,42 @@ begin
     SetLimit(W, FEditor.Doc.Buffer.LineCount);
   DrawView;
   Message(Owner, evBroadcast, cmTveStatus, Self);
+  Changed;
+end;
+
+procedure TTveView.Changed;
+begin
+end;
+
+function TTveView.MessageAttr: TColorAttr;
+begin
+  Result := AttrReversed(GetColor(1).Lo);
+end;
+
+function TTveView.HighlightAttr: TColorAttr;
+begin
+  Result := AttrReversed(GetColor(2).Lo);
+end;
+
+procedure TTveView.SetHighlightRange(A, B: Int64);
+begin
+  if B <= A then
+  begin
+    A := -1;
+    B := -1;
+  end;
+  if (A <> FHlA) or (B <> FHlB) then
+  begin
+    FHlA := A;
+    FHlB := B;
+    DrawView;
+  end;
+end;
+
+procedure TTveView.GetHighlightRange(out A, B: Int64);
+begin
+  A := FHlA;
+  B := FHlB;
 end;
 
 procedure TTveView.KeepCursorVisible;
@@ -339,7 +393,9 @@ var
   Info, NextInfo: TTveCharInfo;
   Selected, Custom, CursorLine: Boolean;
   Mark: Boolean;
-  N: Integer;
+  N, MsgRow: Integer;
+  HlAttr: TColorAttr;
+  COff: Int64;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -380,6 +436,7 @@ var
 begin
   Normal := GetColor(1).Lo;
   SelAttr := GetColor(2).Lo;
+  HlAttr := HighlightAttr;
   TX := TextWidth;
   X0 := Delta.X;
   HasSel := FEditor.HasSelection;
@@ -395,10 +452,25 @@ begin
     else if not FEditor.SelectionRange(SelLo, SelHi) then
       HasSel := False;
   end;
+  MsgRow := -1;
+  if FMessage <> '' then
+  begin
+    if LineToView(FEditor.Line) - Delta.Y < Size.Y div 2 then
+      MsgRow := Size.Y - 1
+    else
+      MsgRow := 0;
+  end;
   B := TDrawBuffer.Create(Size.X);
   try
     for Y := 0 to Size.Y - 1 do
     begin
+      if Y = MsgRow then
+      begin
+        B.MoveChar(0, Ord(' '), MessageAttr, Size.X);
+        B.MoveStr(0, @FMessage[1], Length(FMessage), MessageAttr, Size.X);
+        WriteLineD(0, Y, Size.X, 1, B);
+        Continue;
+      end;
       L := ViewToLine(Delta.Y + Y);
       B.MoveChar(0, Ord(' '), Normal, Size.X);
       if L < FEditor.Doc.Buffer.LineCount then
@@ -461,6 +533,14 @@ begin
           Selected := HasSel and (Cell >= SelA) and (Cell < SelB);
           if Selected then
             Attr := SelAttr;
+          if FHlA >= 0 then
+          begin
+            COff := FEditor.Doc.Buffer.LineStart(L) + Idx - 1;
+            if (COff >= FHlA) and (COff < FHlB) then
+              Attr := HlAttr;
+          end
+          else if FHighlightColumn and (Cell = FEditor.Cell) then
+            AttrSetBg(Attr, AttrBg(SelAttr));
           ScreenX := GutterWidth + Cell - X0;
           if (GrpCells > 0) and (ScreenX >= GutterWidth) then
           begin

@@ -8,8 +8,8 @@
   the file was saved: the document is modified when it is not at that number (or when the save point was lost by throwing the redo stack away). The cursor is not
   kept here (a document can have several views): the view tells the document where its cursor is (NoteCursor) and gets the position back from Undo and Redo.
 
-  Anchors are offsets that follow the edits: the bookmarks, the folds, the markers of the debugger. An anchor in a removed run moves to the start of the run; an
-  anchor at the place of an insertion stays before the inserted text (Sticky anchors go after it).
+  Anchors are offsets that follow the edits: the bookmarks, the folds, the markers of the debugger. An anchor in a removed run moves to the start of the run, one at the
+  end of a replaced run goes to the end of the new text; an anchor at the place of an insertion stays before the inserted text (Sticky anchors go after it).
 
   The observers (views, highlighters) are told about every change, also by undo and redo, with the offset and the lengths removed and inserted. }
 unit TveDoc;
@@ -212,6 +212,8 @@ begin
       begin
         if Pos > Offset + Removed then
           Inc(Pos, Inserted - Removed)
+        else if (Pos = Offset + Removed) and (Removed > 0) then
+          Pos := Offset + Inserted              { at the end of a replaced run: at the end of the new text }
         else if Pos > Offset then
           Pos := Offset                         { inside the removed run: at its start }
         else if (Pos = Offset) and Sticky and (Removed = 0) then

@@ -33,6 +33,7 @@ type
     AutoBrackets: Boolean;
     BracketPairs: AnsiString;       { opening and closing characters in pairs: '()[]{}' }
     SmartHome: Boolean;             { Home goes to the first non-blank first }
+    UnlimitedUnindent: Boolean;     { unindent the lines that can, even when some cannot }
   end;
 
   TTveClipSet = procedure(const Text: AnsiString; Column: Boolean) of object;
@@ -48,6 +49,7 @@ type
     FAnchorLine: Int64;
     FAnchorCell: Integer;
     FAnchorId: Integer;             { the anchor of a stream or line selection follows the edits }
+    FEndId: Integer;                { >= 0: the far end is fixed too (marks of a block, not the cursor) }
     FRows: Integer;
     FOnClipSet: TTveClipSet;
     FOnClipGet: TTveClipGet;
@@ -77,6 +79,19 @@ type
     property SelKind: TTveSelKind read FSelKind;
     property OnClipSet: TTveClipSet read FOnClipSet write FOnClipSet;
     property OnClipGet: TTveClipGet read FOnClipGet write FOnClipGet;
+
+    { The lines that a line command works on: the lines of the selection (a stream selection that ends at the start of a line does not take that line), else the current line. }
+    function AffectedLines(out L1, L2: Int64): Boolean;
+    { The cursor follows an edit: pin it before, put it back after (a position that moves with the text) }
+    function PinCursor: Integer;
+    procedure UnpinCursor(Id: Integer);
+    procedure NoteBefore;
+    procedure NoteAfter;
+    procedure SetSelection(Kind: TTveSelKind; AnchorOffset: Int64);
+    { A block with fixed ends (the marks of WordStar): it does not follow the cursor. Block = False: the selection is the cursor and the anchor again. }
+    procedure SetBlockMarks(A, B: Int64);
+    procedure FreezeSelection;
+    function IsFrozen: Boolean;
 
     { positions }
     procedure GotoLineCell(L: Int64; C: Integer);
@@ -153,6 +168,7 @@ begin
   Result.AutoBrackets := False;
   Result.BracketPairs := '()[]{}';
   Result.SmartHome := True;
+  Result.UnlimitedUnindent := False;
 end;
 
 constructor TTveEditor.Create(ADoc: TTveDoc);
@@ -162,12 +178,15 @@ begin
   Opt := TveDefaultEditorOptions;
   FRows := 24;
   FAnchorId := -1;
+  FEndId := -1;
 end;
 
 destructor TTveEditor.Destroy;
 begin
   if FAnchorId >= 0 then
     FDoc.RemoveAnchor(FAnchorId);
+  if FEndId >= 0 then
+    FDoc.RemoveAnchor(FEndId);
   inherited Destroy;
 end;
 
@@ -252,6 +271,85 @@ begin
   Result := CursorOffset;
 end;
 
+function TTveEditor.PinCursor: Integer;
+begin
+  Result := FDoc.AddAnchor(CursorOffset, False);
+end;
+
+procedure TTveEditor.UnpinCursor(Id: Integer);
+begin
+  PlaceAtOffset(FDoc.AnchorPos(Id));
+  FDoc.RemoveAnchor(Id);
+end;
+
+procedure TTveEditor.NoteBefore;
+begin
+  BeforeEdit;
+end;
+
+procedure TTveEditor.NoteAfter;
+begin
+  AfterEdit;
+end;
+
+procedure TTveEditor.SetSelection(Kind: TTveSelKind; AnchorOffset: Int64);
+begin
+  ClearSelection;
+  FSelKind := Kind;
+  FAnchorId := FDoc.AddAnchor(AnchorOffset);
+  FAnchorLine := FDoc.Buffer.LineOfOffset(AnchorOffset);
+  FAnchorCell := LayoutIndexToCell(GetLineText(FAnchorLine), AnchorOffset - FDoc.Buffer.LineStart(FAnchorLine) + 1, Opt.TabSize);
+end;
+
+procedure TTveEditor.SetBlockMarks(A, B: Int64);
+begin
+  ClearSelection;
+  FSelKind := skStream;
+  FAnchorId := FDoc.AddAnchor(A);
+  FEndId := FDoc.AddAnchor(B);
+  FAnchorLine := FDoc.Buffer.LineOfOffset(A);
+  FAnchorCell := 0;
+end;
+
+procedure TTveEditor.FreezeSelection;
+var
+  A, B: Int64;
+begin
+  if (FSelKind in [skStream, skLine]) and (FEndId < 0) and SelectionRange(A, B) then
+  begin
+    ClearSelection;
+    SetBlockMarks(A, B);
+  end;
+end;
+
+function TTveEditor.IsFrozen: Boolean;
+begin
+  Result := FEndId >= 0;
+end;
+
+function TTveEditor.AffectedLines(out L1, L2: Int64): Boolean;
+var
+  A, B: Int64;
+  C1, C2: Integer;
+begin
+  Result := True;
+  if (FSelKind = skColumn) and HasSelection then
+  begin
+    ColumnRect(L1, L2, C1, C2);
+    Exit;
+  end;
+  if HasSelection and SelectionRange(A, B) then
+  begin
+    L1 := FDoc.Buffer.LineOfOffset(A);
+    L2 := FDoc.Buffer.LineOfOffset(B);
+    if (L2 > L1) and (B = FDoc.Buffer.LineStart(L2)) then
+      Dec(L2);
+    Exit;
+  end;
+  L1 := FLine;
+  L2 := FLine;
+end;
+
 procedure TTveEditor.PlaceAtOffset(Offset: Int64);
 var
   L: Int64;
@@ -293,7 +391,7 @@ procedure TTveEditor.BeginMove(Extend: Boolean);
 begin
   if Extend then
   begin
-    if FSelKind = skNone then
+    if (FSelKind = skNone) or (FEndId >= 0) then
       StartSelection(skStream);
   end
   else if not Opt.PersistentBlocks then
@@ -522,6 +620,9 @@ procedure TTveEditor.StartSelection(Kind: TTveSelKind);
 begin
   if FAnchorId >= 0 then
     FDoc.RemoveAnchor(FAnchorId);
+  if FEndId >= 0 then
+    FDoc.RemoveAnchor(FEndId);
+  FEndId := -1;
   FSelKind := Kind;
   FAnchorLine := FLine;
   FAnchorCell := FCell;
@@ -532,6 +633,9 @@ procedure TTveEditor.ClearSelection;
 begin
   if FAnchorId >= 0 then
     FDoc.RemoveAnchor(FAnchorId);
+  if FEndId >= 0 then
+    FDoc.RemoveAnchor(FEndId);
+  FEndId := -1;
   FAnchorId := -1;
   FSelKind := skNone;
 end;
@@ -561,6 +665,8 @@ begin
   begin
     L1 := FDoc.Buffer.LineOfOffset(FDoc.AnchorPos(FAnchorId));
     L2 := FLine;
+    if FEndId >= 0 then
+      L2 := FDoc.Buffer.LineOfOffset(FDoc.AnchorPos(FEndId));
   end;
   if L2 < L1 then
   begin
@@ -579,7 +685,10 @@ begin
   if FSelKind in [skNone, skColumn] then
     Exit;
   P := FDoc.AnchorPos(FAnchorId);
-  Q := CursorOffset;
+  if FEndId >= 0 then
+    Q := FDoc.AnchorPos(FEndId)
+  else
+    Q := CursorOffset;
   if Q < P then
   begin
     T := P; P := Q; Q := T;

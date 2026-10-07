@@ -50,6 +50,7 @@ type
     FAnchorCell: Integer;
     FAnchorId: Integer;             { the anchor of a stream or line selection follows the edits }
     FEndId: Integer;                { >= 0: the far end is fixed too (marks of a block, not the cursor) }
+    FMarks: array[0..9] of Integer; { anchors of the bookmarks, -1 where a bookmark is not set }
     FRows: Integer;
     FOnClipSet: TTveClipSet;
     FOnClipGet: TTveClipGet;
@@ -92,6 +93,15 @@ type
     procedure SetBlockMarks(A, B: Int64);
     procedure FreezeSelection;
     function IsFrozen: Boolean;
+
+    { bookmarks 0..9: they follow the edits }
+    procedure SetBookmark(N: Integer);
+    procedure ClearBookmark(N: Integer);
+    function GotoBookmark(N: Integer): Boolean;
+    function BookmarkLine(N: Integer): Int64;
+    { the bracket that pairs with the one at the cursor (the pairs are Opt.BracketPairs and <>), False if there is none }
+    function FindMatchingBracket(out Match: Int64): Boolean;
+    function GotoMatchingBracket: Boolean;
 
     { positions }
     procedure GotoLineCell(L: Int64; C: Integer);
@@ -172,6 +182,8 @@ begin
 end;
 
 constructor TTveEditor.Create(ADoc: TTveDoc);
+var
+  I: Integer;
 begin
   inherited Create;
   FDoc := ADoc;
@@ -179,14 +191,21 @@ begin
   FRows := 24;
   FAnchorId := -1;
   FEndId := -1;
+  for I := 0 to 9 do
+    FMarks[I] := -1;
 end;
 
 destructor TTveEditor.Destroy;
+var
+  I: Integer;
 begin
   if FAnchorId >= 0 then
     FDoc.RemoveAnchor(FAnchorId);
   if FEndId >= 0 then
     FDoc.RemoveAnchor(FEndId);
+  for I := 0 to 9 do
+    if FMarks[I] >= 0 then
+      FDoc.RemoveAnchor(FMarks[I]);
   inherited Destroy;
 end;
 
@@ -325,6 +344,104 @@ end;
 function TTveEditor.IsFrozen: Boolean;
 begin
   Result := FEndId >= 0;
+end;
+
+procedure TTveEditor.SetBookmark(N: Integer);
+begin
+  if (N < 0) or (N > 9) then
+    Exit;
+  if FMarks[N] >= 0 then
+    FDoc.RemoveAnchor(FMarks[N]);
+  FMarks[N] := FDoc.AddAnchor(FDoc.Buffer.LineStart(FLine));
+end;
+
+procedure TTveEditor.ClearBookmark(N: Integer);
+begin
+  if (N < 0) or (N > 9) or (FMarks[N] < 0) then
+    Exit;
+  FDoc.RemoveAnchor(FMarks[N]);
+  FMarks[N] := -1;
+end;
+
+function TTveEditor.BookmarkLine(N: Integer): Int64;
+begin
+  Result := -1;
+  if (N < 0) or (N > 9) or (FMarks[N] < 0) then
+    Exit;
+  Result := FDoc.Buffer.LineOfOffset(FDoc.AnchorPos(FMarks[N]));
+end;
+
+function TTveEditor.GotoBookmark(N: Integer): Boolean;
+var
+  L: Int64;
+begin
+  L := BookmarkLine(N);
+  Result := L >= 0;
+  if Result then
+  begin
+    BeginMove(False);
+    SetCursor(L, FWant, True);
+  end;
+end;
+
+function TTveEditor.FindMatchingBracket(out Match: Int64): Boolean;
+var
+  Pairs: AnsiString;
+  Off, Len, P: Int64;
+  Ch, Other: Char;
+  K, Depth: Integer;
+  Forward: Boolean;
+begin
+  Result := False;
+  Match := -1;
+  Pairs := Opt.BracketPairs + '<>';
+  Off := CursorOffset;
+  Len := FDoc.Buffer.Length;
+  if Off >= Len then
+    Exit;
+  Ch := Char(FDoc.Buffer.ByteAt(Off));
+  K := Pos(Ch, Pairs);
+  if K = 0 then
+    Exit;
+  Forward := K mod 2 = 1;
+  if Forward then
+    Other := Pairs[K + 1]
+  else
+    Other := Pairs[K - 1];
+  Depth := 0;
+  P := Off;
+  while True do
+  begin
+    if Forward then
+      Inc(P)
+    else
+      Dec(P);
+    if (P < 0) or (P >= Len) then
+      Exit;
+    if Char(FDoc.Buffer.ByteAt(P)) = Ch then
+      Inc(Depth)
+    else if Char(FDoc.Buffer.ByteAt(P)) = Other then
+    begin
+      if Depth = 0 then
+      begin
+        Match := P;
+        Exit(True);
+      end;
+      Dec(Depth);
+    end;
+  end;
+end;
+
+function TTveEditor.GotoMatchingBracket: Boolean;
+var
+  M: Int64;
+begin
+  Result := FindMatchingBracket(M);
+  if Result then
+  begin
+    BeginMove(False);
+    PlaceAtOffset(M);
+  end;
 end;
 
 function TTveEditor.AffectedLines(out L1, L2: Int64): Boolean;

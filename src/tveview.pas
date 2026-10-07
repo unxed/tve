@@ -17,7 +17,7 @@ unit TveView;
 interface
 
 uses
-  TvGeom, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
+  TvGeom, TvObjs, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
   TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw;
 
 const
@@ -77,6 +77,7 @@ type
     procedure DoMouse(var Event: TEvent);
     procedure Remember;
     procedure Complete;
+    procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
   protected
     // The colour of a class of the highlighter. A host that has its own palette overrides it.
     function ClassAttr(C: Integer): TColorAttr; virtual;
@@ -89,6 +90,8 @@ type
     function HighlightAttr: TColorAttr; virtual;
   public
     constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False);
+    // From a stream (the scroll bars and the scrolling of TScroller); the document is the host's.
+    constructor Load(S: TStream; ADoc: TTveDoc; OwnDoc: Boolean = False);
     destructor Destroy; override;
     property Editor: TTveEditor read FEditor;
     property Doc: TTveDoc read GetDoc;
@@ -154,6 +157,17 @@ const
 constructor TTveView.Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean);
 begin
   inherited Create(Bounds, AHScrollBar, AVScrollBar);
+  Setup(ADoc, OwnDoc);
+end;
+
+constructor TTveView.Load(S: TStream; ADoc: TTveDoc; OwnDoc: Boolean);
+begin
+  inherited Load(S);
+  Setup(ADoc, OwnDoc);
+end;
+
+procedure TTveView.Setup(ADoc: TTveDoc; OwnDoc: Boolean);
+begin
   GrowMode := gfGrowHiX or gfGrowHiY;
   Options := Options or ofFirstClick;
   EventMask := EventMask or evMouseWheel or evBroadcast;

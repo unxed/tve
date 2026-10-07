@@ -25,6 +25,17 @@ type
   { How the lines end in the file (the text itself has LF only) }
   TTveEol = (eolLF, eolCRLF, eolCR);
 
+  { What is known of the file the document came from (filled by TveFile) }
+  TTveFileInfo = record
+    Charset: LongInt;               { the id of TvCharset the file is written in (65001 UTF-8, 1200 UTF-16LE ...) }
+    Bom: Boolean;                   { the file starts with a byte order mark }
+    Eol: TTveEol;
+    MixedEol: Boolean;              { the file had more than one kind of line ends }
+    DiskSize: Int64;                { as of the last read or write }
+    DiskAge: LongInt;
+    Known: Boolean;                 { DiskSize and DiskAge are valid }
+  end;
+
   TTveUndoKind = (ukOther, ukTyping, ukBackspace, ukDeleteKey);
 
   TTveUndoGroup = record
@@ -56,6 +67,7 @@ type
     FAnchors: array of TTveAnchor;
     FObservers: array of TTveDocObserver;
     FEol: TTveEol;
+    FInfo: TTveFileInfo;
     FReadOnly: Boolean;
     FUndoLimit: Integer;
     FFileName: AnsiString;
@@ -74,6 +86,7 @@ type
     property Buffer: TTveBuffer read FBuf;
     property FileName: AnsiString read FFileName write FFileName;
     property Eol: TTveEol read FEol write FEol;
+    property Info: TTveFileInfo read FInfo write FInfo;
     property ReadOnly: Boolean read FReadOnly write FReadOnly;
     property Modified: Boolean read GetModified;
     property UndoLimit: Integer read FUndoLimit write FUndoLimit;
@@ -123,6 +136,7 @@ begin
   FBuf := TTveBuffer.Create;
   FBuf.OnChange := @BufferChange;
   FEol := eolLF;
+  FInfo.Charset := 65001;
   FUndoLimit := 100000;
 end;
 

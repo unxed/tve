@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvObjs, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap, TvXlat;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -1194,6 +1194,7 @@ end;
 
 procedure TTveView.HandleEvent(var Event: TEvent);
 var
+  E2: TEvent;
   K: TKey;
   Cmd: Integer;
   T: AnsiString;
@@ -1230,6 +1231,13 @@ begin
             Exit;
           end;
           Cmd := FKeymap.LookupChord(FPrefix, K);
+          if Cmd <= 0 then
+          begin
+            { the second key typed in another layout: the Latin key of the same place }
+            E2 := Event;
+            if XlatPlain(E2) then
+              Cmd := FKeymap.LookupChord(FPrefix, KeyMake(E2.KeyCode, E2.ControlKeyState));
+          end;
           if Cmd > 0 then
           begin
             Execute(Cmd);

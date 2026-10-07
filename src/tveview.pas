@@ -60,6 +60,7 @@ type
     FComplActive: Boolean;
     FComplFragment: AnsiString;
     FDrawMode: Integer;               // 0 off, 1 single lines, 2 double
+    FKeysEnabled: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
@@ -98,6 +99,8 @@ type
     property Templates: TTveTemplates read FTemplates write FTemplates;
     property Completion: TTveCompletion read FCompletion write FCompletion;
     property DrawMode: Integer read FDrawMode write FDrawMode;
+    // False: the view does not handle keys by its key map (a host that has its own key handling uses the commands of the view and the mouse of it).
+    property KeysEnabled: Boolean read FKeysEnabled write FKeysEnabled;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
     // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
     property MessageText: AnsiString read FMessage write FMessage;
@@ -159,6 +162,7 @@ begin
   FWheelStep := 3;
   FMarkA := -1;
   FMarkB := -1;
+  FKeysEnabled := True;
   FHlA := -1;
   FHlB := -1;
   FEditor.Rows := Size.Y;
@@ -1009,6 +1013,7 @@ begin
         ClearEvent(Event);
       end;
     evKeyDown:
+      if FKeysEnabled then
       begin
         K := KeyMake(Event.KeyCode, Event.ControlKeyState);
         if FHavePrefix then

@@ -83,6 +83,8 @@ type
     // Called at the end of every change of the cursor, the selection or the text (after the view is redrawn): the place for a host to update its own state.
     procedure Changed; virtual;
     // The colours of the message row and of the highlighted range (the selection colours reversed by default).
+    function NormalAttr: TColorAttr; virtual;
+    function SelectedAttr: TColorAttr; virtual;
     function MessageAttr: TColorAttr; virtual;
     function HighlightAttr: TColorAttr; virtual;
   public
@@ -128,7 +130,7 @@ type
     function ReplaceAll(const Repl: AnsiString): Integer;
     { The text of the status line: "line:column  offset  INS  modified". }
     function StatusText: AnsiString;
-    procedure GotoLine(L: Int64);
+    procedure JumpToLine(L: Int64);
     procedure ScrollLines(N: Integer);
     { After the host changed the cursor or the text: scroll to the cursor, redraw, tell the owner. }
     procedure Refresh;
@@ -229,7 +231,7 @@ function TTveView.ClassAttr(C: Integer): TColorAttr;
 var
   Fg: TColor;
 begin
-  Result := GetColor(1).Lo;
+  Result := NormalAttr;
   if (C <= 0) or (C >= hcClassCount) then
     Exit;
   if FClassSet[C] then
@@ -307,14 +309,24 @@ procedure TTveView.Changed;
 begin
 end;
 
+function TTveView.NormalAttr: TColorAttr;
+begin
+  Result := GetColor(1).Lo;
+end;
+
+function TTveView.SelectedAttr: TColorAttr;
+begin
+  Result := GetColor(2).Lo;
+end;
+
 function TTveView.MessageAttr: TColorAttr;
 begin
-  Result := AttrReversed(GetColor(1).Lo);
+  Result := AttrReversed(NormalAttr);
 end;
 
 function TTveView.HighlightAttr: TColorAttr;
 begin
-  Result := AttrReversed(GetColor(2).Lo);
+  Result := AttrReversed(SelectedAttr);
 end;
 
 procedure TTveView.SetHighlightRange(A, B: Int64);
@@ -434,8 +446,8 @@ var
   end;
 
 begin
-  Normal := GetColor(1).Lo;
-  SelAttr := GetColor(2).Lo;
+  Normal := NormalAttr;
+  SelAttr := SelectedAttr;
   HlAttr := HighlightAttr;
   TX := TextWidth;
   X0 := Delta.X;
@@ -647,7 +659,7 @@ begin
   FEditor.GotoOffset(FComplEnd);
 end;
 
-procedure TTveView.GotoLine(L: Int64);
+procedure TTveView.JumpToLine(L: Int64);
 begin
   Remember;
   if L < 0 then L := 0;

@@ -16,7 +16,15 @@
 | Path | What |
 |---|---|
 | `src/` | the units (`Tve*.pas`) |
+| `langs/` | the grammars of the built-in languages (`lang-*.hl`, parts `part-*.hl`); `tools/gen-langs.py` makes `src/tvelangdata.inc` from them |
+| `app/` | `tve`, the editor as a program (and the test bench of the view) |
 | `tests/` | unit tests (`t_*.pas`), run by `tools/test.sh` |
-| `tools/` | scripts |
+| `tools/` | scripts; `hldump.pas` shows how a file is coloured |
 
 tv3 is not a submodule here: `tools/need-tv.sh` finds a checkout (`TV=/path/to/tv3`, or `tv/`, or it clones one).
+
+## Syntax highlighting
+
+Grammars (`langs/`) have contexts and a stack, so a language can live inside another one: HTML with CSS and JavaScript, and a template language
+(Smarty, PHP, Jinja/Twig/Django) that is injected into every context of them, Markdown with fenced code. The format is in the header of `src/tvehl.pas`;
+`tests/data/appeals.tpl` is the test file (HTML, CSS, JavaScript and Smarty mixed in every place). `build/hldump FILE` prints the classes of the bytes.

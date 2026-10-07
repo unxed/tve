@@ -12,5 +12,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Free Pascal
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fp-compiler fp-units-rtl fp-units-base fp-units-misc fp-units-fcl
+      - name: Generated language data is up to date
+        run: |
+          python3 tools/gen-langs.py
+          git diff --exit-code src/tvelangdata.inc
       - name: Unit tests
+        env:
+          TV_REF: claude/nifty-rubin-7v0d9z
         run: tools/test.sh
+      - name: The tve program builds
+        env:
+          TV_REF: claude/nifty-rubin-7v0d9z
+        run: |
+          . tools/need-tv.sh
+          mkdir -p build/app
+          fpc -Fusrc -Fu"$TVSRC" -Fi"$TVSRC" -FUbuild/app -FEbuild/app app/tve.pas

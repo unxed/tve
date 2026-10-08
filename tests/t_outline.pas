@@ -49,6 +49,10 @@ begin
   Check(Run('HTML', '<html>'#10'<h1 class="a">Head</h1>'#10'<h2>Sub</h2>'#10'<!--'#10'<h2>Old</h2>'#10'-->'#10) = '1:1:Head 2:2:Sub ', 'HTML: ' + Run('HTML', '<h1 class="a">Head</h1>'#10'<h2>Sub</h2>'#10'<!--'#10'<h2>Old</h2>'#10'-->'#10));
   Check(Run('PHP', '<?php'#10'class A {'#10'  public static function f() {}'#10'}'#10'function g() {}'#10) = '1:1:A 2:2:f 4:2:g ', 'PHP: ' + Run('PHP', '<?php'#10'class A {'#10'  public static function f() {}'#10'}'#10'function g() {}'#10));
   Check(Run('SQL', 'create table if not exists t (a int);'#10'CREATE OR REPLACE VIEW v AS select 1;'#10'select 1;'#10) = '0:1:t 1:1:v ', 'SQL: ' + Run('SQL', 'create table if not exists t (a int);'#10));
+  Check(Run('YAML', '# c'#10'a: 1'#10'b:'#10'  c: 2'#10'    d: 3'#10'  - e: 1'#10) = '1:1:a 2:1:b 3:2:c ', 'YAML');
+  Check(Run('INI', '; c'#10'[core]'#10'a = 1'#10'[[x.y]]'#10) = '1:1:core 3:1:x.y ', 'INI');
+  Check(Run('Makefile', '# c'#10'CC := gcc'#10'all: x'#10#9'echo'#10'.PHONY: all'#10'clean:'#10) = '2:1:all 5:1:clean ', 'Makefile');
+  Check(Run('Diff', 'diff --git a/x.c b/x.c'#10'+a'#10'diff --git a/q b/q'#10) = '0:1:x.c 2:1:q ', 'Diff');
   Check(Run('JSON', '{"a": 1}') = '', 'a language without rules has an empty outline');
   { the empty cases and the lookup }
   Check(Length(TveOutline(nil, nil)) = 0, 'nil');

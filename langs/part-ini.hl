@@ -1,0 +1,12 @@
+context ini
+  match /^\s*[;#].*/ => comment
+  match /^\s*\[\[?[^\]\n]*\]\]?/ => tag
+  match /^(\s*[A-Za-z_][\w.\- ]*?)(\s*=)/ => property operator
+  match '"' => string push ini_dq
+  match /'[^'\n]*'/ => string
+  words keyword true false yes no on off
+  number c
+  ops =,[]{}
+context ini_dq default string eolpop
+  match /\\./ => escape
+  match '"' => string pop

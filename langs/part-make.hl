@@ -1,0 +1,15 @@
+context make
+  match /#.*/ => comment
+  match /^\.[A-Z_]+(?=\s*:)/ => preproc
+  match /^(-?include|ifeq|ifneq|ifdef|ifndef|else|endif|define|endef|export|override|vpath)(?=\s|$)/ => keyword
+  match /^([A-Za-z_][\w.]*)(\s*(?:\?|\+|::|:)?=)/ => variable operator
+  match /^([A-Za-z_.%][\w.\-\/% ]*?)(\s*:)(?=[^=]|$)/ => function delimiter
+  match /\$[(\{][^)\}]*[)\}]|\$[@<^?*%+]/ => variable
+  match '"' => string push make_dq
+  match "'" => string push make_sq
+  ops |&;<>=
+context make_dq default string eolpop
+  match /\\./ => escape
+  match '"' => string pop
+context make_sq default string eolpop
+  match "'" => string pop

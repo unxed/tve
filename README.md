@@ -28,3 +28,28 @@ tv3 is not a submodule here: `tools/need-tv.sh` finds a checkout (`TV=/path/to/t
 Grammars (`langs/`) have contexts and a stack, so a language can live inside another one: HTML with CSS and JavaScript, and a template language
 (Smarty, PHP, Jinja/Twig/Django) that is injected into every context of them, Markdown with fenced code. The format is in the header of `src/tvehl.pas`;
 `tests/data/appeals.tpl` is the test file (HTML, CSS, JavaScript and Smarty mixed in every place). `build/hldump FILE` prints the classes of the bytes.
+
+Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript), Jinja/Twig/Django, JSON, Markdown, Pascal, PHP, Python, Shell, Smarty, SQL, XML, YAML, INI/TOML, diff/patch, Makefile.
+
+## Keys, macros, outline, drag and drop
+
+* **Key maps**: `TveKeymapA` / `TveKeymapB` are shipped as text; `TveNewKeymapFromFile(UseB, File, Err)` (or `TTveKeymap.LoadFile`) applies a user file over one of them
+  (`Ctrl+K B = BlockBegin`, `F7 =` removes a binding; format in `src/tvecmds.pas`). The program: `tve --keymap=FILE`.
+* **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay` are commands that a key map can bind; the shipped maps bind neither).
+  `View.Macro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form: one command name or one quoted text (`"hello\n"`) per line;
+  `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
+* **Outline**: `TveOutline(Doc, Lang)` (`src/tvesymbols.pas`) lists `(line, level, title)` of types, routines, headings and so on, by the `symbol LEVEL /REGEX/` lines of
+  a grammar (Pascal, C/C++, Go, Python, JavaScript, PHP, Shell, Markdown, HTML/Smarty/Jinja, SQL, YAML, INI/TOML, Makefile, diff). Matches inside comments and strings
+  are skipped. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program shows it in a list dialog (`TveListDialog`).
+* **Drag and drop**: a press on selected text and a drag moves it to where the button is released, Ctrl copies; one undo step (`DragBlock`, `View.DragDrop`).
+  Column selections are not dragged.
+
+## What is not done
+
+* Outline rules are line based regular expressions: no nesting by indentation or braces (Python and Pascal use fixed levels), multi-line signatures give the first line only,
+  and a declaration and its implementation both appear (Pascal).
+* The macro is one per view and has no repeat counts, no prompts, no conditions; a command that the host handles itself (a dialog) is not recorded.
+* Drag and drop works inside one view; no dragging to another window and no auto-scroll speed control (one line per mouse event outside the view).
+* Colouring: no semantic colouring (a function name that is only known from its definition), no folding by grammar, the Markdown fences know fewer languages than there are grammars
+  (no YAML, diff, INI, Makefile inside a fence), block scalars of YAML are coloured as plain text.
+* The hardware cursor shows the drop place during a drag; there is no separate drop marker.

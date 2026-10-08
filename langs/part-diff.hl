@@ -1,0 +1,6 @@
+context diff
+  match /^(?:diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files).*/ => keyword
+  match /^@@[^@]*@@/ => special
+  match /^\+.*/ => type
+  match /^-.*/ => preproc
+  match /^\\.*/ => comment

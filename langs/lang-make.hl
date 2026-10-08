@@ -1,0 +1,6 @@
+language Makefile
+masks Makefile makefile GNUmakefile *.mk
+start make
+ident _-
+symbol 1 /^([A-Za-z_][\w.\-\/]*)\s*:(?:[^=]|$)/
+%include part-make

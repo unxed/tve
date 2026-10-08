@@ -1,0 +1,5 @@
+language Diff
+masks *.diff *.patch
+start diff
+symbol 1 /^diff (?:--git )?(?:a\/)?(\S+)/
+%include part-diff

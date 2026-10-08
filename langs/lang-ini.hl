@@ -1,0 +1,6 @@
+language INI/TOML
+masks *.ini *.toml *.cfg *.desktop *.editorconfig
+start ini
+ident _-
+symbol 1 /^\s*\[\[?([^\]]+)\]\]?/
+%include part-ini

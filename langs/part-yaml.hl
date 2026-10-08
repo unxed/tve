@@ -1,0 +1,20 @@
+context yaml
+  match /(?:^|\s)#.*/ => comment
+  match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter
+  match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|'[^']*')(\s*:)(?=\s|$)/ => delimiter string delimiter
+  match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter
+  match /^\s*-(?=\s|$)/ => delimiter
+  match '"' => string push yaml_dq
+  match "'" => string push yaml_sq
+  match /[&*][A-Za-z_][\w-]*/ => variable
+  match /![\w!<>:\/.-]*/ => type
+  match /[|>][+-]?(?=\s*$)/ => operator
+  words keyword true false null True False TRUE FALSE Null NULL yes no on off Yes No
+  number c
+  ops :,[]{}
+context yaml_dq default string
+  match /\\./ => escape
+  match '"' => string pop
+context yaml_sq default string
+  match "''" => escape
+  match "'" => string pop

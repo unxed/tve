@@ -3,6 +3,13 @@ masks *.j2 *.jinja *.twig
 start html
 inject jinja
 ident _$
+symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/
+symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/
+symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/
+symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/
+symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/
+symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/
+symbol 2 /^\s*\{%-?\s*(?:block|macro)\s+(\w+)/
 %include part-html
 %include part-js
 %include part-css

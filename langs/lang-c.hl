@@ -2,4 +2,6 @@ language C/C++
 masks *.c *.h *.cpp *.hpp *.cc *.cxx
 start c
 ident _
+symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\s+([A-Za-z_]\w*)\s*(?::[^;{]*)?(?:\{.*)?$/
+symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/
 %include part-c

@@ -5,7 +5,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols;
 
 const
   cmSaveFile = 200;
@@ -103,6 +103,8 @@ var
   C: Integer;
   IsOfs: Boolean;
   CP: LongWord;
+  Items: TTveOutline;
+  Labels: TTveStringArray;
 begin
   Result := True;
   case Cmd of
@@ -135,6 +137,21 @@ begin
         if TveCodePointDialog(T) and TveParseCodePoint(T, CP) then
         begin
           InsertCodePoint(View.Editor, CP);
+          View.Refresh;
+        end;
+      end;
+    tcOutline:
+      begin
+        Items := View.Outline;
+        if Length(Items) = 0 then
+          Exit;
+        SetLength(Labels, Length(Items));
+        for C := 0 to High(Items) do
+          Labels[C] := TveOutlineLabel(Items[C]);
+        C := TveOutlineAt(Items, View.Editor.Line);
+        if TveListDialog('Outline', Labels, C) then
+        begin
+          View.Editor.GotoLineCell(Items[C].Line, 0);
           View.Refresh;
         end;
       end;

@@ -2,4 +2,6 @@ language Go
 masks *.go go.mod
 start go
 ident _
+symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/
+symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/
 %include part-go

@@ -34,6 +34,8 @@ begin
   Check(TveCommandByName('Calculate') = tcCalculate, 'calculate index');
   Check(TveCommandByName('SelTextEnd') = tcSelTextEnd, 'sel text end index');
   Check(TveCommandByName('DeleteBlock') = tcDeleteBlock, 'delete block index');
+  Check((TveKeymapA.Lookup(K('Alt+O')) = tcOutline) and (TveKeymapB.Lookup(K('Alt+O')) = tcOutline), 'Alt+O is the outline in both maps');
+  Check(TveCommandByName('Outline') = tcOutline, 'outline name');
   Bad := 0;
   for I := 1 to tcCommandCount - 1 do
     if (TveCommandName(I) <> '') and (TveCommandByName(TveCommandName(I)) <> I) then

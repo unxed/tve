@@ -2,6 +2,12 @@ language Markdown
 masks *.md *.markdown
 start md
 ident _$
+symbol 1 /^#\s+(.+?)\s*#*\s*$/
+symbol 2 /^##\s+(.+?)\s*#*\s*$/
+symbol 3 /^###\s+(.+?)\s*#*\s*$/
+symbol 4 /^####\s+(.+?)\s*#*\s*$/
+symbol 5 /^#####\s+(.+?)\s*#*\s*$/
+symbol 6 /^######\s+(.+?)\s*#*\s*$/
 %include part-markdown
 %include part-pascal
 %include part-go

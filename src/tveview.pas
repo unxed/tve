@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvObjs, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap, TveMacro, TvXlat;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap, TveMacro, TveSymbols, TvXlat;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -141,6 +141,8 @@ type
     property Recording: Boolean read FRecording;
     { The recorded macro (commands and typed text); it can be loaded and saved as text, see TveMacro. }
     property Macro: TTveMacro read FMacro;
+    { The outline of the text by the symbol rules of the language of the view (empty without a language); see TveSymbols. }
+    function Outline: TTveOutline;
     procedure PlayMacro;
     function LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
     function SaveMacroFile(const FileName: AnsiString): Boolean;
@@ -990,6 +992,14 @@ function TTveView.ReplaceAll(const Repl: AnsiString): Integer;
 begin
   Result := FSearcher.ReplaceAll(FEditor.Doc, FSearch, Repl);
   Sync;
+end;
+
+function TTveView.Outline: TTveOutline;
+begin
+  if FHl = nil then
+    Result := nil
+  else
+    Result := TveOutline(FEditor.Doc, FHl.Language);
 end;
 
 procedure TTveView.PlayMacro;

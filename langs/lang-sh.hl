@@ -2,4 +2,6 @@ language Shell
 masks *.sh *.bash
 start sh
 ident _
+symbol 1 /^\s*function\s+([\w-]+)/
+symbol 1 /^\s*([A-Za-z_][\w-]*)\s*\(\s*\)/
 %include part-sh

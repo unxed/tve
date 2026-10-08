@@ -21,13 +21,18 @@ function TveCodePointDialog(var Text: AnsiString): Boolean;
 { A line number, "line:column" or "+offset" (the text is returned as typed; see TveParseGoto). }
 function TveGotoDialog(var Text: AnsiString): Boolean;
 
+{ A list to choose from (the outline of a document): Index is the item that is focused first and the chosen one when True is returned. Enter, OK or a double click choose. }
+type
+  TTveStringArray = array of AnsiString;
+function TveListDialog(const Title: AnsiString; const Items: TTveStringArray; var Index: Integer): Boolean;
+
 { "12", "12:5", "+1000" (byte offset); False when the text is none of them. Line and column are 1-based in the text and 0-based in the result. }
 function TveParseGoto(const Text: AnsiString; out Line: Int64; out Cell: Integer; out Offset: Int64; out IsOffset: Boolean): Boolean;
 
 implementation
 
 uses
-  SysUtils, TvGeom, TvViews, TvApp, TvDialog, TvInput, TvCluster, TvHist, TvEvents;
+  SysUtils, TvGeom, TvViews, TvApp, TvDialog, TvInput, TvCluster, TvHist, TvEvents, TvList, TvWindow;
 
 const
   HistFind = 61;
@@ -240,6 +245,60 @@ begin
     D.GetData(Rec);
     Text := Rec.Text;
   end;
+  D.Free;
+end;
+
+type
+  TStrListViewer = class(TListViewer)
+    Items: TTveStringArray;
+    function GetText(Item, MaxLen: Integer): ShortString; override;
+    procedure SelectItem(Item: Integer); override;
+  end;
+
+function TStrListViewer.GetText(Item, MaxLen: Integer): ShortString;
+begin
+  if (Item >= 0) and (Item < Length(Items)) then
+    Result := Copy(Items[Item], 1, MaxLen)
+  else
+    Result := '';
+end;
+
+procedure TStrListViewer.SelectItem(Item: Integer);
+begin
+  Message(TopView, evCommand, cmOK, Self);
+end;
+
+function TveListDialog(const Title: AnsiString; const Items: TTveStringArray; var Index: Integer): Boolean;
+var
+  D: TDialog;
+  R: TRect;
+  V: TStrListViewer;
+  Bar: TScrollBar;
+begin
+  Result := False;
+  if Length(Items) = 0 then
+    Exit;
+  R.Assign(0, 0, 60, 20);
+  D := TDialog.Create(R, Title);
+  D.Options := D.Options or ofCentered;
+  R.Assign(57, 2, 58, 15);
+  Bar := TScrollBar.Create(R);
+  D.Insert(Bar);
+  R.Assign(2, 2, 57, 15);
+  V := TStrListViewer.Create(R, 1, nil, Bar);
+  V.Items := Items;
+  V.SetRange(Length(Items));
+  D.Insert(V);
+  R.Assign(14, 16, 24, 18);
+  D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
+  R.Assign(34, 16, 44, 18);
+  D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
+  if (Index >= 0) and (Index < Length(Items)) then
+    V.FocusItem(Index);
+  V.Select;
+  Result := Run(D);
+  if Result then
+    Index := V.Focused;
   D.Free;
 end;
 

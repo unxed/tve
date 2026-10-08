@@ -17,6 +17,8 @@
 //   case sensitive | insensitive  (the default of the contexts that follow, for their words and literals; a regular expression has the flag i: /text/i)
 //   start CONTEXT                 (the context at the start of the text)
 //   inject CONTEXT ...            (the contexts whose rules are tried first everywhere, except in a context declared noinject)
+//   symbol LEVEL /REGEX/          (a line that the expression matches is an entry of the outline, see TveOutline; the title is the group 1 or the whole
+//                                  match, LEVEL is 1 for the top level, 2 and more are nested; the first symbol rule that matches a line wins)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
 //   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
 //     include CONTEXT             (the rules, words and so on of another context, here)
@@ -106,8 +108,14 @@ type
     AllOps: AnsiString;
   end;
 
+  TSymbolRule = record
+    Level: Integer;
+    Re: TTveRegex;
+  end;
+
   TTveLanguage = class
   private
+    FSymbols: array of TSymbolRule;
     FName: AnsiString;
     FMasks: AnsiString;
     FIgnoreCase: Boolean;
@@ -134,6 +142,10 @@ type
     function KeywordText: AnsiString;
     // The classes of the bytes of Text, from a state; EndState is the state after it. State 0 is the start of a text.
     procedure Classify(const Text: AnsiString; StartState: LongInt; out Cls: TByteClasses; out EndState: LongInt);
+    // The outline rules of the grammar (the lines "symbol"), in the order of the grammar.
+    function SymbolCount: Integer;
+    function SymbolLevel(I: Integer): Integer;
+    function SymbolRegex(I: Integer): TTveRegex;
     property Name: AnsiString read FName;
     property Masks: AnsiString read FMasks;
   end;
@@ -217,6 +229,24 @@ begin
   end;
   FCtx := nil;
   FStacks := nil;
+  for I := 0 to High(FSymbols) do
+    FSymbols[I].Re.Free;
+  FSymbols := nil;
+end;
+
+function TTveLanguage.SymbolCount: Integer;
+begin
+  Result := Length(FSymbols);
+end;
+
+function TTveLanguage.SymbolLevel(I: Integer): Integer;
+begin
+  Result := FSymbols[I].Level;
+end;
+
+function TTveLanguage.SymbolRegex(I: Integer): TTveRegex;
+begin
+  Result := FSymbols[I].Re;
 end;
 
 function TTveLanguage.CtxIndex(const Name: AnsiString): Integer;
@@ -532,6 +562,26 @@ begin
       InjNames := SplitWords(Arg)
     else if Key = 'ident' then
       FIdent := Arg
+    else if Key = 'symbol' then
+    begin
+      Sp := Pos(' ', Arg);
+      I := StrToIntDef(Copy(Arg, 1, Sp - 1), 0);
+      Arg := Trim(Copy(Arg, Sp + 1, MaxInt));
+      if (I < 1) or (Length(Arg) < 2) or (Arg[1] <> '/') or (Arg[Length(Arg)] <> '/') then
+      begin
+        Err := 'line ' + IntToStr(LineNo) + ': symbol LEVEL /REGEX/';
+        Exit;
+      end;
+      Arg := Copy(Arg, 2, Length(Arg) - 2);
+      SetLength(FSymbols, Length(FSymbols) + 1);
+      FSymbols[High(FSymbols)].Level := I;
+      FSymbols[High(FSymbols)].Re := TTveRegex.Create(Arg);
+      if FSymbols[High(FSymbols)].Re.Error <> '' then
+      begin
+        Err := 'line ' + IntToStr(LineNo) + ': ' + FSymbols[High(FSymbols)].Re.Error;
+        Exit;
+      end;
+    end
     else if Key = 'context' then
     begin
       T := SplitWords(Arg);

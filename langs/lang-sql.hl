@@ -2,4 +2,5 @@ language SQL
 masks *.sql
 start sql
 ident _
+symbol 1 /(?i)^\s*create\s+(?:or\s+replace\s+)?(?:temp(?:orary)?\s+)?(?:table|view|function|procedure|trigger|index|type)\s+(?:if\s+not\s+exists\s+)?([\w."`\[\]]+)/
 %include part-sql

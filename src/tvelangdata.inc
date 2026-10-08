@@ -8,6 +8,8 @@ const
     'masks *.c *.h *.cpp *.hpp *.cc *.cxx' + #10 +
     'start c' + #10 +
     'ident _' + #10 +
+    'symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\s+([A-Za-z_]\w*)\s*(?::[^;{]*)?(?:\{.*)?$/' + #10 +
+    'symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/' + #10 +
     'context c' + #10 +
     '  match /^\s*#\s*include\b/ => preproc push c_include' + #10 +
     '  match /^\s*#.*/ => preproc' + #10 +
@@ -98,6 +100,8 @@ const
     'masks *.go go.mod' + #10 +
     'start go' + #10 +
     'ident _' + #10 +
+    'symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/' + #10 +
+    'symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/' + #10 +
     'context go' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
     '  match ''/*'' => comment push go_comment' + #10 +
@@ -124,6 +128,12 @@ const
     'masks *.html *.htm' + #10 +
     'start html' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -269,6 +279,9 @@ const
     'masks *.js *.mjs *.ts' + #10 +
     'start js' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /^\s*(?:export\s+)?(?:default\s+)?(?:abstract\s+)?(?:class|interface|enum)\s+([A-Za-z_$][\w$]*)/' + #10 +
+    'symbol 2 /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/' + #10 +
+    'symbol 2 /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/' + #10 +
     '# JavaScript (also the body of <script> and of the on... attributes)' + #10 +
     'context js' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
@@ -305,6 +318,13 @@ const
     'start html' + #10 +
     'inject jinja' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /^\s*\{%-?\s*(?:block|macro)\s+(\w+)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -485,6 +505,12 @@ const
     'masks *.md *.markdown' + #10 +
     'start md' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /^#\s+(.+?)\s*#*\s*$/' + #10 +
+    'symbol 2 /^##\s+(.+?)\s*#*\s*$/' + #10 +
+    'symbol 3 /^###\s+(.+?)\s*#*\s*$/' + #10 +
+    'symbol 4 /^####\s+(.+?)\s*#*\s*$/' + #10 +
+    'symbol 5 /^#####\s+(.+?)\s*#*\s*$/' + #10 +
+    'symbol 6 /^######\s+(.+?)\s*#*\s*$/' + #10 +
     '# Markdown with fenced code in the other languages (needs the parts of those languages)' + #10 +
     'context md' + #10 +
     '  match /^(#{1,6})(\s.*)$/ => delimiter keyword' + #10 +
@@ -825,6 +851,8 @@ const
     'masks *.pas *.pp *.inc *.lpr *.dpr *.p' + #10 +
     'start pascal' + #10 +
     'ident _' + #10 +
+    'symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/' + #10 +
+    'symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
     '  match ''{'' => comment push pas_brace' + #10 +
@@ -864,6 +892,14 @@ const
     'start html' + #10 +
     'inject php' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /(?i)^\s*(?:(?:abstract|final)\s+)?(?:class|interface|trait)\s+(\w+)/' + #10 +
+    'symbol 2 /(?i)^\s*(?:(?:public|protected|private|static|final|abstract)\s+)*function\s+&?(\w+)/' + #10 +
+    'symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1035,6 +1071,10 @@ const
     'masks *.py' + #10 +
     'start py' + #10 +
     'ident _' + #10 +
+    'symbol 1 /^class\s+(\w+)/' + #10 +
+    'symbol 1 /^(?:async\s+)?def\s+(\w+)/' + #10 +
+    'symbol 2 /^\s+class\s+(\w+)/' + #10 +
+    'symbol 2 /^\s+(?:async\s+)?def\s+(\w+)/' + #10 +
     'context py' + #10 +
     '  match /#.*/ => comment' + #10 +
     '  match ''"""'' => string push py_tq_dq' + #10 +
@@ -1067,6 +1107,8 @@ const
     'masks *.sh *.bash' + #10 +
     'start sh' + #10 +
     'ident _' + #10 +
+    'symbol 1 /^\s*function\s+([\w-]+)/' + #10 +
+    'symbol 1 /^\s*([A-Za-z_][\w-]*)\s*\(\s*\)/' + #10 +
     'context sh' + #10 +
     '  match /^#!.*/ => preproc' + #10 +
     '  match /#.*/ => comment' + #10 +
@@ -1093,6 +1135,12 @@ const
     'start html' + #10 +
     'inject smarty' + #10 +
     'ident _$' + #10 +
+    'symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1272,6 +1320,7 @@ const
     'masks *.sql' + #10 +
     'start sql' + #10 +
     'ident _' + #10 +
+    'symbol 1 /(?i)^\s*create\s+(?:or\s+replace\s+)?(?:temp(?:orary)?\s+)?(?:table|view|function|procedure|trigger|index|type)\s+(?:if\s+not\s+exists\s+)?([\w."`\[\]]+)/' + #10 +
     'context sql nocase' + #10 +
     '  match /--.*/ => comment' + #10 +
     '  match ''/*'' => comment push sql_comment' + #10 +

@@ -3,6 +3,14 @@ masks *.php *.phtml
 start html
 inject php
 ident _$
+symbol 1 /(?i)^\s*(?:(?:abstract|final)\s+)?(?:class|interface|trait)\s+(\w+)/
+symbol 2 /(?i)^\s*(?:(?:public|protected|private|static|final|abstract)\s+)*function\s+&?(\w+)/
+symbol 1 /(?i)^\s*<h1\b[^>]*>\s*([^<]+)/
+symbol 2 /(?i)^\s*<h2\b[^>]*>\s*([^<]+)/
+symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/
+symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/
+symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/
+symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/
 %include part-html
 %include part-js
 %include part-css

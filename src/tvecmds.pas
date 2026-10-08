@@ -48,7 +48,7 @@ const
   { folding }
   tcFoldToggle = 165; tcFoldCollapse = 166; tcFoldExpand = 167; tcFoldFromBlock = 168;
   { the file }
-  tcSave = 170; tcSaveAs = 171; tcReload = 172; tcClose = 173; tcCursorBack = 174; tcWrap = 175;
+  tcSave = 170; tcSaveAs = 171; tcReload = 172; tcClose = 173; tcCursorBack = 174; tcWrap = 175; tcOutline = 176;
   tcCommandCount = 180;
 
 type
@@ -116,7 +116,7 @@ const
     'ClearMarks', '', '', '', '', '', '', '', '', '',
     'InsertDate', 'InsertTime', 'InsertChar', 'Completion', 'Template', 'MacroRecord', 'MacroPlay', 'DrawMode', 'OpenAtCursor', '',
     '', '', '', '', '', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', '',
-    'Save', 'SaveAs', 'Reload', 'Close', 'CursorBack', 'Wrap', '', '', '', '');
+    'Save', 'SaveAs', 'Reload', 'Close', 'CursorBack', 'Wrap', 'Outline', '', '', '');
 
 function TveCommandName(Cmd: Integer): AnsiString;
 begin
@@ -395,7 +395,7 @@ const
     'Ctrl+L = FindNext' + LF + 'Ctrl+Space = Completion' + LF + 'Ctrl+@ = Completion' + LF + 'Ctrl+V = ToggleInsert' + LF +
     'Ctrl+K B = BlockBegin' + LF + 'Ctrl+K K = BlockEnd' + LF + 'Ctrl+K L = LineBlock' + LF + 'Ctrl+K T = SelectWord' + LF +
     'Ctrl+K H = HideBlock' + LF + 'Ctrl+K C = CopyBlockHere' + LF + 'Ctrl+K V = MoveBlockHere' + LF + 'Ctrl+K Y = DeleteBlock' + LF +
-    'Ctrl+K Z = FoldToggle' + LF + 'Alt+U = InsertChar' + LF + 'Alt+W = Wrap' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
+    'Ctrl+K Z = FoldToggle' + LF + 'Alt+U = InsertChar' + LF + 'Alt+W = Wrap' + LF + 'Alt+O = Outline' + LF + 'Ctrl+Shift+O = Outline' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
     'Ctrl+Q B = GotoBlockBegin' + LF + 'Ctrl+Q K = GotoBlockEnd' + LF + 'Ctrl+Q F = Find' + LF + 'Ctrl+Q A = Replace' + LF +
     'Ctrl+Q G = GotoLine' + LF + 'Ctrl+Q Y = DeleteToEol' + LF + 'Ctrl+Q [ = MatchBracket' + LF + 'Ctrl+Q ] = MatchBracket' + LF +
     'Ctrl+Q S = Home' + LF + 'Ctrl+Q D = End' + LF + 'Ctrl+Q R = TextStart' + LF + 'Ctrl+Q C = TextEnd' + LF +

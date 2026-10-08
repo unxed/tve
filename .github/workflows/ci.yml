@@ -26,9 +26,12 @@ jobs:
       - name: The tve program builds
         env:
           TV_REF: claude/nifty-rubin-7v0d9z
-        run: |
-          . tools/need-tv.sh
-          mkdir -p build/app
-          fpc -Fusrc -Fu"$TVSRC" -Fi"$TVSRC" -FUbuild/app -FEbuild/app app/tve.pas
-      - name: The tve program in a pty (the menu keys, the words of the guidelines)
-        run: python3 tests/pty/test_app.py build/app/tve
+        run: tools/pty-test.sh --build
+      # the groups of the test in a pty wait for the program, not for the CPU: they run side by side, each with a HOME of its own
+      - name: The tve program in a pty (the menu keys, the words of the guidelines, the state of the files)
+        env:
+          CMDS: |
+            python3 tests/pty/test_app.py build/app/tve menu
+            python3 tests/pty/test_app.py build/app/tve words
+            python3 tests/pty/test_app.py build/app/tve state
+        run: tools/ci-par.sh

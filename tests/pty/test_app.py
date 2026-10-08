@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Pty test of the tve program: the menu bar by the navigation guidelines of vtui (F9 and F10 open it, Esc closes the drop-down and keeps the bar,
-the second Esc leaves it). usage: test_app.py PATH/TO/tve   (PtyTerm: tools/pty_screen.py; PTY_TOOLS=DIR names another directory)"""
+the second Esc leaves it), the word movement, the state of the files.
+usage: test_app.py PATH/TO/tve [group ...]   groups: menu words state (default: all; tools/pty-test.sh runs them side by side)
+(PtyTerm: tools/pty_screen.py; PTY_TOOLS=DIR names another directory)"""
 import os
 import sys
 
@@ -29,27 +31,28 @@ def check(cond, name, info=''):
             print(info)
 
 
-t = PtyTerm([sys.argv[1]], 80, 25)
-check(t.wait_for('File'), 'the program starts and draws the menu bar')
-for name, key in (('F9', b'\x1b[20~'), ('F10', b'\x1b[21~')):
-    t.send(key)
+def group_menu():
+    t = PtyTerm([sys.argv[1]], 80, 25)
+    check(t.wait_for('File'), 'the program starts and draws the menu bar')
+    for name, key in (('F9', b'\x1b[20~'), ('F10', b'\x1b[21~')):
+        t.send(key)
+        t.send(b'\x1b[B')
+        check('Save macro' in t.text(), name + ' + Down opens the File menu', t.text())
+        t.send(b'\x1b')
+        check('Save macro' not in t.text(), name + ': Esc closes the drop-down', t.text())
+        t.send(b'\x1b[B')
+        check('Save macro' in t.text(), name + ': the bar stays active, Down opens the menu again', t.text())
+        t.send(b'\x1b')
+        t.send(b'\x1b')
+        t.send(b'\x1b[B')
+        check('Save macro' not in t.text(), name + ': the second Esc leaves the bar', t.text())
+    t.send(b'\x1b[21~')
     t.send(b'\x1b[B')
-    check('Save macro' in t.text(), name + ' + Down opens the File menu', t.text())
-    t.send(b'\x1b')
-    check('Save macro' not in t.text(), name + ': Esc closes the drop-down', t.text())
-    t.send(b'\x1b[B')
-    check('Save macro' in t.text(), name + ': the bar stays active, Down opens the menu again', t.text())
-    t.send(b'\x1b')
-    t.send(b'\x1b')
-    t.send(b'\x1b[B')
-    check('Save macro' not in t.text(), name + ': the second Esc leaves the bar', t.text())
-t.send(b'\x1b[21~')
-t.send(b'\x1b[B')
-t.send(b'm', settle=0.5)
-check(os.path.isfile(os.path.join(os.environ['XDG_CONFIG_HOME'], 'tve', 'tve.macro')),
-      'File > Save macro writes tve.macro into $XDG_CONFIG_HOME/tve', t.text())
-t.send(b'\x1bx', settle=0.5)
-check(t.close() == 0, 'Alt-X ends the program')
+    t.send(b'm', settle=0.5)
+    check(os.path.isfile(os.path.join(os.environ['XDG_CONFIG_HOME'], 'tve', 'tve.macro')),
+          'File > Save macro writes tve.macro into $XDG_CONFIG_HOME/tve', t.text())
+    t.send(b'\x1bx', settle=0.5)
+    check(t.close() == 0, 'Alt-X ends the program')
 
 
 def jumps(args):
@@ -67,9 +70,10 @@ def jumps(args):
     return d
 
 
-# E.7 of the guidelines: the word movement of the guidelines is optional (--words=nav); the default keeps the word rules of the editor
-check(jumps([]) == 4, 'Ctrl+Right twice on foo.bar: the word rules of the editor stop at foo.|bar')
-check(jumps(['--words=nav']) == 7, '--words=nav: the rules of the guidelines take foo.bar in two jumps')
+def group_words():
+    # E.7 of the guidelines: the word movement of the guidelines is optional (--words=nav); the default keeps the word rules of the editor
+    check(jumps([]) == 4, 'Ctrl+Right twice on foo.bar: the word rules of the editor stop at foo.|bar')
+    check(jumps(['--words=nav']) == 7, '--words=nav: the rules of the guidelines take foo.bar in two jumps')
 
 
 
@@ -85,25 +89,34 @@ def cursor_after(args, keys):
     return pos
 
 
-# the state: the cursor of a file is remembered when the program quits and restored when it opens the file again
-with tempfile.TemporaryDirectory(prefix='tve-state-') as d:
-    f = os.path.join(d, 'a.txt')
-    with open(f, 'w') as h:
-        h.write(''.join('line %d\n' % i for i in range(20)))
-    st = ['--state=' + os.path.join(d, 'state.ini'), f]
-    first = cursor_after(st, [b'\x1b[B'] * 5 + [b'\x1b[C'] * 3)
-    again = cursor_after(st, [])
-    check(again == first and first[1] > 2, '--state: the cursor is where it was', '%r %r' % (first, again))
-    check(cursor_after([f], []) != first, 'a file of --state is not the default state: the file opens at its start')
-    moved = cursor_after([f], [b'\x1b[B'] * 4)
-    check(cursor_after([f], []) == moved and moved[1] > 2, 'without --state the cursor is remembered too', '%r' % (moved,))
-    check(os.path.isfile(os.path.join(os.environ['XDG_STATE_HOME'], 'tve', 'state.ini')),
-          'the default state file is $XDG_STATE_HOME/tve/state.ini')
-    g = os.path.join(d, 'b.txt')
-    with open(g, 'w') as h:
-        h.write(''.join('line %d\n' % i for i in range(20)))
-    moved = cursor_after(['--state=', g], [b'\x1b[B'] * 4)
-    check(cursor_after([g], []) != moved, '--state= keeps nothing')
+def group_state():
+    # the state: the cursor of a file is remembered when the program quits and restored when it opens the file again
+    with tempfile.TemporaryDirectory(prefix='tve-state-') as d:
+        f = os.path.join(d, 'a.txt')
+        with open(f, 'w') as h:
+            h.write(''.join('line %d\n' % i for i in range(20)))
+        st = ['--state=' + os.path.join(d, 'state.ini'), f]
+        first = cursor_after(st, [b'\x1b[B'] * 5 + [b'\x1b[C'] * 3)
+        again = cursor_after(st, [])
+        check(again == first and first[1] > 2, '--state: the cursor is where it was', '%r %r' % (first, again))
+        check(cursor_after([f], []) != first, 'a file of --state is not the default state: the file opens at its start')
+        moved = cursor_after([f], [b'\x1b[B'] * 4)
+        check(cursor_after([f], []) == moved and moved[1] > 2, 'without --state the cursor is remembered too', '%r' % (moved,))
+        check(os.path.isfile(os.path.join(os.environ['XDG_STATE_HOME'], 'tve', 'state.ini')),
+              'the default state file is $XDG_STATE_HOME/tve/state.ini')
+        g = os.path.join(d, 'b.txt')
+        with open(g, 'w') as h:
+            h.write(''.join('line %d\n' % i for i in range(20)))
+        moved = cursor_after(['--state=', g], [b'\x1b[B'] * 4)
+        check(cursor_after([g], []) != moved, '--state= keeps nothing')
+
+
+GROUPS = (('menu', group_menu), ('words', group_words), ('state', group_state))
+if set(sys.argv[2:]) - set(n for n, _ in GROUPS):
+    sys.exit('unknown group: %s' % ' '.join(sorted(set(sys.argv[2:]) - set(n for n, _ in GROUPS))))
+for name, fn in GROUPS:
+    if name in sys.argv[2:] or not sys.argv[2:]:
+        fn()
 
 print('ALL OK (%d checks)' % count if not fails else '%d of %d checks FAILED' % (fails, count))
 sys.exit(1 if fails else 0)

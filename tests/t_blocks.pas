@@ -173,6 +173,53 @@ begin
   Check(not MoveBlockHere(E) and (Txt = 'abcdef'), 'move into the block itself is refused');
   E.Opt.PersistentBlocks := False;
 
+  { drag and drop of the selection }
+  Setup('one two three');
+  E.GotoLineCell(0, 4);
+  E.StartSelection(skStream);
+  E.GotoLineCell(0, 8);                     { "two " }
+  E.FreezeSelection;
+  Check(DragBlock(E, 13, False) and (Txt = 'one threetwo '), 'drag: move forward: ' + Txt);
+  Check(E.HasSelection and (E.Offset = 13), 'the moved text is selected');
+  Check(D.Undo(C) and (Txt = 'one two three'), 'a move is one undo step');
+  Setup('one two three');
+  E.GotoLineCell(0, 4);
+  E.StartSelection(skStream);
+  E.GotoLineCell(0, 7);                     { "two" }
+  E.FreezeSelection;
+  Check(DragBlock(E, 0, False) and (Txt = 'twoone  three'), 'drag: move back: ' + Txt);
+  Setup('one two three');
+  E.GotoLineCell(0, 4);
+  E.StartSelection(skStream);
+  E.GotoLineCell(0, 7);
+  E.FreezeSelection;
+  Check(DragBlock(E, 13, True) and (Txt = 'one two threetwo'), 'drag with Ctrl copies: ' + Txt);
+  Check(D.Undo(C) and (Txt = 'one two three'), 'a copy is one undo step');
+  Setup('one two three');
+  E.GotoLineCell(0, 4);
+  E.StartSelection(skStream);
+  E.GotoLineCell(0, 7);
+  E.FreezeSelection;
+  Check(E.HasSelection, 'selected again');
+  Check(not DragBlock(E, 5, False) and (Txt = 'one two three'), 'drop inside the selection: refused (move)');
+  Check(not DragBlock(E, 4, False) and not DragBlock(E, 7, False), 'drop at the ends: nothing to move');
+  Check(not DragBlock(E, 5, True), 'drop inside the selection: refused (copy)');
+  Check(DragBlock(E, 7, True) and (Txt = 'one twotwo three'), 'copy next to the selection: ' + Txt);
+  Setup('a'#10'b'#10'c');
+  E.GotoLineCell(0, 0);
+  E.StartSelection(skLine);
+  E.FreezeSelection;
+  Check(DragBlock(E, 4, False) and (Txt = 'b'#10'a'#10'c'), 'a line selection moves: ' + Txt);
+  Setup('abc');
+  D.ReadOnly := True;
+  E.GotoLineCell(0, 0);
+  E.StartSelection(skStream);
+  E.GotoLineCell(0, 1);
+  Check(not DragBlock(E, 3, False), 'read only: no drag');
+  D.ReadOnly := False;
+  Setup('abc');
+  Check(not DragBlock(E, 1, False), 'nothing selected');
+
   { tabs }
   Setup('a'#9'b'#10#9'x');
   ExpandTabs(E);

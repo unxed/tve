@@ -66,6 +66,7 @@ type
     FDrawMode: Integer;               // 0 off, 1 single lines, 2 double
     FKeysEnabled: Boolean;
     FMultiClick: Boolean;
+    FDragDrop: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
@@ -88,6 +89,8 @@ type
     procedure Sync;
     function Hit(Where: TPoint; out L: Int64; out C: Integer): Boolean;
     procedure DoMouse(var Event: TEvent);
+    function InSelection(L: Int64; C: Integer): Boolean;
+    procedure DragSelection(var Event: TEvent);
     procedure Remember;
     procedure Complete;
     procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
@@ -120,6 +123,8 @@ type
     property KeysEnabled: Boolean read FKeysEnabled write FKeysEnabled;
     // True (the default): a double click selects a word and a triple click a line.
     property MultiClick: Boolean read FMultiClick write FMultiClick;
+    // True (the default): a press on the selected text and a drag moves the text to where the button is released (Ctrl: copies it). One undo step.
+    property DragDrop: Boolean read FDragDrop write FDragDrop;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
     // Soft wrap: a long line is shown as several rows (no horizontal scrolling); the text is not changed.
     property Wrap: Boolean read FWrap write SetWrap;
@@ -210,6 +215,7 @@ begin
   FMarkB := -1;
   FKeysEnabled := True;
   FMultiClick := True;
+  FDragDrop := True;
   FHlA := -1;
   FHlB := -1;
   FEditor.Rows := Size.Y;
@@ -1221,6 +1227,66 @@ begin
   Result := True;
 end;
 
+// True when the cell is inside the stream or line selection (a column selection is not dragged).
+function TTveView.InSelection(L: Int64; C: Integer): Boolean;
+var
+  A, B, Off: Int64;
+begin
+  Result := False;
+  if not FEditor.HasSelection or (FEditor.SelKind = skColumn) then
+    Exit;
+  if not FEditor.SelectionRange(A, B) then
+    Exit;
+  Off := FEditor.LineCellToOffset(L, C);
+  Result := (Off >= A) and (Off < B);
+end;
+
+// The button went down on the selected text: a click puts the cursor there, a drag moves the text (Ctrl: copies it) to where the button goes up.
+procedure TTveView.DragSelection(var Event: TEvent);
+var
+  L: Int64;
+  C: Integer;
+  Start: TPoint;
+  Moved, Copying: Boolean;
+  P: TPoint;
+  OldL: Int64;
+  OldC: Integer;
+begin
+  Start := Event.Where;
+  Moved := False;
+  Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
+  OldL := FEditor.Line;
+  OldC := FEditor.Cell;
+  FEditor.FreezeSelection;        // the selection stays while the cursor shows where the text would go
+  while MouseEvent(Event, evMouseMove or evMouseAuto) do
+  begin
+    if (Event.Where.X <> Start.X) or (Event.Where.Y <> Start.Y) then
+      Moved := True;
+    if not Moved then
+      Continue;
+    Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
+    P := MakeLocal(Event.Where);
+    if P.Y < 0 then
+      ScrollLines(-1)
+    else if P.Y >= Size.Y then
+      ScrollLines(1);
+    Hit(Event.Where, L, C);
+    FEditor.GotoLineCell(L, C);
+    Sync;
+  end;
+  if (Event.ControlKeyState and kbCtrlShift) <> 0 then
+    Copying := True;
+  Hit(Event.Where, L, C);
+  if not Moved then
+  begin
+    FEditor.ClearSelection;
+    FEditor.GotoLineCell(L, C);
+  end
+  else if not DragBlock(FEditor, FEditor.LineCellToOffset(L, C), Copying) then
+    FEditor.GotoLineCell(OldL, OldC);
+  Sync;
+end;
+
 procedure TTveView.DoMouse(var Event: TEvent);
 var
   L: Int64;
@@ -1241,6 +1307,11 @@ begin
     FEditor.GotoLineCell(L, C);
     FEditor.SelectWord;
     Sync;
+    Exit;
+  end;
+  if not Extend and FDragDrop and InSelection(L, C) then
+  begin
+    DragSelection(Event);
     Exit;
   end;
   if not Extend then

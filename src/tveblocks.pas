@@ -40,6 +40,9 @@ function InsertLineAbove(E: TTveEditor): Boolean;
 { the selected text is copied / moved to the cursor; the inserted text becomes the selection }
 function CopyBlockHere(E: TTveEditor): Boolean;
 function MoveBlockHere(E: TTveEditor): Boolean;
+{ Drag and drop of the selection (a stream or line selection) to the offset Dest: moved, or copied when Copy is True; one undo step; the dropped text becomes the
+  selection. False (nothing changed) when there is no such selection, the text is read only, or Dest is inside the selection (also at its ends, for a move). }
+function DragBlock(E: TTveEditor; Dest: Int64; Copy: Boolean): Boolean;
 { the selection to a file / a file at the cursor (UTF-8 with LF is converted to the encoding and line ends of the document) }
 function WriteBlock(E: TTveEditor; const Name: AnsiString): Boolean;
 function ReadBlock(E: TTveEditor; const Name: AnsiString): Boolean;
@@ -645,6 +648,29 @@ begin
   E.SetSelection(skStream, Dest);
   E.NoteAfter;
   Result := True;
+end;
+
+function DragBlock(E: TTveEditor; Dest: Int64; Copy: Boolean): Boolean;
+var
+  A, B: Int64;
+begin
+  Result := False;
+  if ReadOnlyNow(E) or not E.HasSelection or (E.SelKind = skColumn) then
+    Exit;
+  if not E.SelectionRange(A, B) then
+    Exit;
+  if Copy then
+  begin
+    if (Dest > A) and (Dest < B) then
+      Exit;
+  end
+  else if (Dest >= A) and (Dest <= B) then
+    Exit;
+  E.GotoOffset(Dest);
+  if Copy then
+    Result := CopyBlockHere(E)
+  else
+    Result := MoveBlockHere(E);
 end;
 
 function WriteBlock(E: TTveEditor; const Name: AnsiString): Boolean;

@@ -59,3 +59,8 @@ Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript),
 * Colouring: no semantic colouring (a function name that is only known from its definition), no folding by grammar, the Markdown fences know fewer languages than there are grammars
   (no YAML, diff, INI, Makefile inside a fence), block scalars of YAML are coloured as plain text.
 * The hardware cursor shows the drop place during a drag; there is no separate drop marker.
+
+## Audit
+
+`tools/audit/fetch-corpora.sh` fetches the reference corpora and `tools/audit/borrow-audit.py --ref build/corpora/list.txt src app tests tools`
+compares the sources with them; CI runs both (job `borrow-audit`) and fails on any chain of 24 tokens or more.

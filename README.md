@@ -81,8 +81,12 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   `goto 12:5` (also `goto 12`, `goto +OFFSET`). A host that moves the cursor or types text after a dialog of its own uses `View.GotoPlace`, `GotoOffsetPlace` and
   `TypeText`, which are recorded (the program does so for go to line, the outline and insert a character).
   `View.PlayMacro(N)` plays it N times; `PlayMacro(0)` (command `MacroPlayAll`) plays it again and again until a step fails (a search finds nothing, a prompt
-  is cancelled, a step of the cursor cannot move at an end of the text) or a round changes nothing; a failed step ends the playing in every case.
-  `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
+  is cancelled, a step of the cursor cannot move at an end of the text), a `stop` step is played or a round changes nothing; a failed step ends the playing in
+  every case. Conditions: `if COND` (or `if not COND`) does the next step only when COND holds: `eof`, `bof`, `eol`, `bol`, `blank` (the line), `selection`,
+  `at "x"` (the text at the cursor), `match "re"` (the line). **Named macros**: `View.Macros` (`TTveMacroList`) holds any number of them; `View.SelectMacro(Name)`
+  makes one the current macro (the one that `MacroRecord` records and `MacroPlay` plays, `View.MacroName`), `View.PlayMacroNamed(Name, N)` plays another one,
+  and the step `play "name"` plays one inside a macro. `View.SaveMacroFile` / `LoadMacroFile` keep all of them in one file (`macro NAME` starts one; the lines
+  before the first are the macro without a name, so a file of one macro is as before). The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
 * **Navigation guidelines of vtui**: the dialogs and the menu bar of the program are tv3's, which follow them (`docs/UX-CONFORMANCE.md` of tv3 has the table, tve's
   place in it and the two places where the editor keeps its own rules: the word definition and `Ctrl+C`). The program opens the menu bar with `F9` and `F10`;
   its commands are declared once with `TvActions` and the menu and the status line read them. `tests/pty/test_app.py` checks the menu keys and the word keys in a pty (`tools/pty_screen.py`).
@@ -109,7 +113,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 
 * Outline rules are line based regular expressions: the first line of a declaration must match (a C return type on a line of its own is not found); XML has no
   outline.
-* The macro is one per view and has no conditions other than a failed step; what a host does to the text by itself (not through the view) is not recorded.
+* Macros: the conditions are those of the cursor and its line (no variables, no loops inside a round); what a host does to the text by itself (not through the
+  view) is not recorded; the program records and plays only the macro without a name.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar: HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); SQL statements are not regions by themselves.
 * Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); a YAML block scalar is known by its key

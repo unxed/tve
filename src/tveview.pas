@@ -48,7 +48,11 @@ type
     FShowCurrentLine: Boolean;
     FMarkWord: Boolean;
     FRecording: Boolean;
-    FMacro: TTveMacro;
+    FMacro: TTveMacro;                // the current macro, one of FMacros
+    FMacros: TTveMacroList;
+    FMacroName: AnsiString;
+    FMacroStop: Boolean;              // a stop step was played
+    FMacroDepth: Integer;             // play steps inside play steps
     FPlaying: Boolean;
     FExecuting: Integer;
     FStepFailed: Boolean;             // the last command of Execute could not be done (a search found nothing)              // inside the commands of Execute: a search is recorded as the command, not as a find step
@@ -112,6 +116,8 @@ type
     procedure FoldAtCursor(Toggle: Boolean);
     procedure RecordSearch(Kind: Integer; const Repl: AnsiString);
     function PlayStep(const St: TTveMacroStep): Boolean;
+    function MacroCondition(const St: TTveMacroStep): Boolean;
+    function RunMacro(M: TTveMacro; Times: Integer): Boolean;
     function PlayGoto(const Place: AnsiString): Boolean;
     procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
   protected
@@ -174,22 +180,31 @@ type
     property WheelStep: Integer read FWheelStep write FWheelStep;
     property SearchOptions: TTveSearchOptions read FSearch write FSearch;
     property Recording: Boolean read FRecording;
-    { The recorded macro (commands and typed text); it can be loaded and saved as text, see TveMacro. }
+    { The current macro (commands and typed text), the one that MacroRecord records and MacroPlay plays; it can be loaded and saved as text, see TveMacro. }
     property RecordedMacro: TTveMacro read FMacro;
+    { All the macros of the view by their names; the current one is MacroName ('' at first). }
+    property Macros: TTveMacroList read FMacros;
+    property MacroName: AnsiString read FMacroName;
+    { Makes the macro of a name the current one (a new empty one when there is none); a recording stops. }
+    procedure SelectMacro(const AName: AnsiString);
+    { Plays the macro of a name as PlayMacro does; False when there is none or a step failed. }
+    function PlayMacroNamed(const AName: AnsiString; Times: Integer = 1): Boolean;
     { The outline of the text by the symbol rules of the language of the view (empty without a language); see TveSymbols. }
     function Outline: TTveOutline;
     { The regions that the grammar of the view can fold (see TveFoldRegions). }
     function FoldRegions: TTveFoldRegions;
     { Every region of the grammar becomes a collapsed fold (the folds there are kept and collapsed too). }
     procedure FoldAll;
-    { Plays the macro Times times; Times <= 0: again and again until a step fails or a round changes neither the text nor the cursor. A step fails when
-      a search finds nothing, a prompt is cancelled or a cursor movement cannot move; that ends the playing. False when a step failed. }
+    { Plays the current macro Times times; Times <= 0: again and again until a step fails, a stop step is played or a round changes neither the text nor
+      the cursor. A step fails when a search finds nothing, a prompt is cancelled or a cursor movement cannot move; that ends the playing. An "if" step
+      skips the step after it when its condition does not hold. False when a step failed. }
     function PlayMacro(Times: Integer = 1): Boolean;
     { For a host (a dialog of its own): moves the cursor (0-based line and cell, or a byte offset) or types text as the user does; while a macro is being
       recorded, they are steps of it. }
     procedure GotoPlace(Line: Int64; Cell: Integer);
     procedure GotoOffsetPlace(Offset: Int64);
     procedure TypeText(const S: AnsiString);
+    { All the macros (TTveMacroList.LoadFile, SaveFile); the current one keeps its name. }
     function LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
     function SaveMacroFile(const FileName: AnsiString): Boolean;
 
@@ -221,7 +236,7 @@ type
 implementation
 
 uses
-  SysUtils, TvUtf8, TveLayout, TveBlocks, TveExtras;
+  SysUtils, TvUtf8, TveLayout, TveBlocks, TveExtras, TveRegex;
 
 const
   CursorHistoryMax = 64;
@@ -246,7 +261,8 @@ begin
   FEditor := TTveEditor.Create(ADoc);
   FOwnDoc := OwnDoc;
   FKeymap := TveKeymapA;
-  FMacro := TTveMacro.Create;
+  FMacros := TTveMacroList.Create;
+  FMacro := FMacros.Get('');
   FSearch := TveDefaultSearch;
   FSearcher := TTveSearcher.Create(ADoc.Buffer);
   FWrapMap := TTveWrapMap.Create(ADoc.Buffer);
@@ -272,7 +288,7 @@ begin
   D := FEditor.Doc;
   D.RemoveObserver(@DocChanged);
   FHl.Free;
-  FMacro.Free;
+  FMacros.Free;
   FFolds.Free;
   FSearcher.Free;
   FWrapMap.Free;
@@ -1266,14 +1282,76 @@ begin
     GotoPlace(L - 1, C - 1);
 end;
 
+function TTveView.MacroCondition(const St: TTveMacroStep): Boolean;
+var
+  Ofs, LS: Int64;
+  T: AnsiString;
+  Re: TTveRegex;
+  Caps: TCaps;
+begin
+  Ofs := FEditor.Offset;
+  LS := FEditor.Doc.Buffer.LineStart(FEditor.Line);
+  T := FEditor.Doc.Buffer.LineText(FEditor.Line);
+  if (T <> '') and (T[Length(T)] = #13) then
+    SetLength(T, Length(T) - 1);
+  if St.Text = 'eof' then
+    Result := Ofs >= FEditor.Doc.Buffer.Length
+  else if St.Text = 'bof' then
+    Result := Ofs = 0
+  else if St.Text = 'eol' then
+    Result := Ofs >= LS + Length(T)
+  else if St.Text = 'bol' then
+    Result := Ofs = LS
+  else if St.Text = 'blank' then
+    Result := Trim(T) = ''
+  else if St.Text = 'selection' then
+    Result := FEditor.HasSelection
+  else if St.Text = 'at' then
+    Result := FEditor.Doc.Buffer.Copy(Ofs, Length(St.Repl)) = St.Repl
+  else if St.Text = 'match' then
+  begin
+    Re := TTveRegex.Create(St.Repl);
+    try
+      Result := (Re.Error = '') and Re.Exec(T, 1, Caps);
+    finally
+      Re.Free;
+    end;
+  end
+  else
+    Result := False;
+  if St.Flags and mfNot <> 0 then
+    Result := not Result;
+end;
+
 function TTveView.PlayStep(const St: TTveMacroStep): Boolean;
 var
   Value: AnsiString;
   P: Int64;
+  M: TTveMacro;
 begin
   Result := True;
   if St.Cmd = msGoto then
     Exit(PlayGoto(St.Text));
+  if St.Cmd = msStop then
+  begin
+    FMacroStop := True;
+    Exit;
+  end;
+  if St.Cmd = msPlay then
+  begin
+    M := FMacros.Find(St.Text);
+    if (M = nil) or (FMacroDepth >= 8) then
+      Exit(False);
+    Inc(FMacroDepth);
+    try
+      Result := RunMacro(M, 1);
+    finally
+      Dec(FMacroDepth);
+    end;
+    Exit;
+  end;
+  if St.Cmd = msIf then
+    Exit;
   if St.Cmd < msText then
   begin
     if St.Cmd = msPrompt then
@@ -1313,46 +1391,96 @@ begin
   end;
 end;
 
-function TTveView.PlayMacro(Times: Integer): Boolean;
+{ the rounds of a macro; a stop step ends them (and those of the macros that play it) }
+function TTveView.RunMacro(M: TTveMacro; Times: Integer): Boolean;
 var
   I, Round: Integer;
   Before: Int64;
   Ver: LongWord;
+  St: TTveMacroStep;
+begin
+  Result := True;
+  Round := 0;
+  while Result and not FMacroStop and (((Times <= 0) and (Round < MacroRoundsMax)) or (Round < Times)) do
+  begin
+    Before := FEditor.Offset;
+    Ver := FEditor.Doc.Buffer.Version;
+    I := 0;
+    while I < M.Count do
+    begin
+      St := M.Step(I);
+      Inc(I);
+      if St.Cmd = msIf then
+      begin
+        if not MacroCondition(St) then
+          Inc(I);
+        Continue;
+      end;
+      if not PlayStep(St) then
+      begin
+        Result := False;
+        Break;
+      end;
+      if FMacroStop then
+        Break;
+    end;
+    Inc(Round);
+    if (Times <= 0) and (FEditor.Offset = Before) and (FEditor.Doc.Buffer.Version = Ver) then
+      Break;
+  end;
+end;
+
+function TTveView.PlayMacro(Times: Integer): Boolean;
 begin
   Result := True;
   if FPlaying or (FMacro.Count = 0) then
     Exit;
   FPlaying := True;
+  FMacroStop := False;
+  FMacroDepth := 0;
   try
-    Round := 0;
-    while Result and (((Times <= 0) and (Round < MacroRoundsMax)) or (Round < Times)) do
-    begin
-      Before := FEditor.Offset;
-      Ver := FEditor.Doc.Buffer.Version;
-      for I := 0 to FMacro.Count - 1 do
-        if not PlayStep(FMacro.Step(I)) then
-        begin
-          Result := False;
-          Break;
-        end;
-      Inc(Round);
-      if (Times <= 0) and (FEditor.Offset = Before) and (FEditor.Doc.Buffer.Version = Ver) then
-        Break;
-    end;
+    Result := RunMacro(FMacro, Times);
   finally
     FPlaying := False;
+    FMacroStop := False;
   end;
   Sync;
 end;
 
+function TTveView.PlayMacroNamed(const AName: AnsiString; Times: Integer): Boolean;
+var
+  Old: TTveMacro;
+begin
+  Old := FMacro;
+  FMacro := FMacros.Find(AName);
+  if FMacro = nil then
+  begin
+    FMacro := Old;
+    Exit(False);
+  end;
+  try
+    Result := PlayMacro(Times);
+  finally
+    FMacro := Old;
+  end;
+end;
+
+procedure TTveView.SelectMacro(const AName: AnsiString);
+begin
+  FRecording := False;
+  FMacro := FMacros.Get(AName);
+  FMacroName := AName;
+end;
+
 function TTveView.LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
 begin
-  Result := FMacro.LoadFile(FileName, Err);
+  Result := FMacros.LoadFile(FileName, Err);
+  FMacro := FMacros.Get(FMacroName);
 end;
 
 function TTveView.SaveMacroFile(const FileName: AnsiString): Boolean;
 begin
-  Result := FMacro.SaveFile(FileName);
+  Result := FMacros.SaveFile(FileName);
 end;
 
 function TTveView.Execute(Cmd: Integer): Boolean;

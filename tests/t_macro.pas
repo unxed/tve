@@ -211,6 +211,61 @@ begin
   Check(V.RecordedMacro.LoadText('goto 9:1'#10, Err) and not V.PlayMacro(1), 'a line past the end fails');
   Check(not V.RecordedMacro.LoadText('goto x'#10, Err) and not V.RecordedMacro.LoadText('goto 1:'#10, Err) and
     not V.RecordedMacro.LoadText('goto +1:2'#10, Err) and not V.RecordedMacro.LoadText('goto'#10, Err), 'bad places');
+  { conditions: an if step skips the next step when it does not hold; stop ends every round }
+  D.LoadText('a'#10#10'b'#10'  '#10'c');
+  V.Editor.GotoOffset(0);
+  Check(V.RecordedMacro.LoadText('if not blank'#10'"* "'#10'End'#10'if eof'#10'stop'#10'Down'#10'Home'#10, Err), 'if and stop: ' + Err);
+  Check(V.RecordedMacro.SaveText = 'if not blank'#10'"* "'#10'End'#10'if eof'#10'stop'#10'Down'#10'Home'#10, 'if and stop saved: ' + V.RecordedMacro.SaveText);
+  Check(V.PlayMacro(0), 'a stop is no failure');
+  Check(D.Buffer.AsString = '* a'#10#10'* b'#10'  '#10'* c', 'mark the lines that are not blank: ' + D.Buffer.AsString);
+  D.LoadText('ab;cd;ef');
+  V.Editor.GotoOffset(0);
+  Check(V.RecordedMacro.LoadText('if eol'#10'stop'#10'if at ";"'#10'NewLine'#10'if at ";"'#10'Delete'#10'if not at ";"'#10'Right'#10, Err), 'at: ' + Err);
+  V.PlayMacro(0);
+  Check(D.Buffer.AsString = 'ab'#10'cd'#10'ef', 'split at the semicolons: ' + D.Buffer.AsString);
+  D.LoadText('x = 1'#10'# y'#10'z = 2'#10);
+  V.Editor.GotoOffset(0);
+  Check(V.RecordedMacro.LoadText('if match "^\\w+ ="'#10'"; "'#10'Home'#10'Down'#10, Err), 'match: ' + Err);
+  Check(not V.PlayMacro(0) and (D.Buffer.AsString = '; x = 1'#10'# y'#10'; z = 2'#10), 'comment the assignments: ' + D.Buffer.AsString);
+  V.Editor.GotoOffset(0);
+  Check(V.RecordedMacro.LoadText('if bof'#10'"<"'#10'if not bol'#10'"!"'#10'if selection'#10'"S"'#10, Err) and V.PlayMacro(1) and
+    (Copy(D.Buffer.AsString, 1, 3) = '<!;'), 'bof, bol, selection: ' + D.Buffer.AsString);
+  Check(not V.RecordedMacro.LoadText('if'#10, Err) and not V.RecordedMacro.LoadText('if sunny'#10, Err) and not V.RecordedMacro.LoadText('if at'#10, Err) and
+    not V.RecordedMacro.LoadText('if eof "x"'#10, Err) and not V.RecordedMacro.LoadText('stop now'#10, Err) and not V.RecordedMacro.LoadText('play x'#10, Err),
+    'bad conditions');
+  { named macros: the current one is recorded and played; others are played by name and by a play step; one file holds them all }
+  D.LoadText('');
+  V.Editor.GotoOffset(0);
+  V.RecordedMacro.LoadText('"0"'#10, Err);
+  V.SelectMacro('dash');
+  Check((V.MacroName = 'dash') and (V.RecordedMacro.Count = 0) and (V.Macros.Count = 2), 'a new named macro');
+  V.Execute(tcMacroRecord);
+  TypeKey(V, '-');
+  V.Execute(tcMacroRecord);
+  Check(V.RecordedMacro.SaveText = '"-"'#10, 'recorded into it: ' + V.RecordedMacro.SaveText);
+  Check(V.PlayMacroNamed('', 2) and (D.Buffer.AsString = '-00'), 'the macro without a name by its name: ' + D.Buffer.AsString);
+  Check(V.MacroName = 'dash', 'the current one stays');
+  Check(not V.PlayMacroNamed('nosuch'), 'no such macro');
+  V.Macros.Get('both').LoadText('play "dash"'#10'play ""'#10, Err);
+  Check(not V.Macros.Get('both').LoadText('play ""'#10, Err), 'a play step needs a name');
+  V.Macros.Get('both').LoadText('play "dash"'#10'"+"'#10, Err);
+  Check(V.PlayMacroNamed('both') and (D.Buffer.AsString = '-00-+'), 'a play step: ' + D.Buffer.AsString);
+  V.Macros.Get('loop').LoadText('"x"'#10'play "loop"'#10, Err);
+  Check(not V.PlayMacroNamed('loop'), 'a macro that plays itself ends');
+  Path := GetTempDir + 'tve_t_macros.txt';
+  Check(V.SaveMacroFile(Path), 'save all');
+  T := V.Macros.SaveText;
+  Check(T = '"0"'#10'macro dash'#10'"-"'#10'macro both'#10'play "dash"'#10'"+"'#10'macro loop'#10'"x"'#10'play "loop"'#10, 'the text of the list: ' + T);
+  V.SelectMacro('');
+  V.Macros.Clear;
+  Check((V.Macros.Count = 1) and (V.RecordedMacro.Count = 0), 'cleared');
+  V.SelectMacro('dash');
+  Check(V.LoadMacroFile(Path, Err) and (V.Macros.Count = 4) and (V.RecordedMacro.SaveText = '"-"'#10), 'load all, the current one by its name: ' + Err);
+  Check(V.Macros.Find('') = V.Macros.Item(0), 'the one without a name is first');
+  V.Macros.Remove('loop');
+  Check((V.Macros.Count = 3) and (V.Macros.Find('loop') = nil), 'remove');
+  DeleteFile(Path);
+  Check(not V.Macros.LoadText('"a"'#10'macro bad name'#10'"b"'#10, Err) and (Err = 'macro bad name'), 'a bad name: ' + Err);
   V.Free;
   P.Free;
   D.Free;

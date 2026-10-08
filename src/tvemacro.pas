@@ -11,6 +11,7 @@
       find "x" case word      finds the next match; the options are any of case, word, regex, back, hex; no match stops the macro
       replace "x" "y" regex   replaces the next match (no match stops the macro)
       replaceall "x" "y"      replaces every match
+      goto 12:5               moves the cursor to the line 12, column 5 (goto 12: the start of the line; goto +100: the byte offset 100)
 
   Blank lines are skipped. The macro commands themselves (MacroRecord, MacroPlay, MacroPlayAll) cannot be steps. }
 unit TveMacro;
@@ -27,6 +28,7 @@ const
   msFind = -2;                   { Text: the pattern; Flags }
   msReplace = -3;                { Text: the pattern; Repl; Flags }
   msReplaceAll = -4;
+  msGoto = -5;                   { Text: "LINE", "LINE:COLUMN" (1-based) or "+OFFSET" }
   { the search options of a step (Flags) }
   mfCase = 1; mfWord = 2; mfRegex = 4; mfBack = 8; mfHex = 16;
 
@@ -191,7 +193,27 @@ begin
     Inc(I);
 end;
 
-{ "prompt ...", "find ...", "replace ...", "replaceall ..." as a step; False if Line is none of them or is not well formed. }
+{ "LINE", "LINE:COLUMN" (1-based) or "+OFFSET" }
+function GoodPlace(const S: AnsiString): Boolean;
+var
+  I, Colons, Digits: Integer;
+begin
+  Result := False;
+  if S = '' then
+    Exit;
+  Colons := 0;
+  Digits := 0;
+  for I := 1 to Length(S) do
+    if S[I] in ['0'..'9'] then
+      Inc(Digits)
+    else if (S[I] = ':') and (I > 1) and (I < Length(S)) and (S[1] <> '+') then
+      Inc(Colons)
+    else if not ((S[I] = '+') and (I = 1)) then
+      Exit;
+  Result := (Colons <= 1) and (Digits > 0);
+end;
+
+{ "prompt ...", "find ...", "replace ...", "replaceall ...", "goto ..." as a step; False if Line is none of them or is not well formed. }
 function ParseSearch(M: TTveMacro; const Line: AnsiString): Boolean;
 var
   I, J, Kind, Flags, F: Integer;
@@ -202,6 +224,14 @@ begin
   while (I <= Length(Line)) and (Line[I] in ['a'..'z', 'A'..'Z']) do
     Inc(I);
   Word_ := LowerCase(Copy(Line, 1, I - 1));
+  if Word_ = 'goto' then
+  begin
+    Pat := Trim(Copy(Line, I, MaxInt));
+    Result := GoodPlace(Pat) and (I <= Length(Line)) and (Line[I] in [' ', #9]);
+    if Result then
+      M.AddSearch(msGoto, Pat, '', 0);
+    Exit;
+  end;
   Kind := 0;
   for J := 1 to 4 do
     if Word_ = KindNames[J] then
@@ -323,6 +353,8 @@ begin
       Result := Result + Quote(St.Text)
     else if St.Cmd > 0 then
       Result := Result + TveCommandName(St.Cmd)
+    else if St.Cmd = msGoto then
+      Result := Result + 'goto ' + St.Text
     else
     begin
       Result := Result + KindNames[-St.Cmd] + ' ' + Quote(St.Text);

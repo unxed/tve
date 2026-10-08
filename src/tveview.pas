@@ -112,6 +112,7 @@ type
     procedure FoldAtCursor(Toggle: Boolean);
     procedure RecordSearch(Kind: Integer; const Repl: AnsiString);
     function PlayStep(const St: TTveMacroStep): Boolean;
+    function PlayGoto(const Place: AnsiString): Boolean;
     procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
   protected
     // The colour of a class of the highlighter. A host that has its own palette overrides it.
@@ -184,6 +185,11 @@ type
     { Plays the macro Times times; Times <= 0: again and again until a step fails or a round changes neither the text nor the cursor. A step fails when
       a search finds nothing, a prompt is cancelled or a cursor movement cannot move; that ends the playing. False when a step failed. }
     function PlayMacro(Times: Integer = 1): Boolean;
+    { For a host (a dialog of its own): moves the cursor (0-based line and cell, or a byte offset) or types text as the user does; while a macro is being
+      recorded, they are steps of it. }
+    procedure GotoPlace(Line: Int64; Cell: Integer);
+    procedure GotoOffsetPlace(Offset: Int64);
+    procedure TypeText(const S: AnsiString);
     function LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
     function SaveMacroFile(const FileName: AnsiString): Boolean;
 
@@ -1204,12 +1210,70 @@ begin
     FMacro.AddSearch(Kind, FSearch.Pattern, Repl, SearchFlags(FSearch));
 end;
 
+procedure TTveView.GotoPlace(Line: Int64; Cell: Integer);
+begin
+  if FRecording and not FPlaying then
+    FMacro.AddSearch(msGoto, IntToStr(Line + 1) + ':' + IntToStr(Cell + 1), '', 0);
+  Remember;
+  FEditor.GotoLineCell(Line, Cell);
+  Sync;
+end;
+
+procedure TTveView.GotoOffsetPlace(Offset: Int64);
+begin
+  if FRecording and not FPlaying then
+    FMacro.AddSearch(msGoto, '+' + IntToStr(Offset), '', 0);
+  Remember;
+  FEditor.GotoOffset(Offset);
+  Sync;
+end;
+
+procedure TTveView.TypeText(const S: AnsiString);
+begin
+  if FRecording and not FPlaying then
+    FMacro.AddText(S);
+  if FEditor.TypeText(S) then
+    Sync;
+end;
+
+{ a goto step: False when the place is not in the text }
+function TTveView.PlayGoto(const Place: AnsiString): Boolean;
+var
+  K: Integer;
+  L, C, Ofs: Int64;
+begin
+  if (Place <> '') and (Place[1] = '+') then
+  begin
+    Ofs := StrToInt64Def(Copy(Place, 2, MaxInt), -1);
+    Result := (Ofs >= 0) and (Ofs <= FEditor.Doc.Buffer.Length);
+    if Result then
+      GotoOffsetPlace(Ofs);
+    Exit;
+  end;
+  K := Pos(':', Place);
+  if K = 0 then
+  begin
+    L := StrToInt64Def(Place, 0);
+    C := 1;
+  end
+  else
+  begin
+    L := StrToInt64Def(Copy(Place, 1, K - 1), 0);
+    C := StrToInt64Def(Copy(Place, K + 1, MaxInt), 0);
+  end;
+  Result := (L >= 1) and (L <= FEditor.Doc.Buffer.LineCount) and (C >= 1) and (C <= MaxInt);
+  if Result then
+    GotoPlace(L - 1, C - 1);
+end;
+
 function TTveView.PlayStep(const St: TTveMacroStep): Boolean;
 var
   Value: AnsiString;
   P: Int64;
 begin
   Result := True;
+  if St.Cmd = msGoto then
+    Exit(PlayGoto(St.Text));
   if St.Cmd < msText then
   begin
     if St.Cmd = msPrompt then

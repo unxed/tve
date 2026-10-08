@@ -7,7 +7,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvActions, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState, TvUStr;
 
 const
   cmSaveFile = 200;
@@ -157,10 +157,7 @@ begin
       begin
         T := '';
         if TveCodePointDialog(T) and TveParseCodePoint(T, CP) then
-        begin
-          InsertCodePoint(View.Editor, CP);
-          View.Refresh;
-        end;
+          View.TypeText(U8Encode(CP));
       end;
     tcOutline:
       begin
@@ -172,10 +169,7 @@ begin
           Labels[C] := TveOutlineLabel(Items[C]);
         C := TveOutlineAt(Items, View.Editor.Line);
         if TveListDialog('Outline', Labels, C) then
-        begin
-          View.Editor.GotoLineCell(Items[C].Line, 0);
-          View.Refresh;
-        end;
+          View.GotoPlace(Items[C].Line, 0);
       end;
     tcGotoLine:
       begin
@@ -183,10 +177,9 @@ begin
         if TveGotoDialog(T) and TveParseGoto(T, L, C, Ofs, IsOfs) then
         begin
           if IsOfs then
-            View.Editor.GotoOffset(Ofs)
+            View.GotoOffsetPlace(Ofs)
           else
-            View.Editor.GotoLineCell(L, C);
-          View.Refresh;
+            View.GotoPlace(L, C);
         end;
       end;
   else

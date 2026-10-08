@@ -73,7 +73,9 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 * **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay`, `MacroPlayAll` are commands that a key map can bind; the shipped maps bind
   none). A search or a replacement that the host runs (`View.FindNext`, `ReplaceNext`, `ReplaceAll` after its dialog) is recorded with its pattern and options.
   `View.RecordedMacro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form, one step per line: a command name, a quoted text (`"hello\n"`),
-  `prompt "Name?"` (asks through `View.OnPrompt` and types the answer), `find "x" case word regex back hex`, `replace "x" "y" ...`, `replaceall "x" "y" ...`.
+  `prompt "Name?"` (asks through `View.OnPrompt` and types the answer), `find "x" case word regex back hex`, `replace "x" "y" ...`, `replaceall "x" "y" ...`,
+  `goto 12:5` (also `goto 12`, `goto +OFFSET`). A host that moves the cursor or types text after a dialog of its own uses `View.GotoPlace`, `GotoOffsetPlace` and
+  `TypeText`, which are recorded (the program does so for go to line, the outline and insert a character).
   `View.PlayMacro(N)` plays it N times; `PlayMacro(0)` (command `MacroPlayAll`) plays it again and again until a step fails (a search finds nothing, a prompt
   is cancelled, a step of the cursor cannot move at an end of the text) or a round changes nothing; a failed step ends the playing in every case.
   `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
@@ -98,8 +100,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 
 * Outline rules are line based regular expressions: multi-line signatures give the first line only; Pascal, Go, PHP and the markup languages use the fixed levels of
   their rules (no nesting).
-* The macro is one per view and has no conditions other than a failed step; a command that the host handles itself with a dialog other than find and replace
-  (go to line, insert a character) is not recorded.
+* The macro is one per view and has no conditions other than a failed step; what a host does to the text by itself (not through the view) is not recorded.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar has no rules for SQL; HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); a tag that spans lines does
   not count; the block words of Pascal count a `case` of a variant record as a block.

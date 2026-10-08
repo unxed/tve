@@ -196,6 +196,21 @@ begin
   Check(not V.PlayMacro(0) and (D.Buffer.AsString = 'y y y'), 'replace until none: ' + D.Buffer.AsString);
   V.RecordedMacro.LoadText('replaceall "y" "zz"'#10, Err);
   Check(V.PlayMacro(1) and (D.Buffer.AsString = 'zz zz zz'), 'replace all: ' + D.Buffer.AsString);
+  { the places and the text that a host gives (its own dialogs) are recorded; goto steps }
+  D.LoadText('a'#10'b'#10'c'#10);
+  V.Editor.ClearSelection;
+  V.Execute(tcMacroRecord);
+  V.GotoPlace(1, 1);
+  V.TypeText('X');
+  V.GotoOffsetPlace(0);
+  V.Execute(tcMacroRecord);
+  Check(V.RecordedMacro.SaveText = 'goto 2:2'#10'"X"'#10'goto +0'#10, 'host steps recorded: ' + V.RecordedMacro.SaveText);
+  Check(D.Buffer.AsString = 'a'#10'bX'#10'c'#10, 'host steps done: ' + D.Buffer.AsString);
+  Check(V.PlayMacro(1) and (D.Buffer.AsString = 'a'#10'bXX'#10'c'#10), 'host steps played: ' + D.Buffer.AsString);
+  Check(V.RecordedMacro.LoadText('goto 3'#10'"!"'#10, Err) and V.PlayMacro(1) and (D.Buffer.AsString = 'a'#10'bXX'#10'!c'#10), 'goto a line: ' + D.Buffer.AsString);
+  Check(V.RecordedMacro.LoadText('goto 9:1'#10, Err) and not V.PlayMacro(1), 'a line past the end fails');
+  Check(not V.RecordedMacro.LoadText('goto x'#10, Err) and not V.RecordedMacro.LoadText('goto 1:'#10, Err) and
+    not V.RecordedMacro.LoadText('goto +1:2'#10, Err) and not V.RecordedMacro.LoadText('goto'#10, Err), 'bad places');
   V.Free;
   P.Free;
   D.Free;

@@ -4,7 +4,7 @@ program tve;
   --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro. MIT. }
 {$I tvdefs.inc}
 {$H+}
-uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
+uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvActions, TvApp, TvUnix,
   TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols;
 
 const
@@ -34,11 +34,11 @@ begin
   R.B.Y := R.A.Y + 1;
   MenuBar := TMenuBar.Create(R, NewMenu(
     NewSubMenu('~F~ile', hcNoContext, NewMenu(
-      NewItem('~S~ave', 'F2', kbF2, cmSaveFile, hcNoContext,
-      NewItem('Save ~m~acro', '', kbNoKey, cmSaveMacro, hcNoContext,
-      NewItem('~L~oad macro', '', kbNoKey, cmLoadMacro, hcNoContext,
+      NewActionItem('file.save',
+      NewActionItem('file.saveMacro',
+      NewActionItem('file.loadMacro',
       NewLine(
-      NewItem('E~x~it', 'Alt-X', kbAltX, cmQuit, hcNoContext, nil)))))), nil)));
+      NewActionItem('file.exit', nil)))))), nil)));
 end;
 
 procedure TTveApp.InitStatusLine;
@@ -49,8 +49,11 @@ begin
   R.A.Y := R.B.Y - 1;
   StatusLine := TStatusLine.Create(R,
     NewStatusDef(0, $FFFF,
-      NewStatusKey('~F2~ Save', kbF2, cmSaveFile,
-      NewStatusKey('~Alt-X~ Exit', kbAltX, cmQuit, nil)), nil));
+      NewActionStatusKey('~F2~ Save', 'file.save',
+      NewActionStatusKey('~Alt-X~ Exit', 'file.exit',
+      { the menu bar by the navigation guidelines (F9) and by Turbo Vision (F10) }
+      NewStatusKey('', kbF9, cmMenu,
+      NewStatusKey('', kbF10, cmMenu, nil)))), nil));
 end;
 
 procedure TTveApp.OpenFile(const FileName: AnsiString; MapB: Boolean; const KeymapFile: AnsiString);
@@ -205,6 +208,11 @@ var
   MapB: Boolean;
   KeyFile, MacroFile: AnsiString;
 begin
+  { the commands of the program are declared once (TvActions): the menu, the status line and the keys read this table }
+  RegisterAction('file.save', '~S~ave', cmSaveFile, kbF2);
+  RegisterAction('file.saveMacro', 'Save ~m~acro', cmSaveMacro);
+  RegisterAction('file.loadMacro', '~L~oad macro', cmLoadMacro);
+  RegisterAction('file.exit', 'E~x~it', cmQuit, kbAltX);
   F := '';
   KeyFile := '';
   MacroFile := '';

@@ -1,7 +1,7 @@
 program t_macro;
 { TveMacro and the key map files: the text form of a macro, a user key map over A or B, recording and playing in a view. }
 {$mode objfpc}{$H+}
-uses SysUtils, Classes, TvGeom, TvKeys, TvKeyName, TvEvents, TveDoc, TveEditor, TveView, TveCmds, TveMacro;
+uses SysUtils, Classes, TvGeom, TvKeys, TvKeyName, TvEvents, TveDoc, TveEditor, TveView, TveCmds, TveMacro, TveSearch;
 {$I testlib.inc}
 
 function K(const S: AnsiString): TKey;
@@ -11,6 +11,18 @@ begin
     Result.Code := 0;
     Result.Mods := 0;
   end;
+end;
+
+type
+  TPrompter = class
+    Cancel: Boolean;
+    function Ask(const Question: AnsiString; out Value: AnsiString): Boolean;
+  end;
+
+function TPrompter.Ask(const Question: AnsiString; out Value: AnsiString): Boolean;
+begin
+  Value := Question + '!';
+  Result := not Cancel;
 end;
 
 procedure TypeKey(V: TTveView; C: Char);
@@ -34,6 +46,8 @@ var
   R: TRect;
   F: TextFile;
   I: Integer;
+  O: TTveSearchOptions;
+  P: TPrompter;
 begin
   { --- the macro text --- }
   M := TTveMacro.Create;
@@ -118,6 +132,72 @@ begin
   I := Pos('X', D.Buffer.AsString);
   Check(I > 0, 'loaded macro typed X');
   V.Free;
+  D.Free;
+  { --- the steps that are no commands, repeat counts, playing until a step fails --- }
+  M := TTveMacro.Create;
+  Check(M.LoadText('prompt "Name?"'#10'find "a\"b" case word regex back hex'#10'replace "x" "y z"'#10'replaceall "1" "" regex'#10, Err), 'search steps: ' + Err);
+  Check((M.Count = 4) and (M.Step(0).Cmd = msPrompt) and (M.Step(0).Text = 'Name?'), 'prompt step');
+  Check((M.Step(1).Cmd = msFind) and (M.Step(1).Text = 'a"b') and (M.Step(1).Flags = mfCase or mfWord or mfRegex or mfBack or mfHex), 'find step');
+  Check((M.Step(2).Cmd = msReplace) and (M.Step(2).Repl = 'y z') and (M.Step(2).Flags = 0), 'replace step');
+  Check((M.Step(3).Cmd = msReplaceAll) and (M.Step(3).Repl = '') and (M.Step(3).Flags = mfRegex), 'replaceall step');
+  T := M.SaveText;
+  Check(T = 'prompt "Name?"'#10'find "a\"b" case word regex back hex'#10'replace "x" "y z"'#10'replaceall "1" "" regex'#10, 'saved: ' + T);
+  Check(not M.LoadText('find "x" sideways'#10, Err), 'unknown option');
+  Check(not M.LoadText('replace "x"'#10, Err), 'replace without the new text');
+  Check(not M.LoadText('prompt "x" case'#10, Err), 'a prompt has no options');
+  Check(not M.LoadText('find x'#10, Err), 'unquoted pattern');
+  Check(not M.LoadText('MacroPlayAll'#10, Err), 'a macro cannot play itself again and again');
+  M.Free;
+
+  D := TTveDoc.Create;
+  D.LoadText('a1 b a2'#10'a3'#10'x'#10);
+  V := TTveView.Create(R, nil, nil, D);
+  { a search from the host (a dialog) is recorded with its options }
+  V.Execute(tcMacroRecord);
+  O := V.SearchOptions;
+  O.Pattern := 'a';
+  O.CaseSensitive := True;
+  V.SearchOptions := O;
+  V.FindNext;
+  TypeKey(V, '_');
+  V.Execute(tcMacroRecord);
+  Check(V.RecordedMacro.SaveText = 'find "a" case'#10'"_"'#10, 'host search recorded: ' + V.RecordedMacro.SaveText);
+  Check(D.Buffer.AsString = '_1 b a2'#10'a3'#10'x'#10, 'recorded run: ' + D.Buffer.AsString);
+  Check(V.PlayMacro(1) and (D.Buffer.AsString = '_1 b _2'#10'a3'#10'x'#10), 'once: ' + D.Buffer.AsString);
+  Check(not V.PlayMacro(0) and (D.Buffer.AsString = '_1 b _2'#10'_3'#10'x'#10), 'until the search fails: ' + D.Buffer.AsString);
+  { counts }
+  D.LoadText('');
+  V.Editor.GotoOffset(0);
+  V.RecordedMacro.LoadText('"ab"'#10, Err);
+  Check(V.PlayMacro(3) and (D.Buffer.AsString = 'ababab'), 'three times: ' + D.Buffer.AsString);
+  { a movement that cannot move ends the playing }
+  D.LoadText('p'#10'q'#10'r');
+  V.Editor.GotoOffset(0);
+  V.RecordedMacro.LoadText('Home'#10'"# "'#10'Down'#10, Err);
+  V.Execute(tcMacroPlayAll);
+  Check(D.Buffer.AsString = '# p'#10'# q'#10'# r', 'comment every line: ' + D.Buffer.AsString);
+  { a round that changes nothing ends the playing }
+  V.RecordedMacro.LoadText('Home'#10, Err);
+  Check(V.PlayMacro(0), 'nothing changes: stops');
+  { prompts: the answer is typed; no OnPrompt or a cancel fails }
+  V.RecordedMacro.LoadText('prompt "who"'#10, Err);
+  Check(not V.PlayMacro(1), 'no OnPrompt');
+  P := TPrompter.Create;
+  V.OnPrompt := @P.Ask;
+  D.LoadText('');
+  V.Editor.GotoOffset(0);
+  Check(V.PlayMacro(2) and (D.Buffer.AsString = 'who!who!'), 'prompt answers: ' + D.Buffer.AsString);
+  P.Cancel := True;
+  Check(not V.PlayMacro(1), 'cancelled prompt');
+  { replace steps }
+  D.LoadText('x x x');
+  V.Editor.GotoOffset(0);
+  V.RecordedMacro.LoadText('replace "x" "y"'#10, Err);
+  Check(not V.PlayMacro(0) and (D.Buffer.AsString = 'y y y'), 'replace until none: ' + D.Buffer.AsString);
+  V.RecordedMacro.LoadText('replaceall "y" "zz"'#10, Err);
+  Check(V.PlayMacro(1) and (D.Buffer.AsString = 'zz zz zz'), 'replace all: ' + D.Buffer.AsString);
+  V.Free;
+  P.Free;
   D.Free;
   Finish;
 end.

@@ -49,6 +49,8 @@ type
     FRecording: Boolean;
     FMacro: TTveMacro;
     FPlaying: Boolean;
+    FExecuting: Integer;
+    FStepFailed: Boolean;             // the last command of Execute could not be done (a search found nothing)              // inside the commands of Execute: a search is recorded as the command, not as a find step
     FHistory: array of Int64;
     FWheelStep: Integer;
     FLastVersion: LongWord;
@@ -93,6 +95,9 @@ type
     procedure DragSelection(var Event: TEvent);
     procedure Remember;
     procedure Complete;
+    function RunCommand(Cmd: Integer): Boolean;
+    procedure RecordSearch(Kind: Integer; const Repl: AnsiString);
+    function PlayStep(const St: TTveMacroStep): Boolean;
     procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
   protected
     // The colour of a class of the highlighter. A host that has its own palette overrides it.
@@ -148,7 +153,9 @@ type
     property RecordedMacro: TTveMacro read FMacro;
     { The outline of the text by the symbol rules of the language of the view (empty without a language); see TveSymbols. }
     function Outline: TTveOutline;
-    procedure PlayMacro;
+    { Plays the macro Times times; Times <= 0: again and again until a step fails or a round changes neither the text nor the cursor. A step fails when
+      a search finds nothing, a prompt is cancelled or a cursor movement cannot move; that ends the playing. False when a step failed. }
+    function PlayMacro(Times: Integer = 1): Boolean;
     function LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
     function SaveMacroFile(const FileName: AnsiString): Boolean;
 
@@ -963,6 +970,8 @@ begin
   begin
     if O.Backward then From := A else From := B2;
   end;
+  if not Backward then
+    RecordSearch(msFind, '');
   Result := FSearcher.Find(O, From, M);
   if Result = fsFound then
   begin
@@ -982,6 +991,7 @@ var
   New_: AnsiString;
 begin
   Result := 0;
+  RecordSearch(msReplace, Repl);
   O := FSearch;
   O.Backward := False;
   if FSearcher.Find(O, FEditor.Offset, M) <> fsFound then
@@ -996,6 +1006,7 @@ end;
 
 function TTveView.ReplaceAll(const Repl: AnsiString): Integer;
 begin
+  RecordSearch(msReplaceAll, Repl);
   Result := FSearcher.ReplaceAll(FEditor.Doc, FSearch, Repl);
   Sync;
 end;
@@ -1008,26 +1019,100 @@ begin
     Result := TveOutline(FEditor.Doc, FHl.Language);
 end;
 
-procedure TTveView.PlayMacro;
-var
-  I: Integer;
-  St: TTveMacroStep;
+const
+  MacroRoundsMax = 1000000;
+
+function SearchFlags(const O: TTveSearchOptions): Integer;
 begin
-  if FPlaying then
+  Result := 0;
+  if O.CaseSensitive then Result := Result or mfCase;
+  if O.WholeWord then Result := Result or mfWord;
+  if O.UseRegex then Result := Result or mfRegex;
+  if O.Backward then Result := Result or mfBack;
+  if O.Hex then Result := Result or mfHex;
+end;
+
+procedure TTveView.RecordSearch(Kind: Integer; const Repl: AnsiString);
+begin
+  if FRecording and not FPlaying and (FExecuting = 0) then
+    FMacro.AddSearch(Kind, FSearch.Pattern, Repl, SearchFlags(FSearch));
+end;
+
+function TTveView.PlayStep(const St: TTveMacroStep): Boolean;
+var
+  Value: AnsiString;
+  P: Int64;
+begin
+  Result := True;
+  if St.Cmd < msText then
+  begin
+    if St.Cmd = msPrompt then
+    begin
+      Result := (FOnPrompt <> nil) and FOnPrompt(St.Text, Value);
+      if Result and FEditor.TypeText(Value) then
+        Sync;
+      Exit;
+    end;
+    FSearch.Pattern := St.Text;
+    FSearch.CaseSensitive := St.Flags and mfCase <> 0;
+    FSearch.WholeWord := St.Flags and mfWord <> 0;
+    FSearch.UseRegex := St.Flags and mfRegex <> 0;
+    FSearch.Backward := St.Flags and mfBack <> 0;
+    FSearch.Hex := St.Flags and mfHex <> 0;
+    FSearch.AllCodePages := False;
+    case St.Cmd of
+      msFind: Result := FindNext = fsFound;
+      msReplace: Result := ReplaceNext(St.Repl) > 0;
+      msReplaceAll: ReplaceAll(St.Repl);
+    end;
+  end
+  else if St.Cmd = msText then
+  begin
+    if FEditor.TypeText(St.Text) then
+      Sync;
+  end
+  else
+  begin
+    P := FEditor.Offset;
+    FStepFailed := False;
+    Execute(St.Cmd);
+    { a step of the cursor that cannot move fails (at an end of the text); Home, End and the like are where they go already }
+    Result := not FStepFailed and not ((St.Cmd in [tcLeft, tcRight, tcUp, tcDown, tcPageUp, tcPageDown, tcWordLeft, tcWordRight, tcNavWordLeft,
+      tcNavWordRight, tcSelLeft, tcSelRight, tcSelUp, tcSelDown, tcSelPageUp, tcSelPageDown, tcSelWordLeft, tcSelWordRight, tcSelNavWordLeft,
+      tcSelNavWordRight]) and (FEditor.Offset = P));
+  end;
+end;
+
+function TTveView.PlayMacro(Times: Integer): Boolean;
+var
+  I, Round: Integer;
+  Before: Int64;
+  Ver: LongWord;
+begin
+  Result := True;
+  if FPlaying or (FMacro.Count = 0) then
     Exit;
   FPlaying := True;
   try
-    for I := 0 to FMacro.Count - 1 do
+    Round := 0;
+    while Result and (((Times <= 0) and (Round < MacroRoundsMax)) or (Round < Times)) do
     begin
-      St := FMacro.Step(I);
-      if St.Cmd > 0 then
-        Execute(St.Cmd)
-      else if FEditor.TypeText(St.Text) then
-        Sync;
+      Before := FEditor.Offset;
+      Ver := FEditor.Doc.Buffer.Version;
+      for I := 0 to FMacro.Count - 1 do
+        if not PlayStep(FMacro.Step(I)) then
+        begin
+          Result := False;
+          Break;
+        end;
+      Inc(Round);
+      if (Times <= 0) and (FEditor.Offset = Before) and (FEditor.Doc.Buffer.Version = Ver) then
+        Break;
     end;
   finally
     FPlaying := False;
   end;
+  Sync;
 end;
 
 function TTveView.LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
@@ -1041,6 +1126,23 @@ begin
 end;
 
 function TTveView.Execute(Cmd: Integer): Boolean;
+begin
+  Result := True;
+  if (FOnHost <> nil) and FOnHost(Self, Cmd) then
+    Exit;
+  if Cmd <> tcCompletion then
+    FComplActive := False;
+  if FRecording and not FPlaying and (Cmd <> tcMacroRecord) and (Cmd <> tcMacroPlay) and (Cmd <> tcMacroPlayAll) then
+    FMacro.AddCommand(Cmd);
+  Inc(FExecuting);
+  try
+    Result := RunCommand(Cmd);
+  finally
+    Dec(FExecuting);
+  end;
+end;
+
+function TTveView.RunCommand(Cmd: Integer): Boolean;
 var
   E: TTveEditor;
   Fwd: Int64;
@@ -1048,13 +1150,7 @@ var
   MIdx: LongInt;
 begin
   Result := True;
-  if (FOnHost <> nil) and FOnHost(Self, Cmd) then
-    Exit;
   E := FEditor;
-  if Cmd <> tcCompletion then
-    FComplActive := False;
-  if FRecording and not FPlaying and (Cmd <> tcMacroRecord) and (Cmd <> tcMacroPlay) then
-    FMacro.AddCommand(Cmd);
   if (FDrawMode > 0) and (Cmd >= tcLeft) and (Cmd <= tcDown) then
   begin
     case Cmd of
@@ -1162,8 +1258,8 @@ begin
         Folds.Add(Back, Fwd, False);
         E.ClearSelection;
       end;
-    tcFindNext: FindNext(False);
-    tcFindPrev: FindNext(True);
+    tcFindNext: FStepFailed := FindNext(False) <> fsFound;
+    tcFindPrev: FStepFailed := FindNext(True) <> fsFound;
     tcMatchBracket: E.GotoMatchingBracket;
     tcSetMark0..tcSetMark0 + 9: E.SetBookmark(Cmd - tcSetMark0);
     tcGotoMark0..tcGotoMark0 + 9: begin Remember; E.GotoBookmark(Cmd - tcGotoMark0); end;
@@ -1184,6 +1280,8 @@ begin
       end;
     tcMacroPlay:
       PlayMacro;
+    tcMacroPlayAll:
+      PlayMacro(0);
   else
     Result := False;
   end;

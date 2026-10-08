@@ -46,7 +46,7 @@ const
   tcSetMark0 = 120; tcGotoMark0 = 130; tcClearMarks = 140;
   { insertion }
   tcInsertDate = 150; tcInsertTime = 151; tcInsertChar = 152; tcCompletion = 153; tcTemplate = 154;
-  tcMacroRecord = 155; tcMacroPlay = 156; tcDrawMode = 157; tcOpenAtCursor = 158;
+  tcMacroRecord = 155; tcMacroPlay = 156; tcDrawMode = 157; tcOpenAtCursor = 158; tcMacroPlayAll = 159;
   { folding }
   tcFoldToggle = 165; tcFoldCollapse = 166; tcFoldExpand = 167; tcFoldFromBlock = 168;
   { the file }
@@ -119,7 +119,7 @@ const
     'SetMark0', 'SetMark1', 'SetMark2', 'SetMark3', 'SetMark4', 'SetMark5', 'SetMark6', 'SetMark7', 'SetMark8', 'SetMark9',
     'GotoMark0', 'GotoMark1', 'GotoMark2', 'GotoMark3', 'GotoMark4', 'GotoMark5', 'GotoMark6', 'GotoMark7', 'GotoMark8', 'GotoMark9',
     'ClearMarks', '', '', '', '', '', '', '', '', '',
-    'InsertDate', 'InsertTime', 'InsertChar', 'Completion', 'Template', 'MacroRecord', 'MacroPlay', 'DrawMode', 'OpenAtCursor', '',
+    'InsertDate', 'InsertTime', 'InsertChar', 'Completion', 'Template', 'MacroRecord', 'MacroPlay', 'DrawMode', 'OpenAtCursor', 'MacroPlayAll',
     '', '', '', '', '', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', '',
     'Save', 'SaveAs', 'Reload', 'Close', 'CursorBack', 'Wrap', 'Outline', '', '', '');
 

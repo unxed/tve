@@ -59,8 +59,12 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 
 * **Key maps**: `TveKeymapA` / `TveKeymapB` are shipped as text; `TveNewKeymapFromFile(UseB, File, Err)` (or `TTveKeymap.LoadFile`) applies a user file over one of them
   (`Ctrl+K B = BlockBegin`, `F7 =` removes a binding; format in `src/tvecmds.pas`). The program: `tve --keymap=FILE`.
-* **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay` are commands that a key map can bind; the shipped maps bind neither).
-  `View.RecordedMacro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form: one command name or one quoted text (`"hello\n"`) per line;
+* **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay`, `MacroPlayAll` are commands that a key map can bind; the shipped maps bind
+  none). A search or a replacement that the host runs (`View.FindNext`, `ReplaceNext`, `ReplaceAll` after its dialog) is recorded with its pattern and options.
+  `View.RecordedMacro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form, one step per line: a command name, a quoted text (`"hello\n"`),
+  `prompt "Name?"` (asks through `View.OnPrompt` and types the answer), `find "x" case word regex back hex`, `replace "x" "y" ...`, `replaceall "x" "y" ...`.
+  `View.PlayMacro(N)` plays it N times; `PlayMacro(0)` (command `MacroPlayAll`) plays it again and again until a step fails (a search finds nothing, a prompt
+  is cancelled, a step of the cursor cannot move at an end of the text) or a round changes nothing; a failed step ends the playing in every case.
   `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
 * **Navigation guidelines of vtui**: the dialogs and the menu bar of the program are tv3's, which follow them (`docs/UX-CONFORMANCE.md` of tv3 has the table, tve's
   place in it and the two places where the editor keeps its own rules: the word definition and `Ctrl+C`). The program opens the menu bar with `F9` and `F10`;
@@ -81,7 +85,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 
 * Outline rules are line based regular expressions: multi-line signatures give the first line only; Pascal, Go, PHP and the markup languages use the fixed levels of
   their rules (no nesting).
-* The macro is one per view and has no repeat counts, no prompts, no conditions; a command that the host handles itself (a dialog) is not recorded.
+* The macro is one per view and has no conditions other than a failed step; a command that the host handles itself with a dialog other than find and replace
+  (go to line, insert a character) is not recorded.
 * Drag and drop works inside one view; no dragging to another window and no auto-scroll speed control (one line per mouse event outside the view).
 * Colouring: no semantic colouring (a function name that is only known from its definition), no folding by grammar, the Markdown fences know fewer languages than there are grammars
   (no YAML, diff, INI, Makefile inside a fence), block scalars of YAML are coloured as plain text.

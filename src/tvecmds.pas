@@ -400,7 +400,7 @@ const
     'Ctrl+L = FindNext' + LF + 'Ctrl+Space = Completion' + LF + 'Ctrl+@ = Completion' + LF + 'Ctrl+V = ToggleInsert' + LF +
     'Ctrl+K B = BlockBegin' + LF + 'Ctrl+K K = BlockEnd' + LF + 'Ctrl+K L = LineBlock' + LF + 'Ctrl+K T = SelectWord' + LF +
     'Ctrl+K H = HideBlock' + LF + 'Ctrl+K C = CopyBlockHere' + LF + 'Ctrl+K V = MoveBlockHere' + LF + 'Ctrl+K Y = DeleteBlock' + LF +
-    'Ctrl+K Z = FoldToggle' + LF + 'Alt+U = InsertChar' + LF + 'Alt+W = Wrap' + LF + 'Alt+O = Outline' + LF + 'Ctrl+Shift+O = Outline' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
+    'Ctrl+K Z = FoldToggle' + LF + 'Ctrl+K - = FoldAll' + LF + 'Ctrl+K + = UnfoldAll' + LF + 'Ctrl+K P = MacroPlayAll' + LF + 'Alt+Shift+F7 = HexSearch' + LF + 'Alt+U = InsertChar' + LF + 'Alt+W = Wrap' + LF + 'Alt+O = Outline' + LF + 'Ctrl+Shift+O = Outline' + LF + 'Ctrl+K W = WriteBlock' + LF + 'Ctrl+K R = ReadBlock' + LF + 'Ctrl+K I = Indent' + LF + 'Ctrl+K U = Unindent' + LF +
     'Ctrl+Q B = GotoBlockBegin' + LF + 'Ctrl+Q K = GotoBlockEnd' + LF + 'Ctrl+Q F = Find' + LF + 'Ctrl+Q A = Replace' + LF +
     'Ctrl+Q G = GotoLine' + LF + 'Ctrl+Q Y = DeleteToEol' + LF + 'Ctrl+Q [ = MatchBracket' + LF + 'Ctrl+Q ] = MatchBracket' + LF +
     'Ctrl+Q S = Home' + LF + 'Ctrl+Q D = End' + LF + 'Ctrl+Q R = TextStart' + LF + 'Ctrl+Q C = TextEnd' + LF +
@@ -426,7 +426,8 @@ const
     'Ctrl+Q P = CursorBack' + LF + 'Ctrl+Q H = DeleteToBol' + LF + 'Ctrl+Q L = Undo' + LF +
     'Ctrl+K N = UpperCase' + LF + 'Ctrl+K O = LowerCase' + LF + 'Ctrl+K A = FoldFromBlock' + LF + 'Ctrl+K S = Save' + LF +
     'Ctrl+J = Template' + LF + 'Ctrl+Enter = OpenAtCursor' + LF +
-    'F7 = Find' + LF + 'F2 = Save' + LF + 'Ctrl+Num- = FoldCollapse' + LF + 'Ctrl+Num+ = FoldExpand' + LF;
+    'F7 = Find' + LF + 'F2 = Save' + LF + 'Ctrl+Num- = FoldCollapse' + LF + 'Ctrl+Num+ = FoldExpand' + LF +
+    'Ctrl+Shift+Num- = FoldAll' + LF + 'Ctrl+Shift+Num+ = UnfoldAll' + LF;
 
 var
   MapA, MapB: TTveKeymap;

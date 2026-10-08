@@ -48,7 +48,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   `fold indent`, `fold outline`, `fold /OPEN/ /CLOSE/` for words such as `begin` and `end`; `TveFoldRegions`): C/C++, Go, JavaScript, CSS, JSON and PHP by braces,
   Pascal by its block words, Shell by braces and `if`/`fi`, `case`/`esac`, the loops and `done`, Python and YAML by indentation, Markdown, INI/TOML, diff and
   Makefile by the outline, XML by its tags, HTML (and PHP, Smarty, Jinja) by its container elements and the blocks of the template language. `FoldToggle` and `FoldCollapse` on a line where no fold is take the innermost region of the grammar there (and put the cursor on
-  its first line when it hides the cursor); `FoldAll` collapses every region, `UnfoldAll` expands every fold (neither is bound in the shipped maps).
+  its first line when it hides the cursor); `FoldAll` (Ctrl+K -; B also Ctrl+Shift+Num-) collapses every region, `UnfoldAll` (Ctrl+K +; B also Ctrl+Shift+Num+) expands every fold.
 * **Templates** (`src/tvetemplates.pas`): `View.Templates` holds templates loaded from a text (`[shortcut] description` starts one); command `Template` (Ctrl+J)
   replaces the word before the cursor by its template. Variables: `$DATE`, `$TIME` (with an optional format), `$PROMPT(question)` (asked through `View.OnPrompt`),
   `$CURSOR`, `$$`; the lines after the first get the indentation of the line.
@@ -59,7 +59,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   insert mode of a file in a section of an INI file; at most `TveStateMaxFiles` (200) files are kept, the one saved longest ago is dropped first. The program:
   `tve --state=FILE`.
 * **Hex search** (`src/tvesearch.pas`): the option `Hex` searches bytes written in hexadecimal (`DE AD be ef`); `AllCodePages` searches a plain text in every
-  single-byte code page as well. The find dialog (`TveFindDialog`) has both; the commands `HexSearch` and `FindInAllCodePages` are for the host (the program opens
+  single-byte code page as well. The find dialog (`TveFindDialog`) has both; the commands `HexSearch` (Alt+Shift+F7) and `FindInAllCodePages` are for the host (the program opens
   the find dialog with the option set).
 * **Draw mode** (`src/tvedraw.pas`): command `DrawMode` (A: Ctrl+Q M) cycles off, single lines, double lines; in a draw mode the cursor keys draw lines of box
   characters and join them at corners and crossings. The status text shows `DRAW`.
@@ -69,9 +69,10 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 ## Keys, macros, outline, drag and drop
 
 * **Key maps**: `TveKeymapA` / `TveKeymapB` are shipped as text; `TveNewKeymapFromFile(UseB, File, Err)` (or `TTveKeymap.LoadFile`) applies a user file over one of them
-  (`Ctrl+K B = BlockBegin`, `F7 =` removes a binding; format in `src/tvecmds.pas`). The program: `tve --keymap=FILE`.
+  (`Ctrl+K B = BlockBegin`, `F7 =` removes a binding; format in `src/tvecmds.pas`). The second key of a chord that is a character is also
+  found without Shift and from the keypad (`Ctrl+K +` is typed as Ctrl+K Shift+= on many keyboards). The program: `tve --keymap=FILE`.
 * **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay`, `MacroPlayAll` are commands that a key map can bind; the shipped maps bind
-  none). A search or a replacement that the host runs (`View.FindNext`, `ReplaceNext`, `ReplaceAll` after its dialog) is recorded with its pattern and options.
+  `MacroPlayAll` to Ctrl+K P). A search or a replacement that the host runs (`View.FindNext`, `ReplaceNext`, `ReplaceAll` after its dialog) is recorded with its pattern and options.
   `View.RecordedMacro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form, one step per line: a command name, a quoted text (`"hello\n"`),
   `prompt "Name?"` (asks through `View.OnPrompt` and types the answer), `find "x" case word regex back hex`, `replace "x" "y" ...`, `replaceall "x" "y" ...`,
   `goto 12:5` (also `goto 12`, `goto +OFFSET`). A host that moves the cursor or types text after a dialog of its own uses `View.GotoPlace`, `GotoOffsetPlace` and

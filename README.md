@@ -31,6 +31,30 @@ Grammars (`langs/`) have contexts and a stack, so a language can live inside ano
 
 Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript), Jinja/Twig/Django, JSON, Markdown, Pascal, PHP, Python, Shell, Smarty, SQL, XML, YAML, INI/TOML, diff/patch, Makefile.
 
+## Editing features
+
+Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); every command can be bound in a key map file by its name.
+
+* **Folding** (`src/tvefold.pas`): a fold is a range of lines that collapses to its first line; folds nest and follow the edits (they are anchors of the
+  document). Commands `FoldToggle` (Ctrl+K Z), `FoldFromBlock` (a fold from the selected lines; B: Ctrl+K A), `FoldCollapse` / `FoldExpand` (B: Ctrl+Num- / Ctrl+Num+).
+  `View.Folds` is the list; the vertical movement and the scroll bar skip hidden lines.
+* **Templates** (`src/tvetemplates.pas`): `View.Templates` holds templates loaded from a text (`[shortcut] description` starts one); command `Template` (Ctrl+J)
+  replaces the word before the cursor by its template. Variables: `$DATE`, `$TIME` (with an optional format), `$PROMPT(question)` (asked through `View.OnPrompt`),
+  `$CURSOR`, `$$`; the lines after the first get the indentation of the line.
+* **Completion** (`src/tvecomplete.pas`): command `Completion` (Ctrl+Space) completes the word before the cursor from `View.Completion` (its keywords, the program
+  gives it those of the language, then the words of the text); pressing it again cycles through the candidates and back to the typed fragment.
+* **Macros**: see below.
+* **State of a file** (`src/tvestate.pas`): `TveStateSave` / `TveStateLoad` keep the cursor, the first visible line, the selection, the bookmarks, the folds and the
+  insert mode of a file in a section of an INI file; at most `TveStateMaxFiles` (200) files are kept, the one saved longest ago is dropped first. The program:
+  `tve --state=FILE`.
+* **Hex search** (`src/tvesearch.pas`): the option `Hex` searches bytes written in hexadecimal (`DE AD be ef`); `AllCodePages` searches a plain text in every
+  single-byte code page as well. The find dialog (`TveFindDialog`) has both; the commands `HexSearch` and `FindInAllCodePages` are for the host (the program opens
+  the find dialog with the option set).
+* **Draw mode** (`src/tvedraw.pas`): command `DrawMode` (A: Ctrl+Q M) cycles off, single lines, double lines; in a draw mode the cursor keys draw lines of box
+  characters and join them at corners and crossings. The status text shows `DRAW`.
+* **Soft wrap** (`src/tvewrap.pas`): command `Wrap` (Alt+W) or `View.Wrap`: a long line is shown as several rows, broken after a blank when there is one; the text
+  is not changed and the cursor keys move by rows.
+
 ## Keys, macros, outline, drag and drop
 
 * **Key maps**: `TveKeymapA` / `TveKeymapB` are shipped as text; `TveNewKeymapFromFile(UseB, File, Err)` (or `TTveKeymap.LoadFile`) applies a user file over one of them

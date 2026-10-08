@@ -38,6 +38,20 @@ begin
   Check(V2.Editor.BookmarkLine(2) = 7, 'bookmark');
   Check(V2.Folds.Count = 1, 'fold');
   Check(V2.Editor.HasSelection, 'selection');
+  { at most TveStateMaxFiles files; the one saved longest ago goes first, a file saved again is young again }
+  for I := 1 to TveStateMaxFiles + 5 do
+  begin
+    TveStateSave(Ini, '/tmp/f' + IntToStr(I) + '.txt', V2);
+    if I = 3 then
+      TveStateSave(Ini, '/tmp/x.txt', V2);
+  end;
+  TveStateSave(Ini, '/tmp/f6.txt', V2);
+  TveStateSave(Ini, '/tmp/n.txt', V2);
+  Check(Ini.SectionCount = TveStateMaxFiles, 'files kept ' + IntToStr(Ini.SectionCount));
+  Check(Ini.SearchSection('file:/tmp/f1.txt') = nil, 'the oldest is dropped');
+  Check(Ini.SearchSection('file:/tmp/f6.txt') <> nil, 'saved again: kept');
+  Check(Ini.SearchSection('file:/tmp/f7.txt') = nil, 'the next oldest is dropped');
+  Check(Ini.SearchSection('file:/tmp/n.txt') <> nil, 'the newest');
   V2.Free;
   D2.Free;
   Ini.Free;

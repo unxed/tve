@@ -1,12 +1,13 @@
 program tve;
 { tve: the editor as a program (and the test bench of the editor view).
-  Usage: tve [--keys=a|b] [--words=nav] [--keymap=FILE] [--macro=FILE] [file]. F2 saves, Alt-X quits.
+  Usage: tve [--keys=a|b] [--words=nav] [--keymap=FILE] [--macro=FILE] [--state=FILE] [file]. F2 saves, Alt-X quits.
   --words=nav binds Ctrl+Left / Ctrl+Right (and with Shift) to the word movement of the guidelines (the default is the word definition of the editor);
-  --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro. MIT. }
+  --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro;
+  --state remembers the cursor, the bookmarks and the folds of the file in an INI file (TveState) when the program quits and restores them when it opens the file. MIT. }
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvActions, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState;
 
 const
   cmSaveFile = 200;
@@ -121,9 +122,16 @@ var
 begin
   Result := True;
   case Cmd of
-    tcFind:
+    tcFind, tcHexSearch, tcFindInAllCodePages:
       begin
         O := View.SearchOptions;
+        if Cmd = tcHexSearch then
+          O.Hex := True
+        else if Cmd = tcFindInAllCodePages then
+        begin
+          O.Hex := False;
+          O.AllCodePages := True;
+        end;
         if TveFindDialog(O) then
         begin
           View.SearchOptions := O;
@@ -216,7 +224,8 @@ var
   I: Integer;
   F: AnsiString;
   MapB: Boolean;
-  KeyFile, MacroFile: AnsiString;
+  KeyFile, MacroFile, StateFile: AnsiString;
+  State: TIniFile;
 begin
   { the commands of the program are declared once (TvActions): the menu, the status line and the keys read this table }
   RegisterAction('file.save', '~S~ave', cmSaveFile, kbF2);
@@ -226,6 +235,7 @@ begin
   F := '';
   KeyFile := '';
   MacroFile := '';
+  StateFile := '';
   MapB := False;
   for I := 1 to ParamCount do
     if ParamStr(I) = '--keys=b' then
@@ -238,6 +248,8 @@ begin
       KeyFile := Copy(ParamStr(I), 10, MaxInt)
     else if Copy(ParamStr(I), 1, 8) = '--macro=' then
       MacroFile := Copy(ParamStr(I), 9, MaxInt)
+    else if Copy(ParamStr(I), 1, 8) = '--state=' then
+      StateFile := Copy(ParamStr(I), 9, MaxInt)
     else
       F := ParamStr(I);
   if not UnixInit then
@@ -247,9 +259,22 @@ begin
   end;
   App := TTveApp.Create;
   App.OpenFile(F, MapB, KeyFile);
+  State := nil;
+  if (StateFile <> '') and (App.Name <> '') then
+  begin
+    State := TIniFile.Create(StateFile);
+    State.Read;
+    TveStateLoad(State, App.Name, App.View);
+  end;
   if MacroFile <> '' then
     App.View.LoadMacroFile(MacroFile, F);
   App.Run;
+  if State <> nil then
+  begin
+    TveStateSave(State, App.Name, App.View);
+    State.Update;
+    State.Free;
+  end;
   App.Free;
   UnixDone;
 end.

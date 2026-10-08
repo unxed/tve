@@ -58,5 +58,31 @@ def jumps(args):
 check(jumps([]) == 4, 'Ctrl+Right twice on foo.bar: the word rules of the editor stop at foo.|bar')
 check(jumps(['--words=nav']) == 7, '--words=nav: the rules of the guidelines take foo.bar in two jumps')
 
+
+
+def cursor_after(args, keys):
+    """opens the program, sends the keys, quits: where the cursor was before Alt-X"""
+    t = PtyTerm([sys.argv[1]] + args, 80, 25)
+    t.wait_for('File')
+    for k in keys:
+        t.send(k)
+    pos = (t.screen.x, t.screen.y)
+    t.send(b'\x1bx', settle=0.5)
+    t.close()
+    return pos
+
+
+# --state: the cursor of a file is remembered when the program quits and restored when it opens the file again
+import tempfile
+with tempfile.TemporaryDirectory(prefix='tve-state-') as d:
+    f = os.path.join(d, 'a.txt')
+    with open(f, 'w') as h:
+        h.write(''.join('line %d\n' % i for i in range(20)))
+    st = ['--state=' + os.path.join(d, 'state.ini'), f]
+    first = cursor_after(st, [b'\x1b[B'] * 5 + [b'\x1b[C'] * 3)
+    again = cursor_after(st, [])
+    check(again == first and first[1] > 2, '--state: the cursor is where it was', '%r %r' % (first, again))
+    check(cursor_after([f], []) != first, 'without --state the file opens at its start')
+
 print('ALL OK (%d checks)' % count if not fails else '%d of %d checks FAILED' % (fails, count))
 sys.exit(1 if fails else 0)

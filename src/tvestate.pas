@@ -3,7 +3,8 @@
   MIT.
 
   The state of every file is a section of an INI file (TvIni) named by the full name of the file; the host decides where the INI file is. A selection, which is
-  offsets, is restored only when the file has the same length as then. }
+  offsets, is restored only when the file has the same length as then. A saved section moves to the end of the INI file; when there are more than
+  TveStateMaxFiles files, the ones saved longest ago are dropped. }
 unit TveState;
 
 {$I tvdefs.inc}
@@ -31,6 +32,26 @@ begin
   Result := 'file:' + ExpandFileName(FileName);
 end;
 
+{ Removes the first file sections until at most Keep are left. }
+procedure DropOldest(Ini: TIniFile; Keep: Integer);
+var
+  I, N: Integer;
+begin
+  N := 0;
+  for I := 0 to Ini.SectionCount - 1 do
+    if Copy(Ini.SectionAt(I).GetName, 1, 5) = 'file:' then
+      Inc(N);
+  I := 0;
+  while (N > Keep) and (I < Ini.SectionCount) do
+    if Copy(Ini.SectionAt(I).GetName, 1, 5) = 'file:' then
+    begin
+      Ini.DeleteSection(Ini.SectionAt(I).GetName);
+      Dec(N);
+    end
+    else
+      Inc(I);
+end;
+
 procedure TveStateSave(Ini: TIniFile; const FileName: AnsiString; V: TTveView);
 var
   Sec: AnsiString;
@@ -44,6 +65,8 @@ begin
     Exit;
   Sec := SectionOf(FileName);
   E := V.Editor;
+  Ini.DeleteSection(Sec);
+  DropOldest(Ini, TveStateMaxFiles - 1);
   Ini.SetEntry(Sec, 'line', IntToStr(E.Line));
   Ini.SetEntry(Sec, 'cell', IntToStr(E.Cell));
   Ini.SetEntry(Sec, 'top', IntToStr(V.Delta.Y));

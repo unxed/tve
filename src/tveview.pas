@@ -143,7 +143,7 @@ type
     procedure ChangeBounds(const Bounds: TRect); override;
 
     { Runs a command (the host's first). True if something was done. }
-    function Execute(Cmd: Integer): Boolean;
+    function Execute(Cmd: Integer): Boolean; reintroduce;
     function FindNext(Backward: Boolean = False): TTveFindStatus;
     { Finds the next match and replaces it (the new text is selected); the number of replacements (0 or 1). }
     function ReplaceNext(const Repl: AnsiString): Integer;

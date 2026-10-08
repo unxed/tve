@@ -130,7 +130,8 @@ end;
 
 function BlockIndent(E: TTveEditor): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   Pin: Integer;
   Changed: Boolean;
   Ind: AnsiString;
@@ -162,7 +163,8 @@ end;
 
 function BlockUnindent(E: TTveEditor): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   Pin: Integer;
   S: AnsiString;
   Size, I, Cells, Remove, Idx: Integer;
@@ -279,7 +281,8 @@ var
   Old, New_: AnsiString;
   Pin: Integer;
   Col: Boolean;
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   C1, C2: Integer;
   S, T: AnsiString;
   OffA: Int64;
@@ -342,7 +345,8 @@ end;
 
 function ChangeCaseLines(E: TTveEditor; Mode: TTveCase): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   Pin: Integer;
   S, T: AnsiString;
   Changed: Boolean;
@@ -693,7 +697,8 @@ end;
 
 function ExpandTabs(E: TTveEditor): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   S, T: AnsiString;
   I, Cells: Integer;
   C: TTveCharInfo;
@@ -737,7 +742,8 @@ end;
 
 function TabifyIndent(E: TTveEditor): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   S, Ind, NewInd: AnsiString;
   Cells, Tabs: Integer;
   Pin: Integer;
@@ -774,7 +780,8 @@ end;
 
 function TrimTrailing(E: TTveEditor): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   S: AnsiString;
   N: Integer;
   Pin: Integer;
@@ -885,7 +892,8 @@ end;
 
 function FormatParagraph(E: TTveEditor; Align: TTveAlign; LeftMargin, RightMargin, ParaIndent: Integer): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   Text: AnsiString;
   W: TWordList;
   Out_: array of AnsiString;
@@ -954,7 +962,8 @@ end;
 
 function AlignLines(E: TTveEditor; Align: TTveAlign; LeftMargin, RightMargin: Integer): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
+  L: LongInt;
   S: AnsiString;
   W: TWordList;
   Out_: array of AnsiString;

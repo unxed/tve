@@ -954,7 +954,9 @@ end;
 function TTveView.Execute(Cmd: Integer): Boolean;
 var
   E: TTveEditor;
-  Back, Fwd: Int64;
+  Fwd: Int64;
+  Back: Int64;
+  MIdx: LongInt;
 begin
   Result := True;
   if (FOnHost <> nil) and FOnHost(Self, Cmd) then
@@ -1092,9 +1094,9 @@ begin
       end;
     tcMacroPlay:
       begin
-        for Back := 0 to High(FMacro) do
-          if (FMacro[Back] <> tcMacroPlay) then
-            Execute(FMacro[Back]);
+        for MIdx := 0 to High(FMacro) do
+          if (FMacro[MIdx] <> tcMacroPlay) then
+            Execute(FMacro[MIdx]);
       end;
   else
     Result := False;

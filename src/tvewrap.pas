@@ -112,7 +112,8 @@ end;
 
 procedure TTveWrapMap.Build(Width, TabSize: Integer; Folds: TTveFolds);
 var
-  L, N: Int64;
+  N: Int64;
+  L: LongInt;
   Rows: Int64;
 begin
   N := FBuf.LineCount;

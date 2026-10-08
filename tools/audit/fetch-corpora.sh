@@ -1,12 +1,18 @@
 #!/bin/sh
 # Fetches the reference corpora of tools/audit/borrow-audit.py into $CORPORA (default build/corpora, never committed)
-# and writes $CORPORA/list.txt, one source file per line.
+# and writes $CORPORA/list.txt (the references, one source file per line) and $CORPORA/allowed.txt (the sources that
+# tv3 may use: magiblot/tvision at the commit its translation names, the specification of the far2l extensions, and
+# the documents of standards in tools/audit/facts/ of the repository that runs the script).
 #   fpc      Free Pascal 3.2.2: packages fv, ide, fcl-base, rtl-objpas, fcl-passrc (GPL / LGPL with exception)
 #   fpcmain  the same packages of the main branch of Free Pascal
 #   fpide    the Free Pascal IDE on tv3 (unxed/sp, GPL)
 #   dn214    DOS Navigator OSP 2.14 sources (licence of RIT Research Labs / DN OSP)
 #   dn151    DOS Navigator 1.51 sources (RIT Research Labs)
 #   bp7tv    Borland Pascal 7.0 / 7.01 Turbo Vision sources (proprietary)
+#   far2l    far2l (C/C++, GPL)
+# allowed:
+#   magiblot magiblot/tvision @ b4831e2 (C++, MIT)
+#   vtexts   VTExts.md, the specification of the far2l terminal extensions (branch extsdocs of unxed/far2l)
 # usage: tools/audit/fetch-corpora.sh        needs: git, curl, sha256sum, unrar, unzip
 set -eu
 here=$(cd "$(dirname "$0")/../.." && pwd)
@@ -58,10 +64,29 @@ if [ ! -d bp7tv ]; then
     unzip -q -o -C -j bp7x/_UPDATE_/BP_OBJEC.701/2/BP7ETC.ZIP 'rtl/tv/*.pas' 'rtl/common/objects.pas' -d bp7tv.tmp
     rm -rf bp7x && mv bp7tv.tmp bp7tv
 fi
+if [ ! -d far2l ]; then
+    rm -rf far2l.tmp && git clone -q --depth 1 https://github.com/elfmz/far2l far2l.tmp && mv far2l.tmp far2l
+fi
+if [ ! -d magiblot ]; then
+    rm -rf magiblot.tmp
+    git clone -q --filter=blob:none --no-checkout https://github.com/magiblot/tvision magiblot.tmp
+    git -C magiblot.tmp -c advice.detachedHead=false checkout -q b4831e2
+    mv magiblot.tmp magiblot
+fi
+if [ ! -s VTExts.md ]; then
+    curl -fsSL --retry 4 -o VTExts.md.part https://raw.githubusercontent.com/unxed/far2l/extsdocs/VTExts.md
+    mv VTExts.md.part VTExts.md
+fi
 
 {
+    find far2l -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \)
     find fpc/packages fpcmain/packages -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
     find sp/fpide -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
     find dn214 dn151 bp7tv -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
 } | LC_ALL=C sort | sed "s|^|$C/|" > list.txt
-echo "reference corpora: $(wc -l < list.txt) files in $C"
+{
+    find magiblot/source magiblot/include -type f \( -name '*.cpp' -o -name '*.h' \) | sed "s|^|$C/|"
+    echo "$C/VTExts.md"
+    find "$here/tools/audit/facts" -type f -name '*.md' 2>/dev/null
+} | LC_ALL=C sort > allowed.txt
+echo "reference corpora: $(wc -l < list.txt) files in $C; allowed sources: $(wc -l < allowed.txt)"

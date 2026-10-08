@@ -16,7 +16,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends unrar unzip
       - uses: actions/cache@v4
         with:
-          path: build/corpora
+          path: |
+            build/corpora
+            build/audit-cache
           key: corpora-${{ hashFiles('tools/audit/fetch-corpora.sh') }}
       - name: Reference corpora
         run: tools/audit/fetch-corpora.sh

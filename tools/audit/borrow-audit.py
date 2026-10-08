@@ -332,6 +332,9 @@ def files(paths, exts):
 
 
 def main():
+    if os.environ.get('PYTHONHASHSEED') != '0':      # the indexes are kept between runs: the hashes must be the same
+        os.environ['PYTHONHASHSEED'] = '0'
+        os.execv(sys.executable, [sys.executable] + sys.argv)
     ap = argparse.ArgumentParser()
     ap.add_argument('--ref', required=True)
     ap.add_argument('--allowed')
@@ -342,22 +345,32 @@ def main():
     ap.add_argument('--lit-k', type=int, default=LIT_K)
     ap.add_argument('--lit-distinct', type=int, default=LIT_DISTINCT)
     ap.add_argument('--git-range')
+    ap.add_argument('--cache', default='build/audit-cache',
+                    help='directory for the indexes of the corpora (default build/audit-cache; "" for none)')
     ap.add_argument('paths', nargs='*')
     a = ap.parse_args()
     refs = [l.strip() for l in open(a.ref, encoding='utf-8') if l.strip()]
-    pas_raw, pas_ren, all_lit = [], [], []
-    for r in refs:
-        raw, ren, lit = scan(r)
-        if not r.lower().endswith(CPP):
-            pas_raw.append((r, raw))
-            pas_ren.append((r, ren))
-        if r.lower().endswith(CPP):
-            all_lit.append((r, lit))
-    ix_raw = index(pas_raw, a.raw_k)
-    ix_ren = index(pas_ren, a.ren_k)
-    ix_lit = index(all_lit, a.lit_k)
-    if a.allowed:
-        for r in (l.strip() for l in open(a.allowed, encoding='utf-8') if l.strip()):
+    allowed = [l.strip() for l in open(a.allowed, encoding='utf-8') if l.strip()] if a.allowed else []
+    import hashlib, pickle
+    key = hashlib.sha1(repr((open(__file__, 'rb').read(), a.raw_k, a.ren_k, a.lit_k,
+                             [(r, os.path.getmtime(r)) for r in refs + allowed])).encode()).hexdigest()
+    cache = os.path.join(a.cache, key + '.pickle') if a.cache else None
+    if cache and os.path.isfile(cache):
+        with open(cache, 'rb') as fh:
+            ix_raw, ix_ren, ix_lit = pickle.load(fh)
+    else:
+        pas_raw, pas_ren, all_lit = [], [], []
+        for r in refs:
+            raw, ren, lit = scan(r)
+            if r.lower().endswith(CPP):
+                all_lit.append((r, lit))
+            else:
+                pas_raw.append((r, raw))
+                pas_ren.append((r, ren))
+        ix_raw = index(pas_raw, a.raw_k)
+        ix_ren = index(pas_ren, a.ren_k)
+        ix_lit = index(all_lit, a.lit_k)
+        for r in allowed:
             if r.lower().endswith(DOC):
                 seqs = {'lit': doc_literals(r)}
             else:
@@ -367,6 +380,11 @@ def main():
                 if name in seqs:
                     for h in index([(r, seqs[name])], k):
                         ix.pop(h, None)
+        if cache:
+            os.makedirs(a.cache, exist_ok=True)
+            with open(cache + '.part', 'wb') as fh:
+                pickle.dump((ix_raw, ix_ren, ix_lit), fh, protocol=pickle.HIGHEST_PROTOCOL)
+            os.replace(cache + '.part', cache)
     def significant(v):
         if isinstance(v, tuple):
             return False

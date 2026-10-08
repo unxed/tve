@@ -1077,7 +1077,7 @@ begin
     tcMatchBracket: E.GotoMatchingBracket;
     tcSetMark0..tcSetMark0 + 9: E.SetBookmark(Cmd - tcSetMark0);
     tcGotoMark0..tcGotoMark0 + 9: begin Remember; E.GotoBookmark(Cmd - tcGotoMark0); end;
-    tcClearMarks: for Back := 0 to 9 do E.ClearBookmark(Back);
+    tcClearMarks: for MIdx := 0 to 9 do E.ClearBookmark(MIdx);
     tcInsertDate: InsertDateTime(E, 'yyyy-mm-dd');
     tcInsertTime: InsertDateTime(E, 'hh:nn:ss');
     tcCursorBack:

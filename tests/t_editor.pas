@@ -114,6 +114,73 @@ begin
   E.MoveTextStart;
   Check(At(0, 0), 'text start');
 
+  { the word movement of the guidelines (optional, E.7 of the guidelines): the rules of WORDNAV.md }
+  Setup('foo.bar baz');
+  E.MoveNavWordRight;
+  Check(At(0, 3), 'nav: |foo.bar -> foo|.bar (the end of a word before a divider)');
+  E.MoveNavWordRight;
+  Check(At(0, 8), 'nav: foo|.bar -> foo.bar |baz (a divider is crossed with the word after it only up to the blank)');
+  E.MoveNavWordRight;
+  Check(At(0, 11), 'nav: to the end of the line');
+  E.MoveNavWordLeft;
+  Check(At(0, 8), 'nav: Ctrl+Left to the start of the word');
+  E.MoveNavWordLeft;
+  Check(At(0, 4), 'nav: Ctrl+Left: a divider followed by a word is the start of that word (foo.|bar)');
+  E.MoveNavWordLeft;
+  Check(At(0, 0), 'nav: Ctrl+Left to the start of the line');
+  Setup('...///x');
+  E.MoveNavWordRight;
+  Check(At(0, 7), 'nav: a run of dividers is not split: no stop inside ...///x (a divider followed by a word is no stop going right)');
+  Setup('ab ...///');
+  E.MoveNavWordRight;
+  Check(At(0, 3), 'nav: the start of the run of dividers');
+  E.MoveNavWordRight;
+  Check(At(0, 9), 'nav: ... the whole run (mixed dividers) is crossed in one jump');
+  Setup('  foo');
+  E.MoveNavWordRight;
+  Check(At(0, 2), 'nav: from blanks to the first token');
+  { line boundaries: the end of a line is a stop, the next jump goes to the next line }
+  Setup('ab cd'#10'  ef'#10'gh');
+  E.GotoLineCell(0, 3);
+  E.MoveNavWordRight;
+  Check(At(0, 5), 'nav: Ctrl+Right stops at the end of the line');
+  E.MoveNavWordRight;
+  Check(At(1, 0), 'nav: ... the next one goes to the beginning of the next line');
+  E.MoveNavWordRight;
+  Check(At(1, 2), 'nav: ... and on to the first token');
+  E.GotoLineCell(1, 0);
+  E.MoveNavWordLeft;
+  Check(At(0, 5), 'nav: Ctrl+Left at the beginning of a line goes to the end of the previous one');
+  E.MoveNavWordLeft;
+  Check(At(0, 3), 'nav: ... and on to the start of the word');
+  Setup('ab'#13#10'cd');
+  E.MoveNavWordRight;
+  E.MoveNavWordRight;
+  Check(At(1, 0), 'nav: CR LF is one line end');
+  E.MoveNavWordLeft;
+  Check(At(0, 2), 'nav: ... also going back');
+  { the selecting variants of the editor treat dividers as blanks }
+  Setup('foo bar.baz');
+  E.MoveNavWordRight(True);
+  Check(At(0, 3), 'nav: Ctrl+Shift+Right: |foo -> foo| (the end of a word)');
+  E.MoveNavWordRight(True);
+  Check(At(0, 7), 'nav: ... over the blank to the end of the next word (never stopping on the blank)');
+  E.MoveNavWordRight(True);
+  Check(At(0, 11), 'nav: ... a divider ends a word as a blank does');
+  E.MoveNavWordLeft(True);
+  Check(At(0, 8), 'nav: Ctrl+Shift+Left: to the start of baz');
+  E.MoveNavWordLeft(True);
+  Check(At(0, 4), 'nav: ... to the start of bar');
+  Check(E.HasSelection, 'nav: the selection is made');
+  { UTF-8: a character is not split; letters of any script are word characters }
+  Setup(Japan + ' ' + Japan + '.x');
+  E.MoveNavWordRight;
+  Check(At(0, 5), 'nav: wide characters are word characters (a jump over two of them, 4 cells)');
+  E.MoveNavWordRight;
+  Check(At(0, 9), 'nav: ... the blank is crossed with the next word, up to the divider');
+  E.MoveNavWordLeft;
+  Check(At(0, 5), 'nav: ... and back');
+
   { typing, the free cursor pads }
   Setup('ab');
   E.MoveEnd;

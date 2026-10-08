@@ -1,6 +1,7 @@
 program tve;
 { tve: the editor as a program (and the test bench of the editor view).
-  Usage: tve [--keys=a|b] [--keymap=FILE] [--macro=FILE] [file]. F2 saves, Alt-X quits.
+  Usage: tve [--keys=a|b] [--words=nav] [--keymap=FILE] [--macro=FILE] [file]. F2 saves, Alt-X quits.
+  --words=nav binds Ctrl+Left / Ctrl+Right (and with Shift) to the word movement of the guidelines (the default is the word definition of the editor);
   --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro. MIT. }
 {$I tvdefs.inc}
 {$H+}
@@ -11,6 +12,9 @@ const
   cmSaveFile = 200;
   cmSaveMacro = 201;
   cmLoadMacro = 202;
+
+var
+  NavWords: Boolean = False;          { --words=nav }
 
 type
   TTveApp = class(TApplication)
@@ -75,9 +79,15 @@ begin
   R := Win.GetExtent;
   R.Grow(-1, -1);
   View := TTveView.Create(R, H, V, Doc, True);
-  if KeymapFile <> '' then
+  if NavWords or (KeymapFile <> '') then
   begin
-    Map := TveNewKeymapFromFile(MapB, KeymapFile, Err);
+    { a map of our own: the shipped one, the word movement of the guidelines if asked, then the file of the user }
+    if NavWords then
+      Map := TveNewKeymap(MapB, TveNavWordsKeymapText, Err)
+    else
+      Map := TveNewKeymap(MapB, '', Err);
+    if (Err = '') and (KeymapFile <> '') then
+      Map.LoadFile(KeymapFile, Err);
     if Err <> '' then
       WriteLn(StdErr, 'tve: key map: ', Err);
     View.Keymap := Map;
@@ -222,6 +232,8 @@ begin
       MapB := True
     else if ParamStr(I) = '--keys=a' then
       MapB := False
+    else if ParamStr(I) = '--words=nav' then
+      NavWords := True
     else if Copy(ParamStr(I), 1, 9) = '--keymap=' then
       KeyFile := Copy(ParamStr(I), 10, MaxInt)
     else if Copy(ParamStr(I), 1, 8) = '--macro=' then

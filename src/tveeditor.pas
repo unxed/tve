@@ -63,6 +63,8 @@ type
     function OffsetAt(L: Int64; C: Integer; out Pad: Integer): Int64;
     function CursorOffset: Int64;
     procedure PlaceAtOffset(Offset: Int64);
+    procedure FarCpBefore(O: Int64; out CP: LongWord; out Size: Integer);
+    procedure FarCpAt(O: Int64; out CP: LongWord; out Size: Integer);
     procedure BeforeEdit;
     procedure AfterEdit;
     procedure BeginMove(Extend: Boolean);
@@ -124,6 +126,12 @@ type
     procedure MoveEnd(Extend: Boolean = False);
     procedure MoveWordLeft(Extend: Boolean = False);
     procedure MoveWordRight(Extend: Boolean = False);
+    { The word movement of the navigation guidelines of vtui (WORDNAV.md, "Ctrl+Left and Ctrl+Right", the editor part): three classes of characters (space,
+      divider, word), a jump of at least one character, a stop at the end and at the start of a line; with Extend (Ctrl+Shift) dividers count as blanks, so a selection
+      covers whole words. Not used by the key maps shipped (they keep MoveWordLeft / MoveWordRight); the commands NavWordLeft, NavWordRight, SelNavWordLeft and
+      SelNavWordRight and TveNavWordsKeymapText (TveCmds) bind them. }
+    procedure MoveNavWordLeft(Extend: Boolean = False);
+    procedure MoveNavWordRight(Extend: Boolean = False);
     procedure MoveTextStart(Extend: Boolean = False);
     procedure MoveTextEnd(Extend: Boolean = False);
 
@@ -164,7 +172,7 @@ function TveDefaultEditorOptions: TTveOptions;
 implementation
 
 uses
-  SysUtils, TvUtf8;
+  SysUtils, TvUtf8, TvWordNav;
 
 function TveDefaultEditorOptions: TTveOptions;
 begin
@@ -726,6 +734,141 @@ begin
     if (Off < Len) and (CpAt(Off) = 10) and (Off = CursorOffset) then
       Inc(Off);
   end;
+  PlaceAtOffset(Off);
+end;
+
+{ The code point that ends at the byte offset O (and its size), and the one that starts at O: the text is UTF-8 when Utf8Enabled }
+procedure TTveEditor.FarCpBefore(O: Int64; out CP: LongWord; out Size: Integer);
+var
+  K, Used: Integer;
+  Buf: AnsiString;
+begin
+  K := 1;
+  if Utf8Enabled then
+    while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
+      Inc(K);
+  Size := K;
+  Buf := FDoc.Buffer.Copy(O - K, K);
+  if Utf8Enabled and (K >= 1) and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) then
+    Exit;
+  CP := FDoc.Buffer.ByteAt(O - 1);
+  Size := 1;
+end;
+
+procedure TTveEditor.FarCpAt(O: Int64; out CP: LongWord; out Size: Integer);
+var
+  Used: Integer;
+  Buf: AnsiString;
+begin
+  Buf := FDoc.Buffer.Copy(O, 4);
+  Size := 1;
+  CP := 0;
+  if Buf = '' then
+    Exit;
+  CP := Byte(Buf[1]);
+  if Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+    Size := Used
+  else
+    CP := Byte(Buf[1]);
+end;
+
+function FarClass(CP: LongWord): Integer;
+begin
+  if (CP = 32) or (CP = 9) then
+    Result := wnSpace
+  else if (CP < 128) and (Pos(Char(CP), WordDividers) > 0) then
+    Result := wnDivider
+  else
+    Result := wnWord;
+end;
+
+procedure TTveEditor.MoveNavWordRight(Extend: Boolean);
+var
+  Off, Len: Int64;
+  CP, Prev: LongWord;
+  Sz, PC, CC: Integer;
+begin
+  BeginMove(Extend);
+  Off := CursorOffset;
+  Len := FDoc.Buffer.Length;
+  if Off >= Len then
+  begin
+    PlaceAtOffset(Off);
+    Exit;
+  end;
+  FarCpAt(Off, CP, Sz);
+  if (CP = 10) or (CP = 13) then
+  begin
+    { at the end of a line: the beginning of the next one }
+    if (CP = 13) and (Off + 1 < Len) and (FDoc.Buffer.ByteAt(Off + 1) = 10) then
+      Inc(Off, 2)
+    else
+      Inc(Off);
+    PlaceAtOffset(Off);
+    Exit;
+  end;
+  repeat
+    Inc(Off, Sz);
+    if Off >= Len then
+      Break;
+    FarCpBefore(Off, Prev, Sz);
+    PC := FarClass(Prev);
+    FarCpAt(Off, CP, Sz);
+    if (CP = 10) or (CP = 13) then
+      Break;
+    CC := FarClass(CP);
+    if Extend then
+    begin
+      if (PC = wnWord) and (CC <> wnWord) then
+        Break;
+    end
+    else if ((PC = wnSpace) and (CC <> wnSpace)) or ((PC = wnWord) and (CC = wnDivider)) then
+      Break;
+  until False;
+  PlaceAtOffset(Off);
+end;
+
+procedure TTveEditor.MoveNavWordLeft(Extend: Boolean);
+var
+  Off: Int64;
+  CP, Cur: LongWord;
+  Sz, PC, CC: Integer;
+begin
+  BeginMove(Extend);
+  Off := CursorOffset;
+  if Off <= 0 then
+  begin
+    PlaceAtOffset(0);
+    Exit;
+  end;
+  FarCpBefore(Off, CP, Sz);
+  if (CP = 10) or (CP = 13) then
+  begin
+    { at the start of a line: the end of the previous one }
+    Dec(Off);
+    if (CP = 10) and (Off > 0) and (FDoc.Buffer.ByteAt(Off - 1) = 13) then
+      Dec(Off);
+    PlaceAtOffset(Off);
+    Exit;
+  end;
+  repeat
+    Dec(Off, Sz);
+    if Off <= 0 then
+      Break;
+    FarCpBefore(Off, CP, Sz);
+    if (CP = 10) or (CP = 13) then
+      Break;
+    PC := FarClass(CP);
+    FarCpAt(Off, Cur, CC);
+    CC := FarClass(Cur);
+    if Extend then
+    begin
+      if (PC <> wnWord) and (CC = wnWord) then
+        Break;
+    end
+    else if ((PC = wnSpace) and (CC <> wnSpace)) or ((PC = wnDivider) and (CC = wnWord)) then
+      Break;
+  until False;
   PlaceAtOffset(Off);
 end;
 

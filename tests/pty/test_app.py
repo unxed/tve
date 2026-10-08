@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Pty test of the tve program: the menu bar by the navigation guidelines of vtui (F9 and F10 open it, Esc closes the drop-down and keeps the bar,
-the second Esc leaves it). usage: test_app.py PATH/TO/tve   (PtyTerm: tools/pty_screen.py; PTY_TOOLS=DIR names the directory)"""
+the second Esc leaves it). usage: test_app.py PATH/TO/tve   (PtyTerm: tools/pty_screen.py; PTY_TOOLS=DIR names another directory)"""
 import os
 import sys
 
-sys.path.insert(0, os.environ.get('PTY_TOOLS', os.path.join(os.path.dirname(__file__), '..', '..', '..', 'tools')))
+sys.path.insert(0, os.environ.get('PTY_TOOLS', os.path.join(os.path.dirname(__file__), '..', '..', 'tools')))
 from pty_screen import PtyTerm
 
 fails = 0
@@ -37,5 +37,26 @@ for name, key in (('F9', b'\x1b[20~'), ('F10', b'\x1b[21~')):
     check('Save macro' not in t.text(), name + ': the second Esc leaves the bar', t.text())
 t.send(b'\x1bx', settle=0.5)
 check(t.close() == 0, 'Alt-X ends the program')
+
+
+def jumps(args):
+    """types foo.bar, goes Home and presses Ctrl+Right twice: how far the cursor went"""
+    t = PtyTerm([sys.argv[1]] + args, 80, 25)
+    t.wait_for('File')
+    t.send(b'foo.bar')
+    t.send(b'\x1b[H')
+    x0 = t.screen.x
+    t.send(b'\x1b[1;5C')
+    t.send(b'\x1b[1;5C')
+    d = t.screen.x - x0
+    t.send(b'\x1bx', settle=0.5)
+    t.close()
+    return d
+
+
+# E.7 of the guidelines: the word movement of the guidelines is optional (--words=nav); the default keeps the word rules of the editor
+check(jumps([]) == 4, 'Ctrl+Right twice on foo.bar: the word rules of the editor stop at foo.|bar')
+check(jumps(['--words=nav']) == 7, '--words=nav: the rules of the guidelines take foo.bar in two jumps')
+
 print('ALL OK (%d checks)' % count if not fails else '%d of %d checks FAILED' % (fails, count))
 sys.exit(1 if fails else 0)

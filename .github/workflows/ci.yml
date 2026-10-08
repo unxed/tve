@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Free Pascal
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fp-compiler fp-units-rtl fp-units-base fp-units-misc fp-units-fcl
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fp-compiler fp-units-rtl fp-units-base fp-units-misc fp-units-fcl python3
       - name: Generated language data is up to date
         run: |
           python3 tools/gen-langs.py
@@ -27,3 +27,5 @@ jobs:
           . tools/need-tv.sh
           mkdir -p build/app
           fpc -Fusrc -Fu"$TVSRC" -Fi"$TVSRC" -FUbuild/app -FEbuild/app app/tve.pas
+      - name: The tve program in a pty (the menu keys, the words of the guidelines)
+        run: python3 tests/pty/test_app.py build/app/tve

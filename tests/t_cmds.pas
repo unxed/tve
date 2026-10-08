@@ -36,6 +36,9 @@ begin
   Check(TveCommandByName('DeleteBlock') = tcDeleteBlock, 'delete block index');
   Check((TveKeymapA.Lookup(K('Alt+O')) = tcOutline) and (TveKeymapB.Lookup(K('Alt+O')) = tcOutline), 'Alt+O is the outline in both maps');
   Check(TveCommandByName('Outline') = tcOutline, 'outline name');
+  Check((TveCommandByName('NavWordLeft') = tcNavWordLeft) and (TveCommandByName('SelNavWordRight') = tcSelNavWordRight), 'nav word commands have names');
+  Check((TveKeymapA.Lookup(K('Ctrl+Left')) = tcWordLeft) and (TveKeymapB.Lookup(K('Ctrl+Right')) = tcWordRight), 'the shipped maps keep the word rules of the editor');
+  Check((TveKeymapA.Lookup(K('Ctrl+Shift+Left')) = tcSelWordLeft) and (TveKeymapB.Lookup(K('Ctrl+Shift+Right')) = tcSelWordRight), '... also selecting');
   Bad := 0;
   for I := 1 to tcCommandCount - 1 do
     if (TveCommandName(I) <> '') and (TveCommandByName(TveCommandName(I)) <> I) then
@@ -53,6 +56,16 @@ begin
   Check(M.LoadText('F7 =' + #10, Err), 'unbind');
   Check(M.Lookup(K('F7')) = -1, 'unbound');
   Check(M.LoadText('Ctrl+K B =' + #10, Err) and (M.Lookup(K('Ctrl+K')) = -1), 'prefix goes when its last chord goes');
+  M.Free;
+  { the optional map of the word movement of the guidelines, over each of the shipped maps }
+  M := TveNewKeymap(False, TveNavWordsKeymapText, Err);
+  Check(Err = '', 'the words map of the guidelines loads ' + Err);
+  Check((M.Lookup(K('Ctrl+Left')) = tcNavWordLeft) and (M.Lookup(K('Ctrl+Right')) = tcNavWordRight), 'nav words: Ctrl+Left, Ctrl+Right');
+  Check((M.Lookup(K('Ctrl+Shift+Left')) = tcSelNavWordLeft) and (M.Lookup(K('Ctrl+Shift+Right')) = tcSelNavWordRight), 'nav words: with Shift');
+  Check((M.Lookup(K('Ctrl+A')) = tcWordLeft) and (M.Lookup(K('Ctrl+Y')) = tcDeleteLine), 'nav words: the rest of map A is as it was (WordStar Ctrl+A, Ctrl+Y)');
+  M.Free;
+  M := TveNewKeymap(True, TveNavWordsKeymapText, Err);
+  Check((Err = '') and (M.Lookup(K('Ctrl+Right')) = tcNavWordRight) and (M.Lookup(K('Ctrl+N')) = tcBreakLineStay), 'nav words over map B');
   M.Free;
   Check(TveKeymapA.Lookup(K('Ctrl+Y')) = tcDeleteLine, 'A: Ctrl+Y');
   Check(TveKeymapA.Lookup(K('Ctrl+N')) = tcInsertLineBelow, 'A: Ctrl+N');

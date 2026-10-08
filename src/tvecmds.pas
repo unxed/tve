@@ -22,6 +22,8 @@ const
   tcLeft = 1; tcRight = 2; tcUp = 3; tcDown = 4; tcPageUp = 5; tcPageDown = 6;
   tcHome = 7; tcEnd = 8; tcWordLeft = 9; tcWordRight = 10; tcTextStart = 11; tcTextEnd = 12;
   tcWindowTop = 13; tcWindowBottom = 14; tcScrollUp = 15; tcScrollDown = 16;
+  { the word movement of the guidelines (not bound in the maps shipped, see TveNavWordsKeymapText) }
+  tcNavWordLeft = 17; tcNavWordRight = 18; tcSelNavWordLeft = 32; tcSelNavWordRight = 33;
   { the same, extending the selection }
   tcSelLeft = 20; tcSelRight = 21; tcSelUp = 22; tcSelDown = 23; tcSelPageUp = 24; tcSelPageDown = 25;
   tcSelHome = 26; tcSelEnd = 27; tcSelWordLeft = 28; tcSelWordRight = 29; tcSelTextStart = 30; tcSelTextEnd = 31;
@@ -83,6 +85,9 @@ function TveKeymapA: TTveKeymap;
 function TveKeymapB: TTveKeymap;
 function TveKeymapAText: AnsiString;
 function TveKeymapBText: AnsiString;
+{ The word movement of the guidelines as an optional key map: pass it as the override text of TveNewKeymap (or load it as a key map file). It rebinds Ctrl+Left, Ctrl+Right and
+  with Shift the selecting ones; the maps shipped keep the word rules of the editor (families A and B). }
+function TveNavWordsKeymapText: AnsiString;
 { A new map (the caller frees it): the shipped map A or B with the text of a user file applied over it. Err is the first bad line (the good lines are applied). }
 function TveNewKeymap(UseB: Boolean; const OverrideText: AnsiString; out Err: AnsiString): TTveKeymap;
 function TveNewKeymapFromFile(UseB: Boolean; const FileName: AnsiString; out Err: AnsiString): TTveKeymap;
@@ -100,9 +105,9 @@ const
 
   Names: array[0..tcCommandCount - 1] of AnsiString = (
     '', 'Left', 'Right', 'Up', 'Down', 'PageUp', 'PageDown', 'Home', 'End', 'WordLeft',
-    'WordRight', 'TextStart', 'TextEnd', 'WindowTop', 'WindowBottom', 'ScrollUp', 'ScrollDown', '', '', '',
+    'WordRight', 'TextStart', 'TextEnd', 'WindowTop', 'WindowBottom', 'ScrollUp', 'ScrollDown', 'NavWordLeft', 'NavWordRight', '',
     'SelLeft', 'SelRight', 'SelUp', 'SelDown', 'SelPageUp', 'SelPageDown', 'SelHome', 'SelEnd', 'SelWordLeft', 'SelWordRight',
-    'SelTextStart', 'SelTextEnd', '', '', '', '', '', '', '', '',
+    'SelTextStart', 'SelTextEnd', 'SelNavWordLeft', 'SelNavWordRight', '', '', '', '', '', '',
     'NewLine', 'Tab', 'Backspace', 'Delete', 'DeleteLine', 'DeleteToEol', 'DeleteToBol', 'DeleteWordRight', 'DeleteWordLeft', 'InsertLineBelow',
     'InsertLineAbove', 'DuplicateLine', 'BreakLineStay', 'JoinLine', 'ToggleInsert', 'Undo', 'Redo', '', '', '',
     'Copy', 'Cut', 'Paste', 'DeleteBlock', '', '', '', '', '', '',
@@ -434,6 +439,13 @@ end;
 function TveKeymapBText: AnsiString;
 begin
   Result := CommonText + BTextOnly;
+end;
+
+function TveNavWordsKeymapText: AnsiString;
+begin
+  Result := '; the word movement of the navigation guidelines of vtui (WORDNAV.md)' + LF +
+    'Ctrl+Left = NavWordLeft' + LF + 'Ctrl+Right = NavWordRight' + LF +
+    'Ctrl+Shift+Left = SelNavWordLeft' + LF + 'Ctrl+Shift+Right = SelNavWordRight' + LF;
 end;
 
 function Build(const Text: AnsiString): TTveKeymap;

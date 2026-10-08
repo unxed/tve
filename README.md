@@ -40,7 +40,10 @@ Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript),
   `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
 * **Navigation guidelines of vtui**: the dialogs and the menu bar of the program are tv3's, which follow them (`docs/UX-CONFORMANCE.md` of tv3 has the table, tve's
   place in it and the two places where the editor keeps its own rules: the word definition and `Ctrl+C`). The program opens the menu bar with `F9` and `F10`;
-  its commands are declared once with `TvActions` and the menu and the status line read them. `tests/pty/test_app.py` checks the menu keys (uses `PtyTerm` of `tools/pty_screen.py`).
+  its commands are declared once with `TvActions` and the menu and the status line read them. `tests/pty/test_app.py` checks the menu keys and the word keys in a pty (`tools/pty_screen.py`).
+  The wheel scrolls the editor under the pointer, not the focused one (tv3's `UxWheelUnderCursor`). The word movement of the vtui guidelines (`WORDNAV.md`) is optional, not the
+  default: the commands `NavWordLeft`, `NavWordRight`, `SelNavWordLeft`, `SelNavWordRight` (`TTveEditor.MoveNavWordLeft/Right`) and the key map text `TveNavWordsKeymapText`
+  (pass it as the override text of `TveNewKeymap`); the program: `tve --words=nav`. Word wrap is not taken into account (a jump stops at the end of the logical line).
 * **Outline**: `TveOutline(Doc, Lang)` (`src/tvesymbols.pas`) lists `(line, level, title)` of types, routines, headings and so on, by the `symbol LEVEL /REGEX/` lines of
   a grammar (Pascal, C/C++, Go, Python, JavaScript, PHP, Shell, Markdown, HTML/Smarty/Jinja, SQL, YAML, INI/TOML, Makefile, diff). Matches inside comments and strings
   are skipped. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program shows it in a list dialog (`TveListDialog`).

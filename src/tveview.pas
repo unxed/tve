@@ -1084,6 +1084,8 @@ begin
     tcEnd: E.MoveEnd;
     tcWordLeft: E.MoveWordLeft;
     tcWordRight: E.MoveWordRight;
+    tcNavWordLeft: E.MoveNavWordLeft;
+    tcNavWordRight: E.MoveNavWordRight;
     tcTextStart: begin Remember; E.MoveTextStart; end;
     tcTextEnd: begin Remember; E.MoveTextEnd; end;
     tcWindowTop: if FWrap then MoveToRow(Delta.Y, False) else E.GotoLineCell(ViewToLine(Delta.Y), E.Cell);
@@ -1100,6 +1102,8 @@ begin
     tcSelEnd: E.MoveEnd(True);
     tcSelWordLeft: E.MoveWordLeft(True);
     tcSelWordRight: E.MoveWordRight(True);
+    tcSelNavWordLeft: E.MoveNavWordLeft(True);
+    tcSelNavWordRight: E.MoveNavWordRight(True);
     tcSelTextStart: E.MoveTextStart(True);
     tcSelTextEnd: E.MoveTextEnd(True);
     tcNewLine: E.NewLine;

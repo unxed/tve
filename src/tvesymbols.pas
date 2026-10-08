@@ -39,7 +39,7 @@ function TveOutline(Doc: TTveDoc; Lang: TTveLanguage): TTveOutline;
 var
   Hl: TTveHighlighter;
   L, N: Int64;
-  I, S, E, Cnt: Integer;
+  LI, I, S, E, Cnt: Integer;
   Text, Title: AnsiString;
   Caps: TCaps;
   Cls: TByteClasses;
@@ -52,8 +52,9 @@ begin
   try
     N := Doc.Buffer.LineCount;
     Cnt := 0;
-    for L := 0 to N - 1 do
+    for LI := 0 to Integer(N) - 1 do        { a LongInt counter: a 32-bit target has no Int64 loops }
     begin
+      L := LI;
       Text := Doc.Buffer.LineText(L);
       if Text = '' then
         Continue;

@@ -4,7 +4,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras;
 
 const
   cmSaveFile = 200;
@@ -89,6 +89,7 @@ var
   L, Ofs: Int64;
   C: Integer;
   IsOfs: Boolean;
+  CP: LongWord;
 begin
   Result := True;
   case Cmd of
@@ -113,6 +114,15 @@ begin
             View.ReplaceAll(Repl)
           else
             View.ReplaceNext(Repl);
+        end;
+      end;
+    tcInsertChar:
+      begin
+        T := '';
+        if TveCodePointDialog(T) and TveParseCodePoint(T, CP) then
+        begin
+          InsertCodePoint(View.Editor, CP);
+          View.Refresh;
         end;
       end;
     tcGotoLine:

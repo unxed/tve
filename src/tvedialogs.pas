@@ -16,6 +16,8 @@ uses
 function TveFindDialog(var Opt: TTveSearchOptions): Boolean;
 { Also the replacement text and "replace all". }
 function TveReplaceDialog(var Opt: TTveSearchOptions; var Repl: AnsiString; var All: Boolean): Boolean;
+{ A code point to insert: "U+263A", "0x263a", "263a" or "#9786" (see TveParseCodePoint in TveExtras). }
+function TveCodePointDialog(var Text: AnsiString): Boolean;
 { A line number, "line:column" or "+offset" (the text is returned as typed; see TveParseGoto). }
 function TveGotoDialog(var Text: AnsiString): Boolean;
 
@@ -31,6 +33,7 @@ const
   HistFind = 61;
   HistRepl = 62;
   HistGoto = 63;
+  HistCode = 64;
 
 type
   TFindRec = record
@@ -170,6 +173,39 @@ begin
     Opt.Pattern := Rec.Pattern;
     Repl := Rec.Repl;
     FlagsTo(Rec.Flags, Opt);
+  end;
+  D.Free;
+end;
+
+function TveCodePointDialog(var Text: AnsiString): Boolean;
+var
+  D: TDialog;
+  R: TRect;
+  I: TInputLine;
+  Rec: TGotoRec;
+begin
+  R.Assign(0, 0, 44, 8);
+  D := TDialog.Create(R, 'Insert character');
+  D.Options := D.Options or ofCentered;
+  R.Assign(3, 3, 37, 4);
+  I := TInputLine.Create(R, 40);
+  D.Insert(I);
+  R.Assign(2, 2, 40, 3);
+  D.Insert(TLabel.Create(R, '~C~ode point (U+263A, 263A or #9786)', I));
+  R.Assign(37, 3, 40, 4);
+  D.Insert(THistory.Create(R, I, HistCode));
+  R.Assign(10, 5, 20, 7);
+  D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
+  R.Assign(22, 5, 32, 7);
+  D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
+  D.SelectNext(False);
+  Rec.Text := Copy(Text, 1, 40);
+  D.SetData(Rec);
+  Result := Run(D);
+  if Result then
+  begin
+    D.GetData(Rec);
+    Text := Rec.Text;
   end;
   D.Free;
 end;

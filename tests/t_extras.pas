@@ -8,6 +8,7 @@ var
   D: TTveDoc;
   E: TTveEditor;
   V: Double;
+  CP: LongWord;
   Err: AnsiString;
 
 function Calc(const S: AnsiString): AnsiString;
@@ -120,5 +121,12 @@ begin
   Check(not E.GotoMatchingBracket, 'an unmatched bracket');
   E.Free;
   D.Free;
+  Check(TveParseCodePoint('U+263A', CP) and (CP = $263A), 'code point: U+263A');
+  Check(TveParseCodePoint('0x1f600', CP) and (CP = $1F600), 'code point: 0x1f600');
+  Check(TveParseCodePoint(' e9 ', CP) and (CP = $E9), 'code point: bare hexadecimal');
+  Check(TveParseCodePoint('#9786', CP) and (CP = $263A), 'code point: decimal');
+  Check(not TveParseCodePoint('#12ab', CP), 'code point: a letter in a decimal number');
+  Check(not TveParseCodePoint('110000', CP) and not TveParseCodePoint('D800', CP) and not TveParseCodePoint('', CP) and not TveParseCodePoint('0', CP), 'code point: outside Unicode, a surrogate, empty, zero');
+  Check(not TveParseCodePoint('xyz', CP), 'code point: not a number');
   Finish;
 end.

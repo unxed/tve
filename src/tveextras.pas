@@ -19,6 +19,8 @@ function FixLayout(E: TTveEditor; WholeLine: Boolean = False): Boolean;
 function InsertDateTime(E: TTveEditor; const Format: AnsiString): Boolean;
 { a character by its code point (the number of Unicode) }
 function InsertCodePoint(E: TTveEditor; CP: LongWord): Boolean;
+{ A code point as a person types it: "U+263A", "0x263a", "263a" (hexadecimal) or "#9786" (decimal). False for anything else or a value outside Unicode. }
+function TveParseCodePoint(const Text: AnsiString; out CP: LongWord): Boolean;
 { the text of the selection (or of the current line) calculated; the result is put in the clipboard of the editor (OnClipSet) and returned. Column blocks are added up. }
 function CalcBlock(E: TTveEditor; out Result_: AnsiString): Boolean;
 
@@ -160,6 +162,47 @@ end;
 function InsertCodePoint(E: TTveEditor; CP: LongWord): Boolean;
 begin
   Result := (CP > 0) and (CP <= $10FFFF) and E.TypeText(U8Encode(CP));
+end;
+
+function TveParseCodePoint(const Text: AnsiString; out CP: LongWord): Boolean;
+var
+  S: AnsiString;
+  V: Int64;
+  I, Base, D: Integer;
+begin
+  Result := False;
+  CP := 0;
+  S := Trim(Text);
+  Base := 16;
+  if (Length(S) > 1) and (S[1] = '#') then
+  begin
+    Base := 10;
+    Delete(S, 1, 1);
+  end
+  else if (Length(S) > 2) and (S[1] in ['U', 'u']) and (S[2] = '+') then
+    Delete(S, 1, 2)
+  else if (Length(S) > 2) and (S[1] = '0') and (S[2] in ['x', 'X']) then
+    Delete(S, 1, 2);
+  if (S = '') or (Length(S) > 8) then
+    Exit;
+  V := 0;
+  for I := 1 to Length(S) do
+  begin
+    case S[I] of
+      '0'..'9': D := Ord(S[I]) - 48;
+      'a'..'f': D := Ord(S[I]) - 87;
+      'A'..'F': D := Ord(S[I]) - 55;
+    else
+      Exit;
+    end;
+    if D >= Base then
+      Exit;
+    V := V * Base + D;
+  end;
+  if (V = 0) or (V > $10FFFF) or ((V >= $D800) and (V <= $DFFF)) then
+    Exit;
+  CP := V;
+  Result := True;
 end;
 
 function CalcBlock(E: TTveEditor; out Result_: AnsiString): Boolean;

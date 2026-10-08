@@ -135,6 +135,14 @@ begin
   Check(Cl(8)[5] = 'P', 'ends at the next key of the item ' + Cl(8));
   Check(Cl(10) = 'ssss', 'indicator with an indentation ' + Cl(10));
   Check(Cl(11)[1] = 'P', 'and the end ' + Cl(11));
+  { at any indentation; a comment after the indicator is a comment }
+  D.LoadText(StringOfChar(' ', 20) + 'deep: | # note'#10 + StringOfChar(' ', 22) + 'x: y'#10 + StringOfChar(' ', 20) + 'after: 1'#10 +
+    StringOfChar(' ', 30) + 'k: >'#10 + StringOfChar(' ', 31) + 'z'#10 + StringOfChar(' ', 29) + 'w: 2');
+  Check(Copy(Cl(0), 21, 14) = 'PPPPddoccccccc', 'a key at 20 and a comment ' + Cl(0));
+  Check(Copy(Cl(1), 23, 4) = 'ssss', 'its text ' + Cl(1));
+  Check(Copy(Cl(2), 21, 6) = 'PPPPPd', 'ends at a key as indented ' + Cl(2));
+  Check(Copy(Cl(4), 32, 1) = 's', 'a key at 30 ' + Cl(4));
+  Check(Copy(Cl(5), 30, 2) = 'Pd', 'ends at a key indented less ' + Cl(5));
   H.Free;
   L.Free;
   { Markdown fences of these languages }
@@ -144,6 +152,14 @@ begin
   Check((Cl(1)[1] = 'P') and (Cl(4)[1] = 't') and (Cl(7) = 'TTT') and (Cl(10)[1] = 'f'), 'fences: yaml, diff, toml, make');
   Check((Cl(2) = 'ddd') and (Cl(11) = 'ddd') and (Cl(12)[1] = '.'), 'the fences close');
   Check(Cl(14) = 'dTdd', 'an XML fence ' + Cl(14));
+  { the template languages: their tags only inside their own fences; the closing fence ends what the code left open }
+  D.LoadText('```php'#10'<?php'#10'$x = "a;'#10'```'#10'text {$y}'#10'```smarty'#10'<b>{$name|upper}</b>'#10'```'#10'```jinja'#10 +
+    '<p>{{ x }}</p> {% if a %}'#10'```'#10'```html'#10'<p>{{ x }} {$y} <?php $z ?></p>'#10'```');
+  Check((Cl(1) = 'ppppp') and (Cl(2) = 'vv.o.sss'), 'a PHP fence ' + Cl(2));
+  Check((Cl(3) = 'ddd') and (Cl(4) = '.........'), 'its closing fence ends the string and PHP ' + Cl(4));
+  Check(Cl(6) = 'dTddvvvvvffffffdddTd', 'a Smarty fence ' + Cl(6));
+  Check(Cl(9) = 'dTddd...ddddTd.dd.kk...dd', 'a Jinja fence ' + Cl(9));
+  Check(Cl(12) = 'dTd........................ddTd', 'no template tags in an HTML fence ' + Cl(12));
   H.Free;
   L.Free;
   L := TveLangForFile('x.toml');

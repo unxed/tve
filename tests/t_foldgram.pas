@@ -77,6 +77,12 @@ begin
   Check(not L.Load('language X'#10'fold /(a/ /b/'#10, Err), 'bad expression');
   Check(L.Load('language X'#10'fold braces'#10'fold indent'#10'fold outline'#10'fold /x\/y/ /z/'#10'start m'#10'context m'#10, Err) and L.FoldBraces and
     L.FoldIndent and L.FoldOutline and (L.FoldPairCount = 1), 'fold directives: ' + Err);
+  Check(not L.Load('language X'#10'fold skip /a/ /b/'#10, Err), 'fold skip needs in: ' + Err);
+  Check(L.Load('language X'#10'fold /a/ /b/'#10'fold skip /c/ in /d/'#10'start m'#10'context m'#10, Err) and (L.FoldSkip <> nil) and (L.FoldSkipIn <> nil), 'fold skip: ' + Err);
+  { the other directives of this work: unwind in a context, inject when, indentpop }
+  Check(not L.Load('language X'#10'start m'#10'context m'#10'  unwind /(/'#10, Err), 'bad unwind: ' + Err);
+  Check(not L.Load('language X'#10'start m'#10'inject m when nosuch'#10'context m'#10, Err), 'inject when an unknown context: ' + Err);
+  Check(L.Load('language X'#10'start m'#10'inject n when m'#10'context m'#10'  unwind /^x/'#10'context n indentpop'#10, Err), 'unwind, inject when, indentpop: ' + Err);
   L.Free;
 
   { the view: FoldToggle on a line where a region starts makes it a fold and collapses it; again expands it }

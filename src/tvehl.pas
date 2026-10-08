@@ -16,7 +16,8 @@
 //   masks *.tpl *.html            (the file names that choose the language)
 //   case sensitive | insensitive  (the default of the contexts that follow, for their words and literals; a regular expression has the flag i: /text/i)
 //   start CONTEXT                 (the context at the start of the text)
-//   inject CONTEXT ...            (the contexts whose rules are tried first everywhere, except in a context declared noinject)
+//   inject CONTEXT ... [when CTX] (the contexts whose rules are tried first everywhere, except in a context declared noinject; with "when", only while
+//                                  CTX is on the stack: a fence of Markdown; the lines add up)
 //   symbol LEVEL /REGEX/          (a line that the expression matches is an entry of the outline, see TveOutline; the title is the group 1 or the whole
 //                                  match, LEVEL is 1 for the top level, 2 and more are nested; the first symbol rule that matches a line wins)
 //   outline indent | braces       (the level of an entry is 1 + the number of entries that hold it: those above it with less indentation, or whose braces
@@ -39,15 +40,18 @@
 //   fold skip /WORD/ in /OUTER/   (an open word that WORD matches opens nothing when the innermost open region of its pair began with one that OUTER
 //                                  matches: the case of a Pascal variant record)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
-//   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
+//   context NAME [noinject] [default CLASS] [eolpop] [indentpop] [nocase|case]
 //     include CONTEXT             (the rules, words and so on of another context, here)
+//     unwind /REGEX/              (a line that the expression matches at its start ends the contexts above this one first: the closing fence of
+//                                  Markdown ends an unclosed string or PHP block of the code inside)
 //     match PATTERN => CLASS... [push CTX] [pop] [switch CTX] [literal on|off] [always]
 //     words CLASS WORD ...        (identifiers; the class of a word that no rule took)
 //     number c | pascal           (what a number looks like)
 //     ops CHARS                   (characters drawn as operators)
 //   PATTERN is 'literal', "literal" (no escapes inside) or /regular expression/i. A regular expression can end with a look-ahead (?=...) or (?!...).
 //   With one class the whole match has it; with a regular expression that has groups, the classes are those of the groups 1, 2, ... in turn (the text outside the
-//   groups is normal). "eolpop": the context ends at the end of the line. "always": the rule of an inject context works in literal mode too.
+//   groups is normal). "eolpop": the context ends at the end of the line. "indentpop": the context ends before a line that is not blank and is indented no
+//   more than the end of the group 1 of the rule that pushed it (the start of its match when it has no groups): a YAML block scalar. "always": the rule of an inject context works in literal mode too.
 unit TveHl;
 
 {$I tvdefs.inc}
@@ -98,6 +102,7 @@ type
     LiteralSet: Integer;              // -1: none, 0: off, 1: on
     Always: Boolean;
     Injected: Boolean;
+    InjWhen: Integer;                 // an injected rule of "inject ... when CTX": the context CTX (-1: always)
     IncludeName: AnsiString;          // a rule that only stands for the rules of a context
     First: TByteSet;
     AnyFirst: Boolean;
@@ -113,7 +118,8 @@ type
 
   TContext = record
     Name: AnsiString;
-    NoInject, EolPop, NoCase: Boolean;
+    NoInject, EolPop, IndentPop, NoCase: Boolean;
+    Unwind: TTveRegex;                // a line that it matches at its start ends the contexts pushed above this one
     DefaultClass: Byte;
     Rules: TRuleList;                 // the own rules, with the includes still in them
     Words: TWordLists;
@@ -151,9 +157,9 @@ type
     FIgnoreCase: Boolean;
     FIdent: AnsiString;
     FStart: Integer;
-    FInject: array of Integer;
+    FInject, FInjectWhen: array of Integer;
     FCtx: array of TContext;
-    FStacks: array of AnsiString;      // the numbered states: a byte per context, and the literal flag at the end
+    FStacks: array of AnsiString;      // the numbered states: a byte per context, a byte of indentation per context (indentpop), and the literal flag at the end
     function CtxIndex(const Name: AnsiString): Integer;
     function AddCtx(const Name: AnsiString): Integer;
     function ParseRule(const Line: AnsiString; LineNo: Integer; CtxNoCase: Boolean; var R: TRule; out Err: AnsiString): Boolean;
@@ -285,6 +291,7 @@ begin
     end;
     FCtx[I].Rules := nil;
     FCtx[I].All := nil;
+    FreeAndNil(FCtx[I].Unwind);
   end;
   FCtx := nil;
   FStacks := nil;
@@ -636,7 +643,7 @@ end;
 function TTveLanguage.Load(const Text: AnsiString; out Err: AnsiString): Boolean;
 var
   P, E, LineNo, Cur, I, Sp: Integer;
-  Line, Key, Arg, OpenRe, CloseRe: AnsiString;
+  Line, Key, Arg, OpenRe, CloseRe, Cond: AnsiString;
   T, InjNames: TWordArr;
   R: TRule;
   StartName: AnsiString;
@@ -689,7 +696,20 @@ begin
     else if Key = 'start' then
       StartName := Arg
     else if Key = 'inject' then
-      InjNames := SplitWords(Arg)
+    begin
+      T := SplitWords(Arg);
+      Cond := '';
+      if (Length(T) >= 2) and SameText(T[High(T) - 1], 'when') then
+      begin
+        Cond := '@' + T[High(T)];
+        SetLength(T, Length(T) - 2);
+      end;
+      for I := 0 to High(T) do
+      begin
+        SetLength(InjNames, Length(InjNames) + 1);
+        InjNames[High(InjNames)] := T[I] + Cond;
+      end;
+    end
     else if Key = 'ident' then
       FIdent := Arg
     else if Key = 'symbol' then
@@ -870,6 +890,8 @@ begin
           FCtx[Cur].NoCase := False
         else if SameText(T[I], 'eolpop') then
           FCtx[Cur].EolPop := True
+        else if SameText(T[I], 'indentpop') then
+          FCtx[Cur].IndentPop := True
         else if SameText(T[I], 'default') and (I + 1 < Length(T)) then
         begin
           Inc(I);
@@ -893,6 +915,21 @@ begin
     begin
       Err := 'line ' + IntToStr(LineNo) + ': "' + Key + '" is outside of a context';
       Exit;
+    end
+    else if Key = 'unwind' then
+    begin
+      if not CutSlashed(Arg, OpenRe) or (Arg <> '') then
+      begin
+        Err := 'line ' + IntToStr(LineNo) + ': unwind /REGEX/';
+        Exit;
+      end;
+      FreeAndNil(FCtx[Cur].Unwind);
+      FCtx[Cur].Unwind := TTveRegex.Create(OpenRe);
+      if FCtx[Cur].Unwind.Error <> '' then
+      begin
+        Err := 'line ' + IntToStr(LineNo) + ': ' + FCtx[Cur].Unwind.Error;
+        Exit;
+      end;
     end
     else if Key = 'include' then
     begin
@@ -966,22 +1003,38 @@ begin
     end;
   end;
   SetLength(FInject, 0);
+  SetLength(FInjectWhen, 0);
   for I := 0 to High(InjNames) do
   begin
-    C := CtxIndex(InjNames[I]);
+    Sp := Pos('@', InjNames[I]);
+    if Sp = 0 then
+      Sp := Length(InjNames[I]) + 1;
+    C := CtxIndex(Copy(InjNames[I], 1, Sp - 1));
     if C < 0 then
     begin
-      Err := 'the inject context "' + InjNames[I] + '" does not exist';
+      Err := 'the inject context "' + Copy(InjNames[I], 1, Sp - 1) + '" does not exist';
       Exit;
     end;
     SetLength(FInject, Length(FInject) + 1);
+    SetLength(FInjectWhen, Length(FInjectWhen) + 1);
     FInject[High(FInject)] := C;
+    FInjectWhen[High(FInjectWhen)] := -1;
+    if Sp <= Length(InjNames[I]) then
+    begin
+      C := CtxIndex(Copy(InjNames[I], Sp + 1, MaxInt));
+      if C < 0 then
+      begin
+        Err := 'the context "' + Copy(InjNames[I], Sp + 1, MaxInt) + '" of an inject does not exist';
+        Exit;
+      end;
+      FInjectWhen[High(FInjectWhen)] := C;
+    end;
   end;
   Link(Err);
   if Err <> '' then
     Exit;
   SetLength(FStacks, 1);
-  FStacks[0] := Chr(FStart) + #0;
+  FStacks[0] := Chr(FStart) + #0#0;
   Result := True;
 end;
 
@@ -1013,6 +1066,7 @@ begin
     else
     begin
       R.Injected := Inj;
+      R.InjWhen := -1;
       SetLength(Rules, Length(Rules) + 1);
       Rules[High(Rules)] := R;
     end;
@@ -1067,7 +1121,12 @@ begin
     if not FCtx[I].NoInject then
       for J := 0 to High(FInject) do
         if FInject[J] <> I then
+        begin
+          B := Length(Rules);
           Gather(FInject[J], 0, True, Rules, W, Num, Ops, Err);
+          for B := B to High(Rules) do
+            Rules[B].InjWhen := FInjectWhen[J];
+        end;
     if Err <> '' then
       Exit;
     // the words, numbers and operators of the injected contexts do not count
@@ -1170,8 +1229,9 @@ end;
 
 procedure TTveLanguage.Classify(const Text: AnsiString; StartState: LongInt; out Cls: TByteClasses; out EndState: LongInt);
 var
-  Stack: array[0..MaxDepth] of Byte;
+  Stack, Ind: array[0..MaxDepth] of Byte;
   Depth: Integer;       // the index of the top
+  LineInd: Integer;
   LiteralMode: Boolean;
   N, Pos_, ZeroRun, K, J, RI, E, B, G, Len, Start: Integer;
   Key, Word_: AnsiString;
@@ -1235,6 +1295,16 @@ var
     Result := True;
   end;
 
+  function OnStack(C: Integer): Boolean;
+  var
+    X: Integer;
+  begin
+    for X := 0 to Depth do
+      if Stack[X] = C then
+        Exit(True);
+    Result := False;
+  end;
+
   procedure ApplyClasses(var R: TRule; At, EndAt: Integer);
   var
     I: Integer;
@@ -1263,10 +1333,26 @@ begin
   if (StartState < 0) or (StartState > High(FStacks)) then
     StartState := 0;
   Key := FStacks[StartState];
-  Depth := Length(Key) - 2;
+  Depth := (Length(Key) - 1) div 2 - 1;
   for K := 0 to Depth do
+  begin
     Stack[K] := Byte(Key[K + 1]);
+    Ind[K] := Byte(Key[Depth + K + 2]);
+  end;
   LiteralMode := Key[Length(Key)] = #1;
+  // a context that lasts while the lines are indented more than where it began
+  LineInd := 0;
+  while (LineInd < N) and (Text[LineInd + 1] in [' ', #9]) do
+    Inc(LineInd);
+  if (LineInd < N) and not (Text[LineInd + 1] in [#13, #10]) then
+    while (Depth > 0) and FCtx[Stack[Depth]].IndentPop and (LineInd <= Ind[Depth]) do
+      Dec(Depth);
+  for K := Depth - 1 downto 0 do
+    if (FCtx[Stack[K]].Unwind <> nil) and FCtx[Stack[K]].Unwind.ExecAt(Text, 1, Caps) then
+    begin
+      Depth := K;
+      Break;
+    end;
   Pos_ := 1;
   ZeroRun := 0;
   while Pos_ <= N do
@@ -1279,6 +1365,8 @@ begin
       RI := Ctx^.Cand[B][K];
       Rule := @Ctx^.All[RI];
       if LiteralMode and Rule^.Injected and not Rule^.Always then
+        Continue;
+      if (Rule^.InjWhen >= 0) and not OnStack(Rule^.InjWhen) then
         Continue;
       if not TryRule(Rule^, Pos_, E) then
         Continue;
@@ -1301,6 +1389,17 @@ begin
       begin
         Inc(Depth);
         Stack[Depth] := Rule^.Push;
+        Ind[Depth] := 0;
+        if FCtx[Rule^.Push].IndentPop then
+        begin
+          if (Rule^.Re <> nil) and (Rule^.Re.Groups > 0) and (Caps[3] >= 0) then
+            J := Caps[3] - 1
+          else
+            J := Pos_ - 1;
+          if J > 255 then
+            J := 255;
+          Ind[Depth] := J;
+        end;
       end;
       Pos_ := E;
       Found := True;
@@ -1378,13 +1477,16 @@ begin
   // a context that lasts to the end of the line
   while (Depth > 0) and FCtx[Stack[Depth]].EolPop do
     Dec(Depth);
-  SetLength(Key, Depth + 2);
+  SetLength(Key, 2 * Depth + 3);
   for K := 0 to Depth do
+  begin
     Key[K + 1] := Chr(Stack[K]);
+    Key[Depth + K + 2] := Chr(Ind[K]);
+  end;
   if LiteralMode then
-    Key[Depth + 2] := #1
+    Key[2 * Depth + 3] := #1
   else
-    Key[Depth + 2] := #0;
+    Key[2 * Depth + 3] := #0;
   EndState := Intern(Key);
 end;
 

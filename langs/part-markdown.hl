@@ -16,6 +16,9 @@ context md
   match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini
   match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make
   match /^(```|~~~)\s*(?:xml|svg|xsd|xsl)\s*$/i => delimiter push md_xml
+  match /^(```|~~~)\s*(?:php|phtml)\s*$/i => delimiter push md_php
+  match /^(```|~~~)\s*(?:smarty|tpl)\s*$/i => delimiter push md_smarty
+  match /^(```|~~~)\s*(?:jinja|jinja2|j2|twig|django)\s*$/i => delimiter push md_jinja
   match /^(```|~~~).*$/ => delimiter push md_code
   match /`[^`]+`/ => string
   match /\*\*[^*]+\*\*/ => special
@@ -26,47 +29,75 @@ context md
 context md_code default string
   match /^(```|~~~)\s*$/ => delimiter pop
 context md_pascal
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include pascal
 context md_go
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include go
 context md_c
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include c
 context md_js
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include js
 context md_css
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include css
 context md_html
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include html
 context md_sh
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include sh
 context md_py
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include py
 context md_json
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include json
 context md_sql
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include sql
 context md_yaml
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include yaml
 context md_diff
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include diff
 context md_ini
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include ini
 context md_make
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include make
 context md_xml
+  unwind /^(```|~~~)\s*$/
   match /^(```|~~~)\s*$/ => delimiter pop
   include xml
+# the template languages: HTML with their tags (inject ... when md_php and so on in the language)
+context md_php
+  unwind /^(```|~~~)\s*$/
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include html
+context md_smarty
+  unwind /^(```|~~~)\s*$/
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include html
+context md_jinja
+  unwind /^(```|~~~)\s*$/
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include html

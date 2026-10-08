@@ -9,6 +9,9 @@ symbol 4 /^####\s+(.+?)\s*#*\s*$/
 symbol 5 /^#####\s+(.+?)\s*#*\s*$/
 symbol 6 /^######\s+(.+?)\s*#*\s*$/
 fold outline
+inject php when md_php
+inject smarty when md_smarty
+inject jinja when md_jinja
 %include part-markdown
 %include part-pascal
 %include part-go
@@ -25,3 +28,6 @@ fold outline
 %include part-ini
 %include part-make
 %include part-xml
+%include part-php
+%include part-smarty
+%include part-jinja

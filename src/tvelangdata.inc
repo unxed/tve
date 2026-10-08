@@ -593,6 +593,9 @@ const
     'symbol 5 /^#####\s+(.+?)\s*#*\s*$/' + #10 +
     'symbol 6 /^######\s+(.+?)\s*#*\s*$/' + #10 +
     'fold outline' + #10 +
+    'inject php when md_php' + #10 +
+    'inject smarty when md_smarty' + #10 +
+    'inject jinja when md_jinja' + #10 +
     '# Markdown with fenced code in the other languages (needs the parts of those languages)' + #10 +
     'context md' + #10 +
     '  match /^(#{1,6})(\s.*)$/ => delimiter keyword' + #10 +
@@ -611,6 +614,9 @@ const
     '  match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini' + #10 +
     '  match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make' + #10 +
     '  match /^(```|~~~)\s*(?:xml|svg|xsd|xsl)\s*$/i => delimiter push md_xml' + #10 +
+    '  match /^(```|~~~)\s*(?:php|phtml)\s*$/i => delimiter push md_php' + #10 +
+    '  match /^(```|~~~)\s*(?:smarty|tpl)\s*$/i => delimiter push md_smarty' + #10 +
+    '  match /^(```|~~~)\s*(?:jinja|jinja2|j2|twig|django)\s*$/i => delimiter push md_jinja' + #10 +
     '  match /^(```|~~~).*$/ => delimiter push md_code' + #10 +
     '  match /`[^`]+`/ => string' + #10 +
     '  match /\*\*[^*]+\*\*/ => special' + #10 +
@@ -621,50 +627,78 @@ const
     'context md_code default string' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     'context md_pascal' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include pascal' + #10 +
     'context md_go' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include go' + #10 +
     'context md_c' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include c' + #10 +
     'context md_js' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include js' + #10 +
     'context md_css' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include css' + #10 +
     'context md_html' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include html' + #10 +
     'context md_sh' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include sh' + #10 +
     'context md_py' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include py' + #10 +
     'context md_json' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include json' + #10 +
     'context md_sql' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include sql' + #10 +
     'context md_yaml' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include yaml' + #10 +
     'context md_diff' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include diff' + #10 +
     'context md_ini' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include ini' + #10 +
     'context md_make' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include make' + #10 +
     'context md_xml' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include xml' + #10 +
+    '# the template languages: HTML with their tags (inject ... when md_php and so on in the language)' + #10 +
+    'context md_php' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include html' + #10 +
+    'context md_smarty' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include html' + #10 +
+    'context md_jinja' + #10 +
+    '  unwind /^(```|~~~)\s*$/' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include html' + #10 +
     '' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
@@ -949,23 +983,7 @@ const
     'context yaml' + #10 +
     '  match /(?:^|\s)#.*/ => comment' + #10 +
     '  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text' + #10 +
-    '  match /^([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => property delimiter operator push yaml_block0' + #10 +
-    '  match /^([ -]{1})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block1' + #10 +
-    '  match /^([ -]{2})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block2' + #10 +
-    '  match /^([ -]{3})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block3' + #10 +
-    '  match /^([ -]{4})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block4' + #10 +
-    '  match /^([ -]{5})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block5' + #10 +
-    '  match /^([ -]{6})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block6' + #10 +
-    '  match /^([ -]{7})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block7' + #10 +
-    '  match /^([ -]{8})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block8' + #10 +
-    '  match /^([ -]{9})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block9' + #10 +
-    '  match /^([ -]{10})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block10' + #10 +
-    '  match /^([ -]{11})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block11' + #10 +
-    '  match /^([ -]{12})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block12' + #10 +
-    '  match /^([ -]{13})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block13' + #10 +
-    '  match /^([ -]{14})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block14' + #10 +
-    '  match /^([ -]{15})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block15' + #10 +
-    '  match /^([ -]{16})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block16' + #10 +
+    '  match /^([ -]*)([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(\s*(?:#.*)?)$/ => delimiter property delimiter operator comment push yaml_block' + #10 +
     '  match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|''[^'']*'')(\s*:)(?=\s|$)/ => delimiter string delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter' + #10 +
@@ -984,40 +1002,7 @@ const
     'context yaml_sq default string' + #10 +
     '  match "''''" => escape' + #10 +
     '  match "''" => string pop' + #10 +
-    'context yaml_block0 default string' + #10 +
-    '  match /^(?=\S)/ => normal pop' + #10 +
-    'context yaml_block1 default string' + #10 +
-    '  match /^(?= {0,1}\S)/ => normal pop' + #10 +
-    'context yaml_block2 default string' + #10 +
-    '  match /^(?= {0,2}\S)/ => normal pop' + #10 +
-    'context yaml_block3 default string' + #10 +
-    '  match /^(?= {0,3}\S)/ => normal pop' + #10 +
-    'context yaml_block4 default string' + #10 +
-    '  match /^(?= {0,4}\S)/ => normal pop' + #10 +
-    'context yaml_block5 default string' + #10 +
-    '  match /^(?= {0,5}\S)/ => normal pop' + #10 +
-    'context yaml_block6 default string' + #10 +
-    '  match /^(?= {0,6}\S)/ => normal pop' + #10 +
-    'context yaml_block7 default string' + #10 +
-    '  match /^(?= {0,7}\S)/ => normal pop' + #10 +
-    'context yaml_block8 default string' + #10 +
-    '  match /^(?= {0,8}\S)/ => normal pop' + #10 +
-    'context yaml_block9 default string' + #10 +
-    '  match /^(?= {0,9}\S)/ => normal pop' + #10 +
-    'context yaml_block10 default string' + #10 +
-    '  match /^(?= {0,10}\S)/ => normal pop' + #10 +
-    'context yaml_block11 default string' + #10 +
-    '  match /^(?= {0,11}\S)/ => normal pop' + #10 +
-    'context yaml_block12 default string' + #10 +
-    '  match /^(?= {0,12}\S)/ => normal pop' + #10 +
-    'context yaml_block13 default string' + #10 +
-    '  match /^(?= {0,13}\S)/ => normal pop' + #10 +
-    'context yaml_block14 default string' + #10 +
-    '  match /^(?= {0,14}\S)/ => normal pop' + #10 +
-    'context yaml_block15 default string' + #10 +
-    '  match /^(?= {0,15}\S)/ => normal pop' + #10 +
-    'context yaml_block16 default string' + #10 +
-    '  match /^(?= {0,16}\S)/ => normal pop' + #10 +
+    'context yaml_block default string indentpop' + #10 +
     '' + #10 +
     'context diff' + #10 +
     '  match /^(?:diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files).*/ => keyword' + #10 +
@@ -1073,6 +1058,88 @@ const
     '  match /"[^"]*"/ => value' + #10 +
     '  match /''[^'']*''/ => value' + #10 +
     '  match /[\w:.-]+/ => attr' + #10 +
+    '' + #10 +
+    '# PHP islands; use with: inject php' + #10 +
+    'context php noinject' + #10 +
+    '  match /<\?(?:php\b|=)/i => preproc push php_code' + #10 +
+    '  match /<\?(?=\s)/ => preproc push php_code' + #10 +
+    'context php_code noinject nocase' + #10 +
+    '  match ''?>'' => preproc pop' + #10 +
+    '  match /(?:\/\/|#).*/ => comment' + #10 +
+    '  match ''/*'' => comment push php_comment' + #10 +
+    '  match ''"'' => string push php_dq' + #10 +
+    '  match "''" => string push php_sq' + #10 +
+    '  match /\$[A-Za-z_]\w*/ => variable' + #10 +
+    '  words keyword abstract and as break case catch class clone const continue declare default do echo else elseif empty endfor endforeach endif endswitch endwhile extends final finally fn for foreach function global if implements include include_once instanceof interface isset list namespace new or print private protected public require require_once return static switch throw trait try unset use var while xor yield' + #10 +
+    '  words builtin true false null array' + #10 +
+    '  words type int float string bool void mixed object self parent' + #10 +
+    '  number c' + #10 +
+    '  ops +-*/%=<>!&|^~?:.' + #10 +
+    'context php_comment default comment noinject' + #10 +
+    '  match ''*/'' => comment pop' + #10 +
+    'context php_dq default string noinject' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match /\$[A-Za-z_]\w*/ => variable' + #10 +
+    '  match ''"'' => string pop' + #10 +
+    'context php_sq default string noinject' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match "''" => string pop' + #10 +
+    '' + #10 +
+    '# Smarty tags; use with: inject smarty' + #10 +
+    'context smarty noinject' + #10 +
+    '  match ''{*'' => comment push smarty_comment' + #10 +
+    '  match /(\{)(literal)(\})/ => delimiter keyword delimiter literal on always' + #10 +
+    '  match /(\{\/)(literal)(\})/ => delimiter keyword delimiter literal off always' + #10 +
+    '  match /\{(?=[^\s}])/ => delimiter push smarty_open' + #10 +
+    'context smarty_comment default comment noinject' + #10 +
+    '  match ''*}'' => comment pop' + #10 +
+    'context smarty_open noinject' + #10 +
+    '  match ''}'' => delimiter pop' + #10 +
+    '  match /\/?(?:if|elseif|else|foreach|foreachelse|for|forelse|while|break|continue|section|sectionelse|include|include_php|extends|block|capture|function|strip|nocache|setfilter|assign|config_load|debug|insert|call)\b/ => keyword switch smarty_code' + #10 +
+    '  match /\/?[A-Za-z_]\w*/ => function switch smarty_code' + #10 +
+    '  match /(?=[\s\S])/ => normal switch smarty_code' + #10 +
+    'context smarty_code noinject' + #10 +
+    '  match ''}'' => delimiter pop' + #10 +
+    '  match /\$[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\]]*\]|->[A-Za-z_]\w*)*/ => variable' + #10 +
+    '  match ''"'' => string push smarty_dq' + #10 +
+    '  match "''" => string push smarty_sq' + #10 +
+    '  match /\|[A-Za-z_]\w*/ => function' + #10 +
+    '  match /([A-Za-z_]\w*)(\s*)(=)(?!=)/ => attr normal operator' + #10 +
+    '  match /(?:eq|ne|neq|gt|lt|gte|lte|ge|le|not|and|or|mod|is|in|as)\b/ => operator' + #10 +
+    '  match /===?|!==?|<=|>=|&&|\|\||<|>|!|=|\+|-|\*|\/|%|\?|:/ => operator' + #10 +
+    '  words keyword if' + #10 +
+    '  words builtin true false null' + #10 +
+    '  number c' + #10 +
+    'context smarty_dq default string noinject' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match ''"'' => string pop' + #10 +
+    '  match /\{(?=\$)/ => delimiter push smarty_code' + #10 +
+    '  match /\$[A-Za-z_]\w*/ => variable' + #10 +
+    'context smarty_sq default string noinject' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match "''" => string pop' + #10 +
+    '' + #10 +
+    '# Jinja2 / Twig / Django templates; use with: inject jinja' + #10 +
+    'context jinja noinject' + #10 +
+    '  match ''{#'' => comment push jinja_comment' + #10 +
+    '  match ''{%'' => delimiter push jinja_stmt' + #10 +
+    '  match ''{{'' => delimiter push jinja_expr' + #10 +
+    'context jinja_comment default comment noinject' + #10 +
+    '  match ''#}'' => comment pop' + #10 +
+    'context jinja_code' + #10 +
+    '  match /"(?:[^"\\]|\\.)*"/ => string' + #10 +
+    '  match /''(?:[^''\\]|\\.)*''/ => string' + #10 +
+    '  match /\|\s*[A-Za-z_]\w*/ => function' + #10 +
+    '  match /===?|!==?|<=|>=|<|>|~|\+|-|\*|\/|%|=/ => operator' + #10 +
+    '  words keyword if elif elseif else endif for endfor in not and or is block endblock extends include set endset macro endmacro call endcall filter endfilter with endwith import from as raw endraw autoescape endautoescape trans endtrans load url csrf_token' + #10 +
+    '  words builtin true false none null True False None' + #10 +
+    '  number c' + #10 +
+    'context jinja_stmt noinject' + #10 +
+    '  match ''%}'' => delimiter pop' + #10 +
+    '  include jinja_code' + #10 +
+    'context jinja_expr noinject' + #10 +
+    '  match ''}}'' => delimiter pop' + #10 +
+    '  include jinja_code' + #10 +
     '' + #10 +
     '';
 
@@ -1632,23 +1699,7 @@ const
     'context yaml' + #10 +
     '  match /(?:^|\s)#.*/ => comment' + #10 +
     '  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text' + #10 +
-    '  match /^([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => property delimiter operator push yaml_block0' + #10 +
-    '  match /^([ -]{1})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block1' + #10 +
-    '  match /^([ -]{2})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block2' + #10 +
-    '  match /^([ -]{3})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block3' + #10 +
-    '  match /^([ -]{4})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block4' + #10 +
-    '  match /^([ -]{5})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block5' + #10 +
-    '  match /^([ -]{6})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block6' + #10 +
-    '  match /^([ -]{7})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block7' + #10 +
-    '  match /^([ -]{8})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block8' + #10 +
-    '  match /^([ -]{9})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block9' + #10 +
-    '  match /^([ -]{10})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block10' + #10 +
-    '  match /^([ -]{11})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block11' + #10 +
-    '  match /^([ -]{12})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block12' + #10 +
-    '  match /^([ -]{13})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block13' + #10 +
-    '  match /^([ -]{14})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block14' + #10 +
-    '  match /^([ -]{15})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block15' + #10 +
-    '  match /^([ -]{16})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block16' + #10 +
+    '  match /^([ -]*)([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(\s*(?:#.*)?)$/ => delimiter property delimiter operator comment push yaml_block' + #10 +
     '  match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|''[^'']*'')(\s*:)(?=\s|$)/ => delimiter string delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter' + #10 +
@@ -1667,40 +1718,7 @@ const
     'context yaml_sq default string' + #10 +
     '  match "''''" => escape' + #10 +
     '  match "''" => string pop' + #10 +
-    'context yaml_block0 default string' + #10 +
-    '  match /^(?=\S)/ => normal pop' + #10 +
-    'context yaml_block1 default string' + #10 +
-    '  match /^(?= {0,1}\S)/ => normal pop' + #10 +
-    'context yaml_block2 default string' + #10 +
-    '  match /^(?= {0,2}\S)/ => normal pop' + #10 +
-    'context yaml_block3 default string' + #10 +
-    '  match /^(?= {0,3}\S)/ => normal pop' + #10 +
-    'context yaml_block4 default string' + #10 +
-    '  match /^(?= {0,4}\S)/ => normal pop' + #10 +
-    'context yaml_block5 default string' + #10 +
-    '  match /^(?= {0,5}\S)/ => normal pop' + #10 +
-    'context yaml_block6 default string' + #10 +
-    '  match /^(?= {0,6}\S)/ => normal pop' + #10 +
-    'context yaml_block7 default string' + #10 +
-    '  match /^(?= {0,7}\S)/ => normal pop' + #10 +
-    'context yaml_block8 default string' + #10 +
-    '  match /^(?= {0,8}\S)/ => normal pop' + #10 +
-    'context yaml_block9 default string' + #10 +
-    '  match /^(?= {0,9}\S)/ => normal pop' + #10 +
-    'context yaml_block10 default string' + #10 +
-    '  match /^(?= {0,10}\S)/ => normal pop' + #10 +
-    'context yaml_block11 default string' + #10 +
-    '  match /^(?= {0,11}\S)/ => normal pop' + #10 +
-    'context yaml_block12 default string' + #10 +
-    '  match /^(?= {0,12}\S)/ => normal pop' + #10 +
-    'context yaml_block13 default string' + #10 +
-    '  match /^(?= {0,13}\S)/ => normal pop' + #10 +
-    'context yaml_block14 default string' + #10 +
-    '  match /^(?= {0,14}\S)/ => normal pop' + #10 +
-    'context yaml_block15 default string' + #10 +
-    '  match /^(?= {0,15}\S)/ => normal pop' + #10 +
-    'context yaml_block16 default string' + #10 +
-    '  match /^(?= {0,16}\S)/ => normal pop' + #10 +
+    'context yaml_block default string indentpop' + #10 +
     '' + #10 +
     '';
 

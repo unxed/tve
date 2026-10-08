@@ -33,8 +33,10 @@ Grammars (`langs/`) have contexts and a stack, so a language can live inside ano
 finds are coloured where the text uses them (`View.SemanticNames`; the program turns it on). The names are found again before drawing when the text changed, for a
 text up to `TveSemanticAutoLimit` (128 KB); a longer one keeps them until `View.UpdateNames`.
 
-YAML block scalars (`key: |`, `key: >-`) colour their lines as text up to the next line that is not indented more than the key. Markdown fences take
-`yaml`, `diff`, `toml`/`ini`, `make`, `xml` as well as the languages of the programs.
+YAML block scalars (`key: |`, `key: >-`, at any indentation; a comment after the indicator is a comment) colour their lines as text up to the next line that
+is not indented more than the key (a context declared `indentpop`). Markdown fences take `yaml`, `diff`, `toml`/`ini`, `make`, `xml`, `php`, `smarty`/`tpl`,
+`jinja`/`twig`/`django` as well as the languages of the programs; the tags of a template language count only inside its own fence (`inject php when md_php`),
+and a closing fence ends whatever the code inside left open, as an unclosed string or `<?php` (`unwind /REGEX/` in a context).
 
 Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript), Jinja/Twig/Django, JSON, Markdown, Pascal, PHP, Python, Shell, Smarty, SQL, XML, YAML, INI/TOML, diff/patch, Makefile.
 
@@ -110,8 +112,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 * The macro is one per view and has no conditions other than a failed step; what a host does to the text by itself (not through the view) is not recorded.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar: HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); SQL statements are not regions by themselves.
-* Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); the Markdown fences know all the grammars
-  but Smarty, PHP and Jinja; a YAML block scalar is known by its key up to an indentation of 16 (a comment after `|` is coloured as its text).
+* Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); a YAML block scalar is known by its key
+  (not as an item of a list: `- |`).
 
 ## Audit
 

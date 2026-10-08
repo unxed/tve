@@ -4,4 +4,5 @@ start yaml
 ident _-
 symbol 1 /^([A-Za-z_][\w.\/-]*)\s*:(?:\s|$)/
 symbol 2 /^  ([A-Za-z_][\w.\/-]*)\s*:(?:\s|$)/
+fold indent
 %include part-yaml

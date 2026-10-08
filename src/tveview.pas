@@ -104,6 +104,7 @@ type
     procedure Remember;
     procedure Complete;
     function RunCommand(Cmd: Integer): Boolean;
+    procedure FoldAtCursor(Toggle: Boolean);
     procedure RecordSearch(Kind: Integer; const Repl: AnsiString);
     function PlayStep(const St: TTveMacroStep): Boolean;
     procedure Setup(ADoc: TTveDoc; OwnDoc: Boolean);
@@ -167,6 +168,10 @@ type
     property RecordedMacro: TTveMacro read FMacro;
     { The outline of the text by the symbol rules of the language of the view (empty without a language); see TveSymbols. }
     function Outline: TTveOutline;
+    { The regions that the grammar of the view can fold (see TveFoldRegions). }
+    function FoldRegions: TTveFoldRegions;
+    { Every region of the grammar becomes a collapsed fold (the folds there are kept and collapsed too). }
+    procedure FoldAll;
     { Plays the macro Times times; Times <= 0: again and again until a step fails or a round changes neither the text nor the cursor. A step fails when
       a search finds nothing, a prompt is cancelled or a cursor movement cannot move; that ends the playing. False when a step failed. }
     function PlayMacro(Times: Integer = 1): Boolean;
@@ -1042,6 +1047,96 @@ begin
     Result := TveOutline(FEditor.Doc, FHl.Language);
 end;
 
+function TTveView.FoldRegions: TTveFoldRegions;
+begin
+  if FHl = nil then
+    Result := nil
+  else
+    Result := TveFoldRegions(FEditor.Doc, FHl.Language);
+end;
+
+{ the fold from L1 to L2; -1 if there is none }
+function FindFold(F: TTveFolds; L1, L2: Int64): Integer;
+var
+  I: Integer;
+begin
+  for I := 0 to F.Count - 1 do
+    if (F.StartLine(I) = L1) and (F.EndLine(I) = L2) then
+      Exit(I);
+  Result := -1;
+end;
+
+procedure TTveView.FoldAll;
+var
+  R: TTveFoldRegions;
+  I: Integer;
+begin
+  R := FoldRegions;
+  for I := 0 to High(R) do
+    if FindFold(Folds, R[I].First, R[I].Last) < 0 then
+      Folds.Add(R[I].First, R[I].Last, False);
+  for I := 0 to Folds.Count - 1 do
+    Folds.SetCollapsed(I, True);
+  { the cursor goes to a line that is still shown }
+  FEditor.GotoLineCell(Folds.ViewToLine(Folds.LineToView(FEditor.Line)), 0);
+end;
+
+{ Toggles (or collapses) the fold at the cursor: a fold that starts at its line, else a region of the grammar that starts there, else the innermost fold or
+  region that holds the line. A region becomes a fold. The cursor goes to the first line of a fold that it collapses. }
+procedure TTveView.FoldAtCursor(Toggle: Boolean);
+var
+  L, Best1, Best2: Int64;
+  K: Integer;
+  R: TTveFoldRegions;
+
+  function Pick(Starts: Boolean): Boolean;
+  var
+    J: Integer;
+  begin
+    Best1 := -1;
+    Best2 := -1;
+    for J := 0 to High(R) do
+      if ((R[J].First = L) or (not Starts and (R[J].First < L) and (L <= R[J].Last))) and
+        ((Best1 < 0) or (R[J].Last - R[J].First < Best2 - Best1)) then
+      begin
+        Best1 := R[J].First;
+        Best2 := R[J].Last;
+      end;
+    Result := Best1 >= 0;
+  end;
+
+begin
+  L := FEditor.Line;
+  K := Folds.FoldAt(L, True);
+  if K < 0 then
+  begin
+    R := FoldRegions;
+    if Pick(True) then
+      K := Folds.Add(Best1, Best2, False)
+    else
+    begin
+      { the innermost of the folds and the regions that hold the line }
+      K := Folds.FoldAt(L);
+      if Pick(False) and ((K < 0) or (Best2 - Best1 < Folds.EndLine(K) - Folds.StartLine(K))) then
+      begin
+        K := FindFold(Folds, Best1, Best2);
+        if K < 0 then
+          K := Folds.Add(Best1, Best2, False);
+      end;
+    end;
+  end;
+  if K < 0 then
+    Exit;
+  if Toggle and Folds.Collapsed(K) then
+    Folds.SetCollapsed(K, False)
+  else
+  begin
+    Folds.SetCollapsed(K, True);
+    if L > Folds.StartLine(K) then
+      FEditor.GotoLineCell(Folds.StartLine(K), 0);
+  end;
+end;
+
 const
   MacroRoundsMax = 1000000;
 
@@ -1272,9 +1367,10 @@ begin
     tcTabify: TabifyIndent(E);
     tcTemplate: if FTemplates <> nil then TveExpandShortcut(E, FTemplates, FOnPrompt);
     tcCompletion: Complete;
-    tcFoldToggle: Folds.Toggle(E.Line);
-    tcFoldCollapse: Folds.CollapseAt(E.Line);
+    tcFoldToggle, tcFoldCollapse: FoldAtCursor(Cmd = tcFoldToggle);
     tcFoldExpand: Folds.ExpandAt(E.Line);
+    tcFoldAll: FoldAll;
+    tcUnfoldAll: for MIdx := 0 to Folds.Count - 1 do Folds.SetCollapsed(MIdx, False);
     tcFoldFromBlock:
       if E.AffectedLines(Back, Fwd) and (Fwd > Back) then
       begin

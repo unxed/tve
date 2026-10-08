@@ -2,4 +2,5 @@ language Diff
 masks *.diff *.patch
 start diff
 symbol 1 /^diff (?:--git )?(?:a\/)?(\S+)/
+fold outline
 %include part-diff

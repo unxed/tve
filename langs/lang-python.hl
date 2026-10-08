@@ -5,4 +5,5 @@ ident _
 symbol 1 /^\s*class\s+(\w+)/
 symbol 1 /^\s*(?:async\s+)?def\s+(\w+)/
 outline indent
+fold indent
 %include part-python

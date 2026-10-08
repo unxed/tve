@@ -48,7 +48,7 @@ const
   tcInsertDate = 150; tcInsertTime = 151; tcInsertChar = 152; tcCompletion = 153; tcTemplate = 154;
   tcMacroRecord = 155; tcMacroPlay = 156; tcDrawMode = 157; tcOpenAtCursor = 158; tcMacroPlayAll = 159;
   { folding }
-  tcFoldToggle = 165; tcFoldCollapse = 166; tcFoldExpand = 167; tcFoldFromBlock = 168;
+  tcFoldToggle = 165; tcFoldCollapse = 166; tcFoldExpand = 167; tcFoldFromBlock = 168; tcFoldAll = 169; tcUnfoldAll = 164;
   { the file }
   tcSave = 170; tcSaveAs = 171; tcReload = 172; tcClose = 173; tcCursorBack = 174; tcWrap = 175; tcOutline = 176;
   tcCommandCount = 180;
@@ -120,7 +120,7 @@ const
     'GotoMark0', 'GotoMark1', 'GotoMark2', 'GotoMark3', 'GotoMark4', 'GotoMark5', 'GotoMark6', 'GotoMark7', 'GotoMark8', 'GotoMark9',
     'ClearMarks', '', '', '', '', '', '', '', '', '',
     'InsertDate', 'InsertTime', 'InsertChar', 'Completion', 'Template', 'MacroRecord', 'MacroPlay', 'DrawMode', 'OpenAtCursor', 'MacroPlayAll',
-    '', '', '', '', '', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', '',
+    '', '', '', '', 'UnfoldAll', 'FoldToggle', 'FoldCollapse', 'FoldExpand', 'FoldFromBlock', 'FoldAll',
     'Save', 'SaveAs', 'Reload', 'Close', 'CursorBack', 'Wrap', 'Outline', '', '', '');
 
 function TveCommandName(Cmd: Integer): AnsiString;

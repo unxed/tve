@@ -5,4 +5,5 @@ ident _
 symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/
 symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/
 outline from 2 /(?i)^\s*implementation\b/
+fold /(?i)\b(?:begin|case|try|asm|record)\b|=\s*(?:packed\s+)?(?:class|object|interface)\s*(?:\([^)]*\))?\s*(?:$|\/\/|\{)/ /(?i)\bend\b/
 %include part-pascal

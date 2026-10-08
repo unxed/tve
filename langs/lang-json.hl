@@ -1,4 +1,5 @@
 language JSON
 masks *.json
 start json
+fold braces
 %include part-json

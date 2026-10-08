@@ -11,6 +11,7 @@ const
     'symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\s+([A-Za-z_]\w*)\s*(?::[^;{]*)?(?:\{.*)?$/' + #10 +
     'symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/' + #10 +
     'outline braces' + #10 +
+    'fold braces' + #10 +
     'context c' + #10 +
     '  match /^\s*#\s*include\b/ => preproc push c_include' + #10 +
     '  match /^\s*#.*/ => preproc' + #10 +
@@ -38,6 +39,7 @@ const
     'language CSS' + #10 +
     'masks *.css' + #10 +
     'start css' + #10 +
+    'fold braces' + #10 +
     '# CSS (also the body of <style> and of the style attributes)' + #10 +
     'context css' + #10 +
     '  match ''/*'' => comment push css_comment' + #10 +
@@ -101,6 +103,7 @@ const
     'masks *.diff *.patch' + #10 +
     'start diff' + #10 +
     'symbol 1 /^diff (?:--git )?(?:a\/)?(\S+)/' + #10 +
+    'fold outline' + #10 +
     'context diff' + #10 +
     '  match /^(?:diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files).*/ => keyword' + #10 +
     '  match /^@@[^@]*@@/ => special' + #10 +
@@ -117,6 +120,7 @@ const
     'ident _' + #10 +
     'symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/' + #10 +
     'symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/' + #10 +
+    'fold braces' + #10 +
     'context go' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
     '  match ''/*'' => comment push go_comment' + #10 +
@@ -295,6 +299,7 @@ const
     'start ini' + #10 +
     'ident _-' + #10 +
     'symbol 1 /^\s*\[\[?([^\]]+)\]\]?/' + #10 +
+    'fold outline' + #10 +
     'context ini' + #10 +
     '  match /^\s*[;#].*/ => comment' + #10 +
     '  match /^\s*\[\[?[^\]\n]*\]\]?/ => tag' + #10 +
@@ -319,6 +324,7 @@ const
     'symbol 2 /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/' + #10 +
     'symbol 2 /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/' + #10 +
     'outline braces' + #10 +
+    'fold braces' + #10 +
     '# JavaScript (also the body of <script> and of the on... attributes)' + #10 +
     'context js' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
@@ -528,6 +534,7 @@ const
     'language JSON' + #10 +
     'masks *.json' + #10 +
     'start json' + #10 +
+    'fold braces' + #10 +
     'context json' + #10 +
     '  match /"(?:[^"\\]|\\.)*"(?=\s*:)/ => property' + #10 +
     '  match /"(?:[^"\\]|\\.)*"/ => string' + #10 +
@@ -543,6 +550,7 @@ const
     'start make' + #10 +
     'ident _-' + #10 +
     'symbol 1 /^([A-Za-z_][\w.\-\/]*)\s*:(?:[^=]|$)/' + #10 +
+    'fold outline' + #10 +
     'context make' + #10 +
     '  match /#.*/ => comment' + #10 +
     '  match /^\.[A-Z_]+(?=\s*:)/ => preproc' + #10 +
@@ -572,6 +580,7 @@ const
     'symbol 4 /^####\s+(.+?)\s*#*\s*$/' + #10 +
     'symbol 5 /^#####\s+(.+?)\s*#*\s*$/' + #10 +
     'symbol 6 /^######\s+(.+?)\s*#*\s*$/' + #10 +
+    'fold outline' + #10 +
     '# Markdown with fenced code in the other languages (needs the parts of those languages)' + #10 +
     'context md' + #10 +
     '  match /^(#{1,6})(\s.*)$/ => delimiter keyword' + #10 +
@@ -1040,6 +1049,7 @@ const
     'symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/' + #10 +
     'symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
     'outline from 2 /(?i)^\s*implementation\b/' + #10 +
+    'fold /(?i)\b(?:begin|case|try|asm|record)\b|=\s*(?:packed\s+)?(?:class|object|interface)\s*(?:\([^)]*\))?\s*(?:$|\/\/|\{)/ /(?i)\bend\b/' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
     '  match ''{'' => comment push pas_brace' + #10 +
@@ -1087,6 +1097,7 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'fold braces' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1261,6 +1272,7 @@ const
     'symbol 1 /^\s*class\s+(\w+)/' + #10 +
     'symbol 1 /^\s*(?:async\s+)?def\s+(\w+)/' + #10 +
     'outline indent' + #10 +
+    'fold indent' + #10 +
     'context py' + #10 +
     '  match /#.*/ => comment' + #10 +
     '  match ''"""'' => string push py_tq_dq' + #10 +
@@ -1295,6 +1307,8 @@ const
     'ident _' + #10 +
     'symbol 1 /^\s*function\s+([\w-]+)/' + #10 +
     'symbol 1 /^\s*([A-Za-z_][\w-]*)\s*\(\s*\)/' + #10 +
+    'fold braces' + #10 +
+    'fold /\b(?:if|case|for|while|until|select)\b/ /\b(?:fi|esac|done)\b/' + #10 +
     'context sh' + #10 +
     '  match /^#!.*/ => preproc' + #10 +
     '  match /#.*/ => comment' + #10 +
@@ -1562,6 +1576,7 @@ const
     'ident _-' + #10 +
     'symbol 1 /^([A-Za-z_][\w.\/-]*)\s*:(?:\s|$)/' + #10 +
     'symbol 2 /^  ([A-Za-z_][\w.\/-]*)\s*:(?:\s|$)/' + #10 +
+    'fold indent' + #10 +
     'context yaml' + #10 +
     '  match /(?:^|\s)#.*/ => comment' + #10 +
     '  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text' + #10 +

@@ -23,6 +23,9 @@
 //                                  are still open; the LEVEL of the rules is not used then)
 //   outline from LEVEL /REGEX/    (the entries of LEVEL and deeper are taken only after the first line that the expression matches, when the text has one:
 //                                  the implementation part of a Pascal unit, so a routine is not listed twice)
+//   fold braces | indent | outline   (the regions that can be folded, see TveFoldRegions: from a { to its }, the lines indented more than the line above
+//                                  them, an entry of the outline up to the next entry of its level or above)
+//   fold /OPEN/ /CLOSE/           (a region from a word that opens it to the word that closes it, as begin and end; a / inside is written \/)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
 //   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
 //     include CONTEXT             (the rules, words and so on of another context, here)
@@ -123,6 +126,8 @@ type
     FOutlineNest: Integer;
     FOutlineFromLevel: Integer;
     FOutlineFrom: TTveRegex;
+    FFoldBraces, FFoldIndent, FFoldOutline: Boolean;
+    FFoldOpen, FFoldClose: array of TTveRegex;
     FName: AnsiString;
     FMasks: AnsiString;
     FIgnoreCase: Boolean;
@@ -157,6 +162,13 @@ type
     property OutlineNest: Integer read FOutlineNest;
     property OutlineFromLevel: Integer read FOutlineFromLevel;
     property OutlineFrom: TTveRegex read FOutlineFrom;
+    // The "fold" directives.
+    property FoldBraces: Boolean read FFoldBraces;
+    property FoldIndent: Boolean read FFoldIndent;
+    property FoldOutline: Boolean read FFoldOutline;
+    function FoldPairCount: Integer;
+    function FoldOpen(I: Integer): TTveRegex;
+    function FoldClose(I: Integer): TTveRegex;
     property Name: AnsiString read FName;
     property Masks: AnsiString read FMasks;
   end;
@@ -246,6 +258,65 @@ begin
   FreeAndNil(FOutlineFrom);
   FOutlineNest := 0;
   FOutlineFromLevel := 0;
+  for I := 0 to High(FFoldOpen) do
+  begin
+    FFoldOpen[I].Free;
+    FFoldClose[I].Free;
+  end;
+  FFoldOpen := nil;
+  FFoldClose := nil;
+  FFoldBraces := False;
+  FFoldIndent := False;
+  FFoldOutline := False;
+end;
+
+function TTveLanguage.FoldPairCount: Integer;
+begin
+  Result := Length(FFoldOpen);
+end;
+
+function TTveLanguage.FoldOpen(I: Integer): TTveRegex;
+begin
+  Result := FFoldOpen[I];
+end;
+
+function TTveLanguage.FoldClose(I: Integer): TTveRegex;
+begin
+  Result := FFoldClose[I];
+end;
+
+{ /REGEX/ at the start of S (a \/ inside is a slash): the expression, and S without it; False if there is none. }
+function CutSlashed(var S: AnsiString; out Re: AnsiString): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  Re := '';
+  if (S = '') or (S[1] <> '/') then
+    Exit;
+  I := 2;
+  while I <= Length(S) do
+  begin
+    if (S[I] = '\') and (I < Length(S)) and (S[I + 1] = '/') then
+    begin
+      Re := Re + '/';
+      Inc(I, 2);
+      Continue;
+    end;
+    if (S[I] = '\') and (I < Length(S)) then
+    begin
+      Re := Re + S[I] + S[I + 1];
+      Inc(I, 2);
+      Continue;
+    end;
+    if S[I] = '/' then
+    begin
+      S := TrimLeft(Copy(S, I + 1, MaxInt));
+      Exit(True);
+    end;
+    Re := Re + S[I];
+    Inc(I);
+  end;
 end;
 
 function TTveLanguage.SymbolCount: Integer;
@@ -520,7 +591,7 @@ end;
 function TTveLanguage.Load(const Text: AnsiString; out Err: AnsiString): Boolean;
 var
   P, E, LineNo, Cur, I, Sp: Integer;
-  Line, Key, Arg: AnsiString;
+  Line, Key, Arg, OpenRe, CloseRe: AnsiString;
   T, InjNames: TWordArr;
   R: TRule;
   StartName: AnsiString;
@@ -627,6 +698,37 @@ begin
           Err := 'line ' + IntToStr(LineNo) + ': ' + FOutlineFrom.Error;
           Exit;
         end;
+      end;
+    end
+    else if Key = 'fold' then
+    begin
+      if SameText(Arg, 'braces') then
+        FFoldBraces := True
+      else if SameText(Arg, 'indent') then
+        FFoldIndent := True
+      else if SameText(Arg, 'outline') then
+        FFoldOutline := True
+      else if CutSlashed(Arg, OpenRe) and CutSlashed(Arg, CloseRe) and (Arg = '') then
+      begin
+        SetLength(FFoldOpen, Length(FFoldOpen) + 1);
+        SetLength(FFoldClose, Length(FFoldClose) + 1);
+        FFoldOpen[High(FFoldOpen)] := TTveRegex.Create(OpenRe);
+        FFoldClose[High(FFoldClose)] := TTveRegex.Create(CloseRe);
+        if FFoldOpen[High(FFoldOpen)].Error <> '' then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': ' + FFoldOpen[High(FFoldOpen)].Error;
+          Exit;
+        end;
+        if FFoldClose[High(FFoldClose)].Error <> '' then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': ' + FFoldClose[High(FFoldClose)].Error;
+          Exit;
+        end;
+      end
+      else
+      begin
+        Err := 'line ' + IntToStr(LineNo) + ': fold braces | indent | outline | /OPEN/ /CLOSE/';
+        Exit;
       end;
     end
     else if Key = 'context' then

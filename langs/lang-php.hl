@@ -11,6 +11,7 @@ symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/
 symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/
 symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/
 symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/
+fold braces
 %include part-html
 %include part-js
 %include part-css

@@ -3,4 +3,5 @@ masks Makefile makefile GNUmakefile *.mk
 start make
 ident _-
 symbol 1 /^([A-Za-z_][\w.\-\/]*)\s*:(?:[^=]|$)/
+fold outline
 %include part-make

@@ -8,6 +8,7 @@ symbol 3 /^###\s+(.+?)\s*#*\s*$/
 symbol 4 /^####\s+(.+?)\s*#*\s*$/
 symbol 5 /^#####\s+(.+?)\s*#*\s*$/
 symbol 6 /^######\s+(.+?)\s*#*\s*$/
+fold outline
 %include part-markdown
 %include part-pascal
 %include part-go

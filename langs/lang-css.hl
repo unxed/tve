@@ -1,4 +1,5 @@
 language CSS
 masks *.css
 start css
+fold braces
 %include part-css

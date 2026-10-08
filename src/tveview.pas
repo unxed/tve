@@ -18,7 +18,7 @@ interface
 
 uses
   TvGeom, TvObjs, TvColors, TvKeys, TvEvents, TvDrawBuf, TvViews, TvWindow,
-  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap, TvXlat;
+  TveBuf, TveDoc, TveEditor, TveSearch, TveHl, TveCmds, TveFold, TveTemplates, TveComplete, TveDraw, TveWrap, TveMacro, TvXlat;
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
@@ -47,7 +47,8 @@ type
     FShowCurrentLine: Boolean;
     FMarkWord: Boolean;
     FRecording: Boolean;
-    FMacro: array of Integer;
+    FMacro: TTveMacro;
+    FPlaying: Boolean;
     FHistory: array of Int64;
     FWheelStep: Integer;
     FLastVersion: LongWord;
@@ -138,6 +139,11 @@ type
     property WheelStep: Integer read FWheelStep write FWheelStep;
     property SearchOptions: TTveSearchOptions read FSearch write FSearch;
     property Recording: Boolean read FRecording;
+    { The recorded macro (commands and typed text); it can be loaded and saved as text, see TveMacro. }
+    property Macro: TTveMacro read FMacro;
+    procedure PlayMacro;
+    function LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
+    function SaveMacroFile(const FileName: AnsiString): Boolean;
 
     procedure SetLanguage(ALang: TTveLanguage);
     procedure SetClassAttr(C: Integer; const Attr: TColorAttr);
@@ -192,6 +198,7 @@ begin
   FEditor := TTveEditor.Create(ADoc);
   FOwnDoc := OwnDoc;
   FKeymap := TveKeymapA;
+  FMacro := TTveMacro.Create;
   FSearch := TveDefaultSearch;
   FSearcher := TTveSearcher.Create(ADoc.Buffer);
   FWrapMap := TTveWrapMap.Create(ADoc.Buffer);
@@ -216,6 +223,7 @@ begin
   D := FEditor.Doc;
   D.RemoveObserver(@DocChanged);
   FHl.Free;
+  FMacro.Free;
   FFolds.Free;
   FSearcher.Free;
   FWrapMap.Free;
@@ -984,6 +992,38 @@ begin
   Sync;
 end;
 
+procedure TTveView.PlayMacro;
+var
+  I: Integer;
+  St: TTveMacroStep;
+begin
+  if FPlaying then
+    Exit;
+  FPlaying := True;
+  try
+    for I := 0 to FMacro.Count - 1 do
+    begin
+      St := FMacro.Step(I);
+      if St.Cmd > 0 then
+        Execute(St.Cmd)
+      else if FEditor.TypeText(St.Text) then
+        Sync;
+    end;
+  finally
+    FPlaying := False;
+  end;
+end;
+
+function TTveView.LoadMacroFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
+begin
+  Result := FMacro.LoadFile(FileName, Err);
+end;
+
+function TTveView.SaveMacroFile(const FileName: AnsiString): Boolean;
+begin
+  Result := FMacro.SaveFile(FileName);
+end;
+
 function TTveView.Execute(Cmd: Integer): Boolean;
 var
   E: TTveEditor;
@@ -997,11 +1037,8 @@ begin
   E := FEditor;
   if Cmd <> tcCompletion then
     FComplActive := False;
-  if FRecording and (Cmd <> tcMacroRecord) and (Cmd <> tcMacroPlay) then
-  begin
-    SetLength(FMacro, Length(FMacro) + 1);
-    FMacro[High(FMacro)] := Cmd;
-  end;
+  if FRecording and not FPlaying and (Cmd <> tcMacroRecord) and (Cmd <> tcMacroPlay) then
+    FMacro.AddCommand(Cmd);
   if (FDrawMode > 0) and (Cmd >= tcLeft) and (Cmd <= tcDown) then
   begin
     case Cmd of
@@ -1123,14 +1160,10 @@ begin
       begin
         FRecording := not FRecording;
         if FRecording then
-          FMacro := nil;
+          FMacro.Clear;
       end;
     tcMacroPlay:
-      begin
-        for MIdx := 0 to High(FMacro) do
-          if (FMacro[MIdx] <> tcMacroPlay) then
-            Execute(FMacro[MIdx]);
-      end;
+      PlayMacro;
   else
     Result := False;
   end;
@@ -1299,7 +1332,11 @@ begin
           for I := 0 to Event.TextLength - 1 do
             T[I + 1] := Event.Text[I];
           if FEditor.TypeText(T) then
+          begin
+            if FRecording then
+              FMacro.AddText(T);
             Sync;
+          end;
           ClearEvent(Event);
         end;
       end;

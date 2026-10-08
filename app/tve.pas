@@ -1,6 +1,7 @@
 program tve;
 { tve: the editor as a program (and the test bench of the editor view).
-  Usage: tve [--keys=a|b] [file]. F2 saves, Alt-X quits. MIT. }
+  Usage: tve [--keys=a|b] [--keymap=FILE] [--macro=FILE] [file]. F2 saves, Alt-X quits.
+  --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro. MIT. }
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvApp, TvUnix,
@@ -8,6 +9,8 @@ uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, T
 
 const
   cmSaveFile = 200;
+  cmSaveMacro = 201;
+  cmLoadMacro = 202;
 
 type
   TTveApp = class(TApplication)
@@ -20,7 +23,7 @@ type
     procedure InitStatusLine; override;
     procedure HandleEvent(var Event: TEvent); override;
     function Host(Sender: TObject; Cmd: Integer): Boolean;
-    procedure OpenFile(const FileName: AnsiString; MapB: Boolean);
+    procedure OpenFile(const FileName: AnsiString; MapB: Boolean; const KeymapFile: AnsiString);
   end;
 
 procedure TTveApp.InitMenuBar;
@@ -32,8 +35,10 @@ begin
   MenuBar := TMenuBar.Create(R, NewMenu(
     NewSubMenu('~F~ile', hcNoContext, NewMenu(
       NewItem('~S~ave', 'F2', kbF2, cmSaveFile, hcNoContext,
+      NewItem('Save ~m~acro', '', kbNoKey, cmSaveMacro, hcNoContext,
+      NewItem('~L~oad macro', '', kbNoKey, cmLoadMacro, hcNoContext,
       NewLine(
-      NewItem('E~x~it', 'Alt-X', kbAltX, cmQuit, hcNoContext, nil)))), nil)));
+      NewItem('E~x~it', 'Alt-X', kbAltX, cmQuit, hcNoContext, nil)))))), nil)));
 end;
 
 procedure TTveApp.InitStatusLine;
@@ -48,12 +53,13 @@ begin
       NewStatusKey('~Alt-X~ Exit', kbAltX, cmQuit, nil)), nil));
 end;
 
-procedure TTveApp.OpenFile(const FileName: AnsiString; MapB: Boolean);
+procedure TTveApp.OpenFile(const FileName: AnsiString; MapB: Boolean; const KeymapFile: AnsiString);
 var
   R: TRect;
   H, V: TScrollBar;
   Err: AnsiString;
   Lang: TTveLanguage;
+  Map: TTveKeymap;
 begin
   Name := FileName;
   Doc := TTveDoc.Create;
@@ -66,7 +72,14 @@ begin
   R := Win.GetExtent;
   R.Grow(-1, -1);
   View := TTveView.Create(R, H, V, Doc, True);
-  if MapB then
+  if KeymapFile <> '' then
+  begin
+    Map := TveNewKeymapFromFile(MapB, KeymapFile, Err);
+    if Err <> '' then
+      WriteLn(StdErr, 'tve: key map: ', Err);
+    View.Keymap := Map;
+  end
+  else if MapB then
     View.Keymap := TveKeymapB;
   View.Gutter := True;
   View.MarkOccurrences := True;
@@ -153,6 +166,18 @@ begin
     if (Name <> '') and (View <> nil) then
       TveSaveDoc(View.Doc, Name, TveDefaultOptions, Lost, Err);
     ClearEvent(Event);
+  end
+  else if (Event.What = evCommand) and (Event.Command = cmSaveMacro) then
+  begin
+    if View <> nil then
+      View.SaveMacroFile('tve.macro');
+    ClearEvent(Event);
+  end
+  else if (Event.What = evCommand) and (Event.Command = cmLoadMacro) then
+  begin
+    if View <> nil then
+      View.LoadMacroFile('tve.macro', Err);
+    ClearEvent(Event);
   end;
 end;
 
@@ -161,14 +186,21 @@ var
   I: Integer;
   F: AnsiString;
   MapB: Boolean;
+  KeyFile, MacroFile: AnsiString;
 begin
   F := '';
+  KeyFile := '';
+  MacroFile := '';
   MapB := False;
   for I := 1 to ParamCount do
     if ParamStr(I) = '--keys=b' then
       MapB := True
     else if ParamStr(I) = '--keys=a' then
       MapB := False
+    else if Copy(ParamStr(I), 1, 9) = '--keymap=' then
+      KeyFile := Copy(ParamStr(I), 10, MaxInt)
+    else if Copy(ParamStr(I), 1, 8) = '--macro=' then
+      MacroFile := Copy(ParamStr(I), 9, MaxInt)
     else
       F := ParamStr(I);
   if not UnixInit then
@@ -177,7 +209,9 @@ begin
     Halt(1);
   end;
   App := TTveApp.Create;
-  App.OpenFile(F, MapB);
+  App.OpenFile(F, MapB, KeyFile);
+  if MacroFile <> '' then
+    App.View.LoadMacroFile(MacroFile, F);
   App.Run;
   App.Free;
   UnixDone;

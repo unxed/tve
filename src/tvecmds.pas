@@ -67,6 +67,8 @@ type
     procedure Unbind(const First: TKey; const Second: TKey);
     { Applies the text of a map; Err names the first bad line and False is returned when there is one (the good lines are applied). }
     function LoadText(const Text: AnsiString; out Err: AnsiString): Boolean;
+    { The same for a file (a user override on top of what the map has now); False with Err = the file name when it cannot be read. }
+    function LoadFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
     function SaveText: AnsiString;
     { A single key: the command, -1 if it is bound to nothing, -2 if it starts a chord. }
     function Lookup(const K: TKey): Integer;
@@ -81,11 +83,17 @@ function TveKeymapA: TTveKeymap;
 function TveKeymapB: TTveKeymap;
 function TveKeymapAText: AnsiString;
 function TveKeymapBText: AnsiString;
+{ A new map (the caller frees it): the shipped map A or B with the text of a user file applied over it. Err is the first bad line (the good lines are applied). }
+function TveNewKeymap(UseB: Boolean; const OverrideText: AnsiString; out Err: AnsiString): TTveKeymap;
+function TveNewKeymapFromFile(UseB: Boolean; const FileName: AnsiString; out Err: AnsiString): TTveKeymap;
+{ Whole-file text helpers (bytes as they are). }
+function TveReadTextFile(const FileName: AnsiString; out Text: AnsiString): Boolean;
+function TveWriteTextFile(const FileName: AnsiString; const Text: AnsiString): Boolean;
 
 implementation
 
 uses
-  SysUtils, TvKeyName;
+  SysUtils, Classes, TvKeyName;
 
 const
   LF = #10;
@@ -300,6 +308,61 @@ begin
   end;
 end;
 
+function TveReadTextFile(const FileName: AnsiString; out Text: AnsiString): Boolean;
+var
+  F: TFileStream;
+begin
+  Text := '';
+  Result := False;
+  try
+    F := TFileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
+    try
+      SetLength(Text, F.Size);
+      if Length(Text) > 0 then
+        F.ReadBuffer(Text[1], Length(Text));
+      Result := True;
+    finally
+      F.Free;
+    end;
+  except
+    Text := '';
+  end;
+end;
+
+function TveWriteTextFile(const FileName: AnsiString; const Text: AnsiString): Boolean;
+var
+  F: TFileStream;
+begin
+  Result := False;
+  try
+    F := TFileStream.Create(FileName, fmCreate);
+    try
+      if Length(Text) > 0 then
+        F.WriteBuffer(Text[1], Length(Text));
+      Result := True;
+    finally
+      F.Free;
+    end;
+  except
+    Result := False;
+  end;
+end;
+
+function TTveKeymap.LoadFile(const FileName: AnsiString; out Err: AnsiString): Boolean;
+var
+  T: AnsiString;
+begin
+  if not TveReadTextFile(FileName, T) then
+  begin
+    Err := FileName;
+    Exit(False);
+  end;
+  { a UTF-8 byte order mark is not part of the first key }
+  if Copy(T, 1, 3) = #$EF#$BB#$BF then
+    Delete(T, 1, 3);
+  Result := LoadText(T, Err);
+end;
+
 function TTveKeymap.SaveText: AnsiString;
 var
   I: Integer;
@@ -379,6 +442,22 @@ var
 begin
   Result := TTveKeymap.Create;
   Result.LoadText(Text, Err);
+end;
+
+function TveNewKeymap(UseB: Boolean; const OverrideText: AnsiString; out Err: AnsiString): TTveKeymap;
+begin
+  if UseB then
+    Result := Build(TveKeymapBText)
+  else
+    Result := Build(TveKeymapAText);
+  Err := '';
+  Result.LoadText(OverrideText, Err);
+end;
+
+function TveNewKeymapFromFile(UseB: Boolean; const FileName: AnsiString; out Err: AnsiString): TTveKeymap;
+begin
+  Result := TveNewKeymap(UseB, '', Err);
+  Result.LoadFile(FileName, Err);
 end;
 
 function TveKeymapA: TTveKeymap;

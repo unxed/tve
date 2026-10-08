@@ -55,7 +55,7 @@ uses
 {$IFDEF UNIX}
   BaseUnix,
 {$ENDIF}
-  TvCharset, TvDosNames;
+  TvCharset, TvDosNames, TvPath;
 
 function TveDefaultOptions: TTveFileOptions;
 begin
@@ -92,8 +92,8 @@ begin
     Target := fpReadLink(Cur);
     if Target = '' then
       Exit(Cur);
-    if Target[1] <> '/' then
-      Target := ExtractFilePath(Cur) + Target;
+    if not PathIsRooted(Target) then
+      Target := PathDir(Cur) + Target;
     Cur := Target;
   end;
   Result := Cur;
@@ -370,7 +370,7 @@ begin
   Real := ResolveLink(Name);
   HaveMode := fpStat(PChar(Real), St) = 0;
 {$ENDIF}
-  Tmp := ChangeFileExt(Real, '.$ve');
+  Tmp := PathChangeExt(Real, '.$ve');
   if not WriteAll(Tmp, Data) then
   begin
     Err := 'cannot write ' + Tmp;
@@ -385,7 +385,7 @@ begin
   Bak := '';
   if HadFile and Opt.Backup then
   begin
-    Bak := ChangeFileExt(Real, Opt.BackupExt);
+    Bak := PathChangeExt(Real, Opt.BackupExt);
     if FileExists(OsName(Bak)) then
       DeleteFile(OsName(Bak));
     if not RenameFile(OsName(Real), OsName(Bak)) then

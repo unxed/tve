@@ -7,7 +7,7 @@ program tve;
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvActions, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState, TvUStr;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState, TvUStr, TvPath;
 
 const
   cmSaveFile = 200;
@@ -74,7 +74,7 @@ begin
   if (FileName <> '') and FileExists(FileName) then
     TveLoadDoc(Doc, FileName, TveDefaultOptions, Err);
   R := DeskTop.GetExtent;
-  Win := TWindow.Create(R, ExtractFileName(FileName), 1);
+  Win := TWindow.Create(R, PathName(FileName), 1);
   H := Win.StandardScrollBar(sbHorizontal or sbHandleKeyboard);
   V := Win.StandardScrollBar(sbVertical or sbHandleKeyboard);
   R := Win.GetExtent;

@@ -150,7 +150,23 @@ begin
   TveWriteFile(Dir + 'target.txt', 'mode', Info, Opt, Lost, Err);
   Check(FileGetAttr(Dir + 'target.txt') >= 0, 'the file is there');
   Check(FpAccess(PChar(Dir + 'target.txt'), X_OK) = 0, 'the execute bit is kept');
+  { a backslash is a character of a name on Unix: the link 'l\k.txt' is in Dir, and so is its relative target }
+  Put('target2.txt', 'two');
+  fpSymlink(PChar('target2.txt'), PChar(Dir + 'l\k.txt'));
+  TveWriteFile(Dir + 'l\k.txt', 'via l\k', Info, Opt, Lost, Err);
+  Check((Get('target2.txt') = 'via l\k') and (fpReadLink(Dir + 'l\k.txt') = 'target2.txt'), 'a link with a backslash in its name');
+  DeleteFile(Dir + 'l\k.txt');
+  DeleteFile(Dir + 'target2.txt');
 {$ENDIF}
+
+  { the backup of a name that starts with a dot keeps the whole name }
+  Put('.cfg', 'old');
+  Opt.Backup := True;
+  TveWriteFile(Dir + '.cfg', 'new', Info, Opt, Lost, Err);
+  Check((Get('.cfg') = 'new') and (Get('.cfg.bak') = 'old'), 'the backup of a dot name');
+  Opt.Backup := False;
+  DeleteFile(Dir + '.cfg');
+  DeleteFile(Dir + '.cfg.bak');
 
   { change detection }
   Put('chg.txt', 'x');

@@ -25,11 +25,11 @@ function TveStateLoad(Ini: TIniFile; const FileName: AnsiString; V: TTveView): B
 implementation
 
 uses
-  SysUtils, TveEditor, TveFold;
+  SysUtils, TvPath, TveEditor, TveFold;
 
 function SectionOf(const FileName: AnsiString): AnsiString;
 begin
-  Result := 'file:' + ExpandFileName(FileName);
+  Result := 'file:' + PathExpand(FileName);
 end;
 
 { Removes the first file sections until at most Keep are left. }

@@ -239,7 +239,7 @@ function HlClassName(C: Integer): AnsiString;
 implementation
 
 uses
-  SysUtils, TvWild;
+  SysUtils, TvWild, TvPath;
 
 const
   ClassNames: array[0..hcClassCount - 1] of AnsiString = (
@@ -1154,7 +1154,7 @@ end;
 
 function TTveLanguage.MatchesFile(const FileName: AnsiString): Boolean;
 begin
-  Result := (FMasks <> '') and WildMatchList(ExtractFileName(FileName), StringReplace(Trim(FMasks), ' ', ';', [rfReplaceAll]));
+  Result := (FMasks <> '') and WildMatchList(PathName(FileName), StringReplace(Trim(FMasks), ' ', ';', [rfReplaceAll]));
 end;
 
 function TTveLanguage.KeywordText: AnsiString;

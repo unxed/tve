@@ -145,7 +145,7 @@ type
     property SearchOptions: TTveSearchOptions read FSearch write FSearch;
     property Recording: Boolean read FRecording;
     { The recorded macro (commands and typed text); it can be loaded and saved as text, see TveMacro. }
-    property Macro: TTveMacro read FMacro;
+    property RecordedMacro: TTveMacro read FMacro;
     { The outline of the text by the symbol rules of the language of the view (empty without a language); see TveSymbols. }
     function Outline: TTveOutline;
     procedure PlayMacro;

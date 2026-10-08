@@ -36,7 +36,7 @@ Built-in languages: C/C++, CSS, Go, HTML, JavaScript/TypeScript (as JavaScript),
 * **Key maps**: `TveKeymapA` / `TveKeymapB` are shipped as text; `TveNewKeymapFromFile(UseB, File, Err)` (or `TTveKeymap.LoadFile`) applies a user file over one of them
   (`Ctrl+K B = BlockBegin`, `F7 =` removes a binding; format in `src/tvecmds.pas`). The program: `tve --keymap=FILE`.
 * **Macros**: a view records commands and typed text (`MacroRecord`, `MacroPlay` are commands that a key map can bind; the shipped maps bind neither).
-  `View.Macro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form: one command name or one quoted text (`"hello\n"`) per line;
+  `View.RecordedMacro` is a `TTveMacro` (`src/tvemacro.pas`) with a text form: one command name or one quoted text (`"hello\n"`) per line;
   `View.SaveMacroFile` / `LoadMacroFile`. The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
 * **Outline**: `TveOutline(Doc, Lang)` (`src/tvesymbols.pas`) lists `(line, level, title)` of types, routines, headings and so on, by the `symbol LEVEL /REGEX/` lines of
   a grammar (Pascal, C/C++, Go, Python, JavaScript, PHP, Shell, Markdown, HTML/Smarty/Jinja, SQL, YAML, INI/TOML, Makefile, diff). Matches inside comments and strings

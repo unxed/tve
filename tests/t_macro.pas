@@ -102,7 +102,7 @@ begin
   V.Execute(tcHome);
   V.Execute(tcMacroRecord);
   Check(not V.Recording, 'stopped');
-  Check(V.Macro.SaveText = '"AB"'#10'Down'#10'Home'#10, 'recorded: ' + V.Macro.SaveText);
+  Check(V.RecordedMacro.SaveText = '"AB"'#10'Down'#10'Home'#10, 'recorded: ' + V.RecordedMacro.SaveText);
   V.Editor.GotoLineCell(0, 0);
   V.Execute(tcMacroPlay);
   Check(D.Buffer.LineCount >= 3, 'lines');
@@ -110,8 +110,8 @@ begin
   Check(T = 'ABABone'#10'two'#10'three'#10, 'played: ' + T);
   Check(V.Editor.Line = 1, 'cursor after play');
   Check(V.LoadMacroFile('/nonexistent/m.txt', Err) = False, 'view: missing macro file');
-  Check(V.Macro.Count = 0, 'view: macro is empty after a failed load');
-  V.Macro.LoadText('"X"'#10'Down'#10, Err);
+  Check(V.RecordedMacro.Count = 0, 'view: macro is empty after a failed load');
+  V.RecordedMacro.LoadText('"X"'#10'Down'#10, Err);
   V.Execute(tcMacroPlay);
   V.Execute(tcMacroPlay);
   Check(Copy(D.Buffer.AsString, 1, 7) = 'ABABone', 'unchanged');

@@ -4,4 +4,5 @@ start pascal
 ident _
 symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/
 symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/
+outline from 2 /(?i)^\s*implementation\b/
 %include part-pascal

@@ -10,6 +10,7 @@ const
     'ident _' + #10 +
     'symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\s+([A-Za-z_]\w*)\s*(?::[^;{]*)?(?:\{.*)?$/' + #10 +
     'symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/' + #10 +
+    'outline braces' + #10 +
     'context c' + #10 +
     '  match /^\s*#\s*include\b/ => preproc push c_include' + #10 +
     '  match /^\s*#.*/ => preproc' + #10 +
@@ -317,6 +318,7 @@ const
     'symbol 1 /^\s*(?:export\s+)?(?:default\s+)?(?:abstract\s+)?(?:class|interface|enum)\s+([A-Za-z_$][\w$]*)/' + #10 +
     'symbol 2 /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/' + #10 +
     'symbol 2 /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/' + #10 +
+    'outline braces' + #10 +
     '# JavaScript (also the body of <script> and of the on... attributes)' + #10 +
     'context js' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
@@ -912,6 +914,7 @@ const
     'ident _' + #10 +
     'symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/' + #10 +
     'symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
+    'outline from 2 /(?i)^\s*implementation\b/' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
     '  match ''{'' => comment push pas_brace' + #10 +
@@ -1130,10 +1133,9 @@ const
     'masks *.py' + #10 +
     'start py' + #10 +
     'ident _' + #10 +
-    'symbol 1 /^class\s+(\w+)/' + #10 +
-    'symbol 1 /^(?:async\s+)?def\s+(\w+)/' + #10 +
-    'symbol 2 /^\s+class\s+(\w+)/' + #10 +
-    'symbol 2 /^\s+(?:async\s+)?def\s+(\w+)/' + #10 +
+    'symbol 1 /^\s*class\s+(\w+)/' + #10 +
+    'symbol 1 /^\s*(?:async\s+)?def\s+(\w+)/' + #10 +
+    'outline indent' + #10 +
     'context py' + #10 +
     '  match /#.*/ => comment' + #10 +
     '  match ''"""'' => string push py_tq_dq' + #10 +

@@ -19,6 +19,10 @@
 //   inject CONTEXT ...            (the contexts whose rules are tried first everywhere, except in a context declared noinject)
 //   symbol LEVEL /REGEX/          (a line that the expression matches is an entry of the outline, see TveOutline; the title is the group 1 or the whole
 //                                  match, LEVEL is 1 for the top level, 2 and more are nested; the first symbol rule that matches a line wins)
+//   outline indent | braces       (the level of an entry is 1 + the number of entries that hold it: those above it with less indentation, or whose braces
+//                                  are still open; the LEVEL of the rules is not used then)
+//   outline from LEVEL /REGEX/    (the entries of LEVEL and deeper are taken only after the first line that the expression matches, when the text has one:
+//                                  the implementation part of a Pascal unit, so a routine is not listed twice)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
 //   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
 //     include CONTEXT             (the rules, words and so on of another context, here)
@@ -116,6 +120,9 @@ type
   TTveLanguage = class
   private
     FSymbols: array of TSymbolRule;
+    FOutlineNest: Integer;
+    FOutlineFromLevel: Integer;
+    FOutlineFrom: TTveRegex;
     FName: AnsiString;
     FMasks: AnsiString;
     FIgnoreCase: Boolean;
@@ -146,6 +153,10 @@ type
     function SymbolCount: Integer;
     function SymbolLevel(I: Integer): Integer;
     function SymbolRegex(I: Integer): TTveRegex;
+    // "outline": 0 the levels of the rules, 1 nested by indentation, 2 nested by braces; the "outline from" rule (nil: none).
+    property OutlineNest: Integer read FOutlineNest;
+    property OutlineFromLevel: Integer read FOutlineFromLevel;
+    property OutlineFrom: TTveRegex read FOutlineFrom;
     property Name: AnsiString read FName;
     property Masks: AnsiString read FMasks;
   end;
@@ -232,6 +243,9 @@ begin
   for I := 0 to High(FSymbols) do
     FSymbols[I].Re.Free;
   FSymbols := nil;
+  FreeAndNil(FOutlineFrom);
+  FOutlineNest := 0;
+  FOutlineFromLevel := 0;
 end;
 
 function TTveLanguage.SymbolCount: Integer;
@@ -580,6 +594,39 @@ begin
       begin
         Err := 'line ' + IntToStr(LineNo) + ': ' + FSymbols[High(FSymbols)].Re.Error;
         Exit;
+      end;
+    end
+    else if Key = 'outline' then
+    begin
+      if SameText(Arg, 'indent') then
+        FOutlineNest := 1
+      else if SameText(Arg, 'braces') then
+        FOutlineNest := 2
+      else
+      begin
+        Sp := Pos(' ', Arg);
+        if SameText(Copy(Arg, 1, Sp - 1), 'from') then
+        begin
+          Arg := TrimLeft(Copy(Arg, Sp + 1, MaxInt));
+          Sp := Pos(' ', Arg);
+          I := StrToIntDef(Copy(Arg, 1, Sp - 1), 0);
+          Arg := Trim(Copy(Arg, Sp + 1, MaxInt));
+        end
+        else
+          I := 0;
+        if (I < 1) or (Length(Arg) < 2) or (Arg[1] <> '/') or (Arg[Length(Arg)] <> '/') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': outline indent | braces | from LEVEL /REGEX/';
+          Exit;
+        end;
+        FreeAndNil(FOutlineFrom);
+        FOutlineFromLevel := I;
+        FOutlineFrom := TTveRegex.Create(Copy(Arg, 2, Length(Arg) - 2));
+        if FOutlineFrom.Error <> '' then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': ' + FOutlineFrom.Error;
+          Exit;
+        end;
       end;
     end
     else if Key = 'context' then

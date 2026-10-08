@@ -70,14 +70,17 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   (pass it as the override text of `TveNewKeymap`); the program: `tve --words=nav`. Word wrap is not taken into account (a jump stops at the end of the logical line).
 * **Outline**: `TveOutline(Doc, Lang)` (`src/tvesymbols.pas`) lists `(line, level, title)` of types, routines, headings and so on, by the `symbol LEVEL /REGEX/` lines of
   a grammar (Pascal, C/C++, Go, Python, JavaScript, PHP, Shell, Markdown, HTML/Smarty/Jinja, SQL, YAML, INI/TOML, Makefile, diff). Matches inside comments and strings
-  are skipped. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program shows it in a list dialog (`TveListDialog`).
+  are skipped. `outline indent` (Python) and `outline braces` (C/C++, JavaScript) in a grammar nest the entries: the level is 1 + the number of entries that hold
+  it (by indentation, or by braces outside comments and strings). `outline from LEVEL /REGEX/` takes the deeper entries only after the first matching line: in
+  a Pascal unit the routines come from the implementation part, so a routine is listed once. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program
+  shows it in a list dialog (`TveListDialog`).
 * **Drag and drop**: a press on selected text and a drag moves it to where the button is released, Ctrl copies; one undo step (`DragBlock`, `View.DragDrop`).
   Column selections are not dragged.
 
 ## What is not done
 
-* Outline rules are line based regular expressions: no nesting by indentation or braces (Python and Pascal use fixed levels), multi-line signatures give the first line only,
-  and a declaration and its implementation both appear (Pascal).
+* Outline rules are line based regular expressions: multi-line signatures give the first line only; Pascal, Go, PHP and the markup languages use the fixed levels of
+  their rules (no nesting).
 * The macro is one per view and has no repeat counts, no prompts, no conditions; a command that the host handles itself (a dialog) is not recorded.
 * Drag and drop works inside one view; no dragging to another window and no auto-scroll speed control (one line per mouse event outside the view).
 * Colouring: no semantic colouring (a function name that is only known from its definition), no folding by grammar, the Markdown fences know fewer languages than there are grammars

@@ -140,9 +140,10 @@ begin
   { Markdown fences of these languages }
   L := TveLangForFile('r.md');
   H := TTveHighlighter.Create(D, L);
-  D.LoadText('```yaml'#10'a: 1'#10'```'#10'```diff'#10'+x'#10'```'#10'```toml'#10'[s]'#10'```'#10'```make'#10'all: x'#10'```'#10'text');
+  D.LoadText('```yaml'#10'a: 1'#10'```'#10'```diff'#10'+x'#10'```'#10'```toml'#10'[s]'#10'```'#10'```make'#10'all: x'#10'```'#10'text'#10'```xml'#10'<a/>'#10'```');
   Check((Cl(1)[1] = 'P') and (Cl(4)[1] = 't') and (Cl(7) = 'TTT') and (Cl(10)[1] = 'f'), 'fences: yaml, diff, toml, make');
   Check((Cl(2) = 'ddd') and (Cl(11) = 'ddd') and (Cl(12)[1] = '.'), 'the fences close');
+  Check(Cl(14) = 'dTdd', 'an XML fence ' + Cl(14));
   H.Free;
   L.Free;
   L := TveLangForFile('x.toml');

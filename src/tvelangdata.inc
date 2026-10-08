@@ -155,6 +155,7 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -371,6 +372,8 @@ const
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 2 /^\s*\{%-?\s*(?:block|macro)\s+(\w+)/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /\{%-?\s*(?:block|for|if|macro|with|filter|call|raw)\b/ /\{%-?\s*end(?:block|for|if|macro|with|filter|call|raw)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -601,6 +604,7 @@ const
     '  match /^(```|~~~)\s*(?:diff|patch)\s*$/i => delimiter push md_diff' + #10 +
     '  match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini' + #10 +
     '  match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make' + #10 +
+    '  match /^(```|~~~)\s*(?:xml|svg|xsd|xsl)\s*$/i => delimiter push md_xml' + #10 +
     '  match /^(```|~~~).*$/ => delimiter push md_code' + #10 +
     '  match /`[^`]+`/ => string' + #10 +
     '  match /\*\*[^*]+\*\*/ => special' + #10 +
@@ -652,6 +656,9 @@ const
     'context md_make' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include make' + #10 +
+    'context md_xml' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include xml' + #10 +
     '' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
@@ -1042,6 +1049,25 @@ const
     'context make_sq default string eolpop' + #10 +
     '  match "''" => string pop' + #10 +
     '' + #10 +
+    'context xml' + #10 +
+    '  match ''<!--'' => comment push xml_comment' + #10 +
+    '  match ''<![CDATA['' => preproc push xml_cdata' + #10 +
+    '  match /<\?[\s\S]*?\?>/ => preproc' + #10 +
+    '  match /<![A-Za-z]+[^>]*>/ => preproc' + #10 +
+    '  match /(<\/?)([A-Za-z_][\w:.-]*)/ => delimiter tag push xml_tag' + #10 +
+    '  match /&(?:#\d+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);/ => entity' + #10 +
+    'context xml_comment default comment' + #10 +
+    '  match ''-->'' => comment pop' + #10 +
+    'context xml_cdata default string' + #10 +
+    '  match '']]>'' => preproc pop' + #10 +
+    'context xml_tag' + #10 +
+    '  match ''/>'' => delimiter pop' + #10 +
+    '  match ''>'' => delimiter pop' + #10 +
+    '  match /([\w:.-]+)(\s*)(=)/ => attr normal operator' + #10 +
+    '  match /"[^"]*"/ => value' + #10 +
+    '  match /''[^'']*''/ => value' + #10 +
+    '  match /[\w:.-]+/ => attr' + #10 +
+    '' + #10 +
     '';
 
   TveLangText11 =
@@ -1102,6 +1128,7 @@ const
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'fold braces' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1347,6 +1374,8 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /\{(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/ /\{\/(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1554,6 +1583,7 @@ const
     'language XML' + #10 +
     'masks *.xml *.xsd *.xsl *.svg' + #10 +
     'start xml' + #10 +
+    'fold /<[A-Za-z](?:[^<>]*[^\/<>])?>/ /<\/[A-Za-z][^<>]*>/' + #10 +
     'context xml' + #10 +
     '  match ''<!--'' => comment push xml_comment' + #10 +
     '  match ''<![CDATA['' => preproc push xml_cdata' + #10 +

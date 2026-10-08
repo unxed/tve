@@ -15,6 +15,7 @@ context md
   match /^(```|~~~)\s*(?:diff|patch)\s*$/i => delimiter push md_diff
   match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini
   match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make
+  match /^(```|~~~)\s*(?:xml|svg|xsd|xsl)\s*$/i => delimiter push md_xml
   match /^(```|~~~).*$/ => delimiter push md_code
   match /`[^`]+`/ => string
   match /\*\*[^*]+\*\*/ => special
@@ -66,3 +67,6 @@ context md_ini
 context md_make
   match /^(```|~~~)\s*$/ => delimiter pop
   include make
+context md_xml
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include xml

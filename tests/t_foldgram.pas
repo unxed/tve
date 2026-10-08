@@ -46,6 +46,15 @@ begin
   { the outline: an entry up to the next one of its level or above, without the blank lines at the end }
   T := '# A'#10'text'#10'## B'#10'more'#10#10'# C'#10'end'#10;
   Check(Regions('Markdown', T) = '0-3 2-3 5-6 ', 'Markdown: ' + Regions('Markdown', T));
+  { markup: the tags (a tag that closes itself does not open), HTML by its container elements (not <p>, <li>, void elements), the template blocks }
+  T := '<?xml version="1.0"?>'#10'<a x="1">'#10'  <b/>'#10'  <c>'#10'    <!-- <d> -->'#10'  </c>'#10'</a>'#10;
+  Check(Regions('XML', T) = '1-6 3-5 ', 'XML: ' + Regions('XML', T));
+  T := '<body>'#10'<p>a'#10'<br>'#10'<ul>'#10'<li>x'#10'</ul>'#10'</body>'#10;
+  Check(Regions('HTML', T) = '0-6 3-5 ', 'HTML: ' + Regions('HTML', T));
+  T := '{% block main %}'#10'<div>'#10'{% if x %}'#10'y'#10'{% endif %}'#10'</div>'#10'{% endblock %}'#10;
+  Check(Regions('Jinja/Twig/Django (HTML, CSS, JavaScript)', T) = '0-6 1-5 2-4 ', 'Jinja: ' + Regions('Jinja/Twig/Django (HTML, CSS, JavaScript)', T));
+  T := '{foreach $a as $b}'#10'{if $b}'#10'x'#10'{/if}'#10'{/foreach}'#10;
+  Check(Regions('Smarty (HTML, CSS, JavaScript)', T) = '0-4 1-3 ', 'Smarty: ' + Regions('Smarty (HTML, CSS, JavaScript)', T));
   Check(Regions('SQL', 'begin'#10'x;'#10'end;'#10) = '', 'SQL has no fold rules');
   { the directive }
   L := TTveLanguage.Create;

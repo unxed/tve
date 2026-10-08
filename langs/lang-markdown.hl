@@ -24,3 +24,4 @@ fold outline
 %include part-diff
 %include part-ini
 %include part-make
+%include part-xml

@@ -8,7 +8,7 @@ const
   Letters = '.cs0ktbpoeTaEvdfPSVAx';
 
 var
-  D: TTveDoc;
+  D, D2: TTveDoc;
   L: TTveLanguage;
   H: TTveHighlighter;
   V: TTveView;
@@ -72,6 +72,57 @@ begin
   V.SemanticNames := False;
   Check(Copy(Cl(4), 1, 2) = '..', 'off again ' + Cl(4));
   V.Free;
+  D.Free;
+  { names that the host gives: those of another open file of the project; a name of the text wins }
+  D := TTveDoc.Create;
+  D.LoadText('uses U;'#10'var x: TOther;'#10'begin'#10'  Helper(x); Local;'#10'end.'#10'procedure Local;'#10'begin end;'#10);
+  D2 := TTveDoc.Create;
+  D2.LoadText('unit U;'#10'interface'#10'type'#10'  TOther = class'#10'  end;'#10'implementation'#10'procedure Helper(A: TOther);'#10'begin end;'#10 +
+    'function Local: Integer;'#10'begin end;'#10'end.'#10);
+  V := TTveView.Create(Rc, nil, nil, D);
+  V.SetLanguage(TveLangByName('Pascal'));
+  V.SemanticNames := True;
+  V.Draw;
+  H := V.Highlighter;
+  Check(Copy(Cl(1), 8, 6) = '......', 'no names of the other file yet ' + Cl(1));
+  V.AddNamesOf(D2, TveLangByName('Pascal'));
+  Check(V.ProjectNameCount = 3, 'three names of the other file');
+  V.Draw;
+  Check(Copy(Cl(1), 8, 6) = 'tttttt', 'a type of the other file ' + Cl(1));
+  Check((Copy(Cl(3), 3, 6) = 'ffffff') and (Copy(Cl(3), 14, 5) = 'fffff'), 'a routine of the other file, one of the text ' + Cl(3));
+  Names := nil;
+  SetLength(Names, 2);
+  Names[0] := 'Local';
+  Names[1] := 'x';
+  V.SetProjectNames(Names, [hcType, hcType]);
+  V.Draw;
+  Check((Copy(Cl(3), 14, 5) = 'fffff') and (Copy(Cl(3), 10, 1) = 't') and (Copy(Cl(3), 3, 6) = '......'), 'set replaces; the text wins ' + Cl(3));
+  V.ClearProjectNames;
+  V.Draw;
+  Check((V.ProjectNameCount = 0) and (Copy(Cl(3), 10, 1) = '.'), 'cleared ' + Cl(3));
+  V.SetLanguage(TveLangByName('SQL'));
+  V.SetProjectNames(Names, [hcType, hcType]);
+  V.Draw;
+  H := V.Highlighter;
+  Check(Pos('t', Cl(3)) = 0, 'a grammar without "semantic" takes none ' + Cl(3));
+  V.Free;
+  D2.Free;
+  D.Free;
+  { many names: sorted and found }
+  D := TTveDoc.Create;
+  D.LoadText('n17 n2999 n3000 zz'#10);
+  L := TveLangByName('C/C++');
+  H := TTveHighlighter.Create(D, L);
+  SetLength(Names, 3000);
+  SetLength(Classes, 3000);
+  for I := 0 to 2999 do
+  begin
+    Names[I] := 'n' + IntToStr(2999 - I);
+    Classes[I] := hcType;
+  end;
+  H.SetNames(Names, Classes);
+  Check(Cl(0) = 'ttt.ttttt.........', 'many names (n3000 is none): ' + Cl(0));
+  H.Free;
   D.Free;
   Finish;
 end.

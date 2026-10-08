@@ -76,6 +76,8 @@ type
     FDragDrop: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
     FSemantic: Boolean;
+    FProjNames: TWordArr;
+    FProjClasses: array of Byte;
     FSemValid: Boolean;
     FSemVersion: LongWord;
     FDropShown: Boolean;              // a drag of text is over the view: the cell where it would go is marked
@@ -87,6 +89,7 @@ type
     FWrapMap: TTveWrapMap;
     procedure SetWrap(V: Boolean);
     procedure SetSemantic(V: Boolean);
+    procedure FindNames;
     procedure EnsureWrap;
     function CursorRow: Int64;
     function RowPlace(Row: Int64; out L: Int64; out A, B: Integer; out Last: Boolean): Boolean;
@@ -162,6 +165,14 @@ type
     // when the text changed, before drawing, for a text up to TveSemanticAutoLimit bytes; a longer one keeps the names until UpdateNames.
     property SemanticNames: Boolean read FSemantic write SetSemantic;
     procedure UpdateNames;
+    // Names that the host gives besides those of the text itself, as those that TveSemanticNames finds in the other open files of the same project
+    // (tve reads no files by itself): they are coloured as the names of the text are (with SemanticNames, in a grammar with "semantic"); a name of the
+    // text wins over the same name given here. Set replaces them, Add adds to them, AddNamesOf adds the names of another document by its language.
+    procedure SetProjectNames(const Names: TWordArr; const Classes: array of Byte);
+    procedure AddProjectNames(const Names: TWordArr; const Classes: array of Byte);
+    procedure AddNamesOf(ADoc: TTveDoc; ALang: TTveLanguage);
+    procedure ClearProjectNames;
+    function ProjectNameCount: Integer;
     // Soft wrap: a long line is shown as several rows (no horizontal scrolling); the text is not changed.
     property Wrap: Boolean read FWrap write SetWrap;
     // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
@@ -349,18 +360,84 @@ begin
   DrawView;
 end;
 
+procedure TTveView.FindNames;
+var
+  Names: TWordArr;
+  Classes: TTveByteArray;
+  I, N: Integer;
+begin
+  TveSemanticNames(FEditor.Doc, FHl.Language, Names, Classes);
+  if (Length(FProjNames) > 0) and FHl.Language.Semantic then
+  begin
+    { the names of the text first: the highlighter keeps the first of equal names }
+    N := Length(Names);
+    SetLength(Names, N + Length(FProjNames));
+    SetLength(Classes, N + Length(FProjNames));
+    for I := 0 to High(FProjNames) do
+    begin
+      Names[N + I] := FProjNames[I];
+      Classes[N + I] := FProjClasses[I];
+    end;
+  end;
+  FHl.SetNames(Names, Classes);
+  FSemValid := True;
+  FSemVersion := FEditor.Doc.Buffer.Version;
+end;
+
 procedure TTveView.UpdateNames;
+begin
+  if FHl = nil then
+    Exit;
+  FindNames;
+  DrawView;
+end;
+
+procedure TTveView.SetProjectNames(const Names: TWordArr; const Classes: array of Byte);
+begin
+  FProjNames := nil;
+  FProjClasses := nil;
+  AddProjectNames(Names, Classes);
+end;
+
+procedure TTveView.AddProjectNames(const Names: TWordArr; const Classes: array of Byte);
+var
+  I, N: Integer;
+begin
+  N := Length(FProjNames);
+  SetLength(FProjNames, N + Length(Names));
+  SetLength(FProjClasses, N + Length(Names));
+  for I := 0 to High(Names) do
+  begin
+    FProjNames[N + I] := Names[I];
+    if I <= High(Classes) then
+      FProjClasses[N + I] := Classes[I]
+    else
+      FProjClasses[N + I] := hcType;
+  end;
+  FSemValid := False;
+  DrawView;
+end;
+
+procedure TTveView.AddNamesOf(ADoc: TTveDoc; ALang: TTveLanguage);
 var
   Names: TWordArr;
   Classes: TTveByteArray;
 begin
-  if FHl = nil then
-    Exit;
-  TveSemanticNames(FEditor.Doc, FHl.Language, Names, Classes);
-  FHl.SetNames(Names, Classes);
-  FSemValid := True;
-  FSemVersion := FEditor.Doc.Buffer.Version;
+  TveSemanticNames(ADoc, ALang, Names, Classes);
+  AddProjectNames(Names, Classes);
+end;
+
+procedure TTveView.ClearProjectNames;
+begin
+  FProjNames := nil;
+  FProjClasses := nil;
+  FSemValid := False;
   DrawView;
+end;
+
+function TTveView.ProjectNameCount: Integer;
+begin
+  Result := Length(FProjNames);
 end;
 
 procedure TTveView.SetClassAttr(C: Integer; const Attr: TColorAttr);
@@ -696,8 +773,6 @@ var
   OccWord, OccText: AnsiString;
   OccNext, OccA, OccB: Integer;
   OccAttr: TColorAttr;
-  SemNames: TWordArr;
-  SemClasses: TTveByteArray;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -739,10 +814,7 @@ begin
   if FSemantic and (FHl <> nil) and (not FSemValid or ((FSemVersion <> FEditor.Doc.Buffer.Version) and
     (FEditor.Doc.Buffer.Length <= TveSemanticAutoLimit))) then
   begin
-    TveSemanticNames(FEditor.Doc, FHl.Language, SemNames, SemClasses);
-    FHl.SetNames(SemNames, SemClasses);
-    FSemValid := True;
-    FSemVersion := FEditor.Doc.Buffer.Version;
+    FindNames;
   end;
   Normal := NormalAttr;
   SelAttr := SelectedAttr;

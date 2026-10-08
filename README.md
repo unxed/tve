@@ -31,7 +31,9 @@ Grammars (`langs/`) have contexts and a stack, so a language can live inside ano
 
 **Semantic colouring**: with `semantic` in the grammar (C/C++, Go, JavaScript, Pascal, Python, Shell), the names of the types and routines that the outline
 finds are coloured where the text uses them (`View.SemanticNames`; the program turns it on). The names are found again before drawing when the text changed, for a
-text up to `TveSemanticAutoLimit` (128 KB); a longer one keeps them until `View.UpdateNames`.
+text up to `TveSemanticAutoLimit` (128 KB); a longer one keeps them until `View.UpdateNames`. A host adds the names of the other open files of the same project
+(tve reads no files by itself): `View.AddNamesOf(Doc, Lang)` takes those that the outline of another document defines, `SetProjectNames` / `AddProjectNames`
+take a list of its own, `ClearProjectNames` drops them; a name of the text itself wins over the same name given so.
 
 YAML block scalars (`key: |`, `key: >-`, at any indentation; a comment after the indicator is a comment) colour their lines as text up to the next line that
 is not indented more than the key (a context declared `indentpop`). Markdown fences take `yaml`, `diff`, `toml`/`ini`, `make`, `xml`, `php`, `smarty`/`tpl`,
@@ -117,7 +119,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   view) is not recorded; the program records and plays only the macro without a name.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar: HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); SQL statements are not regions by themselves.
-* Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); a YAML block scalar is known by its key
+* Colouring: the semantic names are those of the outlines of the file and of the documents the host gives (no variables, no scopes; units and headers that are
+  not open are not read); a YAML block scalar is known by its key
   (not as an item of a list: `- |`).
 
 ## Audit

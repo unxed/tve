@@ -1567,30 +1567,68 @@ end;
 
 procedure TTveHighlighter.SetNames(const Names: TWordArr; const Classes: array of Byte);
 var
-  I, J: Integer;
-  W: AnsiString;
-  C: Byte;
+  I, J, K, W, Lo, Mid, Hi, N: Integer;
+  Keys: TWordArr;
+  Idx, Tmp: array of Integer;
 begin
-  SetLength(FNames, Length(Names));
-  SetLength(FNameCls, Length(Names));
-  for I := 0 to High(Names) do
+  N := Length(Names);
+  SetLength(Keys, N);
+  SetLength(Idx, N);
+  SetLength(Tmp, N);
+  for I := 0 to N - 1 do
   begin
     if FLang.SemanticNoCase then
-      W := LowerCase(Names[I])
+      Keys[I] := LowerCase(Names[I])
     else
-      W := Names[I];
-    C := Classes[I];
-    { insertion into the sorted list (the names of a document are few) }
-    J := I - 1;
-    while (J >= 0) and (FNames[J] > W) do
-    begin
-      FNames[J + 1] := FNames[J];
-      FNameCls[J + 1] := FNameCls[J];
-      Dec(J);
-    end;
-    FNames[J + 1] := W;
-    FNameCls[J + 1] := C;
+      Keys[I] := Names[I];
+    Idx[I] := I;
   end;
+  { a stable merge sort (the names of a project can be many): of equal names the first one stays }
+  W := 1;
+  while W < N do
+  begin
+    Lo := 0;
+    while Lo < N do
+    begin
+      Mid := Lo + W;
+      if Mid > N then Mid := N;
+      Hi := Lo + 2 * W;
+      if Hi > N then Hi := N;
+      I := Lo;
+      J := Mid;
+      K := Lo;
+      while K < Hi do
+      begin
+        if (J >= Hi) or ((I < Mid) and (Keys[Idx[I]] <= Keys[Idx[J]])) then
+        begin
+          Tmp[K] := Idx[I];
+          Inc(I);
+        end
+        else
+        begin
+          Tmp[K] := Idx[J];
+          Inc(J);
+        end;
+        Inc(K);
+      end;
+      Lo := Hi;
+    end;
+    for I := 0 to N - 1 do
+      Idx[I] := Tmp[I];
+    W := W * 2;
+  end;
+  SetLength(FNames, N);
+  SetLength(FNameCls, N);
+  K := 0;
+  for I := 0 to N - 1 do
+    if (K = 0) or (FNames[K - 1] <> Keys[Idx[I]]) then
+    begin
+      FNames[K] := Keys[Idx[I]];
+      FNameCls[K] := Classes[Idx[I]];
+      Inc(K);
+    end;
+  SetLength(FNames, K);
+  SetLength(FNameCls, K);
 end;
 
 procedure TTveHighlighter.ColourNames(const Text: AnsiString; var Cls: TByteClasses);

@@ -24,8 +24,10 @@ const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
 
 type
-  TTveHostCommand = function(Sender: TObject; Cmd: Integer): Boolean of object;
-  TTveLineAttr = function(Sender: TObject; Line: Int64; var Attr: TColorAttr): Boolean of object;
+  // The sender of a callback (a host that has a rule against the name of the root class can use this one).
+  TTveSender = TObject;
+  TTveHostCommand = function(Sender: TTveSender; Cmd: Integer): Boolean of object;
+  TTveLineAttr = function(Sender: TTveSender; Line: Int64; var Attr: TColorAttr): Boolean of object;
 
   TTveView = class(TScroller)
   private

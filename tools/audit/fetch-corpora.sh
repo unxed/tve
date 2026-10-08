@@ -2,6 +2,7 @@
 # Fetches the reference corpora of tools/audit/borrow-audit.py into $CORPORA (default build/corpora, never committed)
 # and writes $CORPORA/list.txt, one source file per line.
 #   fpc      Free Pascal 3.2.2: packages fv, ide, fcl-base, rtl-objpas, fcl-passrc (GPL / LGPL with exception)
+#   fpcmain  the same packages of the main branch of Free Pascal
 #   fpide    the Free Pascal IDE on tv3 (unxed/sp, GPL)
 #   dn214    DOS Navigator OSP 2.14 sources (licence of RIT Research Labs / DN OSP)
 #   dn151    DOS Navigator 1.51 sources (RIT Research Labs)
@@ -28,6 +29,12 @@ if [ ! -d fpc ]; then
     git -C fpc.tmp sparse-checkout set packages/fv packages/ide packages/fcl-base packages/rtl-objpas packages/fcl-passrc
     mv fpc.tmp fpc
 fi
+if [ ! -d fpcmain ]; then
+    rm -rf fpcmain.tmp
+    git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fpc/FPCSource fpcmain.tmp
+    git -C fpcmain.tmp sparse-checkout set packages/fv packages/ide packages/fcl-base packages/rtl-objpas packages/fcl-passrc
+    mv fpcmain.tmp fpcmain
+fi
 if [ ! -d sp ]; then
     rm -rf sp.tmp && git clone -q --depth 1 https://github.com/unxed/sp sp.tmp && mv sp.tmp sp
 fi
@@ -53,7 +60,7 @@ if [ ! -d bp7tv ]; then
 fi
 
 {
-    find fpc/packages -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
+    find fpc/packages fpcmain/packages -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
     find sp/fpide -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
     find dn214 dn151 bp7tv -type f \( -iname '*.pas' -o -iname '*.pp' -o -iname '*.inc' \)
 } | LC_ALL=C sort | sed "s|^|$C/|" > list.txt

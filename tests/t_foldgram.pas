@@ -59,7 +59,17 @@ begin
   Check(Regions('Jinja/Twig/Django (HTML, CSS, JavaScript)', T) = '0-6 1-5 2-4 ', 'Jinja: ' + Regions('Jinja/Twig/Django (HTML, CSS, JavaScript)', T));
   T := '{foreach $a as $b}'#10'{if $b}'#10'x'#10'{/if}'#10'{/foreach}'#10;
   Check(Regions('Smarty (HTML, CSS, JavaScript)', T) = '0-4 1-3 ', 'Smarty: ' + Regions('Smarty (HTML, CSS, JavaScript)', T));
-  Check(Regions('SQL', 'begin'#10'x;'#10'end;'#10) = '', 'SQL has no fold rules');
+  { tags over several lines: an XML tag that closes itself on a later line is a region of its own lines, an end tag split before its > closes }
+  T := '<root>'#10'  <item a="1"'#10'        b="2"/>'#10'  <group'#10'     name="x">'#10'    <leaf/>'#10'  </group>'#10'</root>'#10;
+  Check(Regions('XML', T) = '0-7 1-2 3-6 ', 'XML tags over lines: ' + Regions('XML', T));
+  T := '<body>'#10'<div'#10'  class="a">'#10'<p>x</p>'#10'</div'#10'>'#10'</body>'#10;
+  Check(Regions('HTML', T) = '0-6 1-4 ', 'HTML tags over lines: ' + Regions('HTML', T));
+  { SQL: brackets over lines, the blocks of a routine (not BEGIN; of a transaction), END IF and END LOOP close their own words }
+  T := 'CREATE TABLE IF NOT EXISTS t ('#10'  a int,'#10'  b text -- ('#10');'#10'BEGIN;'#10'CREATE FUNCTION f() RETURNS int AS $$'#10'BEGIN'#10 +
+    '  IF x > 1 THEN'#10'    LOOP'#10'      EXIT;'#10'    END LOOP;'#10'  END IF;'#10'  RETURN CASE WHEN a THEN 1 ELSE 0 END;'#10'END;'#10 +
+    '$$ LANGUAGE plpgsql;'#10'COMMIT;'#10'SELECT CASE'#10'  WHEN a THEN 1'#10'END FROM t;'#10;
+  Check(Regions('SQL', T) = '0-3 6-13 7-11 8-10 16-18 ', 'SQL: ' + Regions('SQL', T));
+  Check(Regions('SQL', 'begin'#10'x;'#10'end;'#10) = '0-2 ', 'SQL: a block of begin and end');
   { the directive }
   L := TTveLanguage.Create;
   Check(not L.Load('language X'#10'fold sideways'#10, Err), 'bad fold: ' + Err);

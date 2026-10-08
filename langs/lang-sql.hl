@@ -3,4 +3,6 @@ masks *.sql
 start sql
 ident _
 symbol 1 /(?i)^\s*create\s+(?:or\s+replace\s+)?(?:temp(?:orary)?\s+)?(?:table|view|function|procedure|trigger|index|type)\s+(?:if\s+not\s+exists\s+)?([\w."`\[\]]+)/
+fold /\(/ /\)/
+fold /(?i)\bbegin\s*(?:$|--)|\b(?:case|loop)\b|\bif\b.*\bthen\s*(?:$|--)/ /(?i)\bend\b(?:\s+(?:if|loop|case)\b)?/
 %include part-sql

@@ -47,7 +47,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   `View.Folds` is the list; the vertical movement and the scroll bar skip hidden lines. The grammar of a language tells what can be folded (`fold braces`,
   `fold indent`, `fold outline`, `fold /OPEN/ /CLOSE/` for words such as `begin` and `end`; `TveFoldRegions`): C/C++, Go, JavaScript, CSS, JSON and PHP by braces,
   Pascal by its block words (the `case` of a variant record is no block: `fold skip /WORD/ in /OUTER/`), Shell by braces and `if`/`fi`, `case`/`esac`, the loops and `done`, Python and YAML by indentation, Markdown, INI/TOML, diff and
-  Makefile by the outline, XML by its tags, HTML (and PHP, Smarty, Jinja) by its container elements and the blocks of the template language. `FoldToggle` and `FoldCollapse` on a line where no fold is take the innermost region of the grammar there (and put the cursor on
+  Makefile by the outline, XML by its tags, HTML (and PHP, Smarty, Jinja) by its container elements and the blocks of the template language (a tag
+  may span lines), SQL by brackets over lines and the blocks of its routines (`BEGIN` .. `END`, `CASE`, `LOOP` .. `END LOOP`, `IF` .. `THEN` .. `END IF`). `FoldToggle` and `FoldCollapse` on a line where no fold is take the innermost region of the grammar there (and put the cursor on
   its first line when it hides the cursor); `FoldAll` (Ctrl+K -; B also Ctrl+Shift+Num-) collapses every region, `UnfoldAll` (Ctrl+K +; B also Ctrl+Shift+Num+) expands every fold.
 * **Templates** (`src/tvetemplates.pas`): `View.Templates` holds templates loaded from a text (`[shortcut] description` starts one); command `Template` (Ctrl+J)
   replaces the word before the cursor by its template. Variables: `$DATE`, `$TIME` (with an optional format), `$PROMPT(question)` (asked through `View.OnPrompt`),
@@ -108,8 +109,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   outline.
 * The macro is one per view and has no conditions other than a failed step; what a host does to the text by itself (not through the view) is not recorded.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
-* Folding by the grammar has no rules for SQL; HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); a tag that spans lines does
-  not count.
+* Folding by the grammar: HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); SQL statements are not regions by themselves.
 * Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); the Markdown fences know all the grammars
   but Smarty, PHP and Jinja; a YAML block scalar is known by its key up to an indentation of 16 (a comment after `|` is coloured as its text).
 

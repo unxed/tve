@@ -183,8 +183,14 @@ var
     Inc(Count);
   end;
 
+  { a word inside a closing one (the loop of end loop) opens nothing; nor one that "fold skip" names }
   function IsSkipped(Pair, P: Integer): Boolean;
+  var
+    X: Integer;
   begin
+    for X := 0 to NC - 1 do
+      if (P > CloseAt[X]) and (P < CloseEnd[X]) then
+        Exit(True);
     Result := (Lang.FoldSkip <> nil) and (Depths[Pair] > 0) and Outer[Pair][Depths[Pair] - 1] and Lang.FoldSkip.ExecAt(Text, P, Caps);
   end;
 

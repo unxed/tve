@@ -159,7 +159,7 @@ const
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'outline regions' + #10 +
-    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*(?:>|$)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -378,7 +378,7 @@ const
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 2 /^\s*\{%-?\s*(?:block|macro)\s+(\w+)/' + #10 +
     'outline regions' + #10 +
-    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*(?:>|$)/' + #10 +
     'fold /\{%-?\s*(?:block|for|if|macro|with|filter|call|raw)\b/ /\{%-?\s*end(?:block|for|if|macro|with|filter|call|raw)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
@@ -1139,7 +1139,7 @@ const
     'outline regions' + #10 +
     'outline signature /\s*:\s*\??[\w\\]+/' + #10 +
     'fold braces' + #10 +
-    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*(?:>|$)/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
     '  match ''<!--'' => comment push html_comment' + #10 +
@@ -1388,7 +1388,7 @@ const
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 2 /^\s*\{(?:block|function)\s+(?:name\s*=\s*)?["'']?([\w-]+)/' + #10 +
     'outline regions' + #10 +
-    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
+    'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*(?:>|$)/' + #10 +
     'fold /\{(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/ /\{\/(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
@@ -1570,6 +1570,8 @@ const
     'start sql' + #10 +
     'ident _' + #10 +
     'symbol 1 /(?i)^\s*create\s+(?:or\s+replace\s+)?(?:temp(?:orary)?\s+)?(?:table|view|function|procedure|trigger|index|type)\s+(?:if\s+not\s+exists\s+)?([\w."`\[\]]+)/' + #10 +
+    'fold /\(/ /\)/' + #10 +
+    'fold /(?i)\bbegin\s*(?:$|--)|\b(?:case|loop)\b|\bif\b.*\bthen\s*(?:$|--)/ /(?i)\bend\b(?:\s+(?:if|loop|case)\b)?/' + #10 +
     'context sql nocase' + #10 +
     '  match /--.*/ => comment' + #10 +
     '  match ''/*'' => comment push sql_comment' + #10 +
@@ -1597,7 +1599,7 @@ const
     'language XML' + #10 +
     'masks *.xml *.xsd *.xsl *.svg' + #10 +
     'start xml' + #10 +
-    'fold /<[A-Za-z](?:[^<>]*[^\/<>])?>/ /<\/[A-Za-z][^<>]*>/' + #10 +
+    'fold /<[A-Za-z](?:[^<>]*[^\/<>])?(?:>|$)/ /<\/[A-Za-z][^<>]*>|^[^<>]*\/>/' + #10 +
     'context xml' + #10 +
     '  match ''<!--'' => comment push xml_comment' + #10 +
     '  match ''<![CDATA['' => preproc push xml_cdata' + #10 +

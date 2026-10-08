@@ -1,5 +1,5 @@
 language XML
 masks *.xml *.xsd *.xsl *.svg
 start xml
-fold /<[A-Za-z](?:[^<>]*[^\/<>])?>/ /<\/[A-Za-z][^<>]*>/
+fold /<[A-Za-z](?:[^<>]*[^\/<>])?(?:>|$)/ /<\/[A-Za-z][^<>]*>|^[^<>]*\/>/
 %include part-xml

@@ -34,7 +34,8 @@
 //                                  them, an entry of the outline up to the next entry of its level or above)
 //   semantic [nocase]             (the names that the outline finds, types and routines, are coloured where the text uses them; see TveSemanticNames;
 //                                  nocase: a name in other letter case is the same name)
-//   fold /OPEN/ /CLOSE/           (a region from a word that opens it to the word that closes it, as begin and end; a / inside is written \/)
+//   fold /OPEN/ /CLOSE/           (a region from a word that opens it to the word that closes it, as begin and end; a / inside is written \/; an open
+//                                  word inside a closing one, as the loop of end loop, opens nothing)
 //   fold skip /WORD/ in /OUTER/   (an open word that WORD matches opens nothing when the innermost open region of its pair began with one that OUTER
 //                                  matches: the case of a Pascal variant record)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)

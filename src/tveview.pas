@@ -70,6 +70,9 @@ type
     FMultiClick: Boolean;
     FDragDrop: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
+    FDropShown: Boolean;              // a drag of text is over the view: the cell where it would go is marked
+    FDropL: Int64;
+    FDropC: Integer;
     FHighlightColumn: Boolean;
     FMessage: AnsiString;
     FWrap: Boolean;
@@ -93,6 +96,11 @@ type
     procedure DoMouse(var Event: TEvent);
     function InSelection(L: Int64; C: Integer): Boolean;
     procedure DragSelection(var Event: TEvent);
+    procedure ShowDrop(L: Int64; C: Integer);
+    procedure HideDrop;
+    procedure DropInto(Target: TTveView; const Where: TPoint; Copying: Boolean);
+    function EditorAt(const Where: TPoint): TTveView;
+    procedure DragScroll(var P: TPoint);
     procedure Remember;
     procedure Complete;
     function RunCommand(Cmd: Integer): Boolean;
@@ -109,6 +117,8 @@ type
     function SelectedAttr: TColorAttr; virtual;
     function MessageAttr: TColorAttr; virtual;
     function HighlightAttr: TColorAttr; virtual;
+    { the cell where dragged text would be dropped (the highlight colour by default) }
+    function DropAttr: TColorAttr; virtual;
     { the other occurrences of the word under the cursor }
     function OccurrenceAttr: TColorAttr; virtual;
   public
@@ -130,6 +140,10 @@ type
     property MultiClick: Boolean read FMultiClick write FMultiClick;
     // True (the default): a press on the selected text and a drag moves the text to where the button is released (Ctrl: copies it). One undo step.
     property DragDrop: Boolean read FDragDrop write FDragDrop;
+    // True while dragged text is over the view (the drop place is marked at DropLine, DropCell).
+    property DropShown: Boolean read FDropShown;
+    property DropLine: Int64 read FDropL;
+    property DropCell: Integer read FDropC;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
     // Soft wrap: a long line is shown as several rows (no horizontal scrolling); the text is not changed.
     property Wrap: Boolean read FWrap write SetWrap;
@@ -518,6 +532,11 @@ begin
   Result := AttrReversed(SelectedAttr);
 end;
 
+function TTveView.DropAttr: TColorAttr;
+begin
+  Result := HighlightAttr;
+end;
+
 function TTveView.OccurrenceAttr: TColorAttr;
 begin
   Result := NormalAttr;
@@ -828,6 +847,10 @@ begin
               if (N >= SelA) and (N >= X0) and (N < X0 + TX) then
                 B.MoveChar(GutterWidth + N - X0, Ord(' '), SelAttr, 1);
         end;
+        { the place where dragged text would go }
+        if FDropShown and (L = FDropL) and (FDropC >= X0) and ((FDropC < X0 + TX) or (IsLast and (FDropC = X0 + TX))) and
+          (GutterWidth + FDropC - X0 < Size.X) then
+          B.PutAttribute(GutterWidth + FDropC - X0, DropAttr);
       end;
       WriteLineD(0, Y, Size.X, 1, B);
     end;
@@ -1344,6 +1367,126 @@ begin
 end;
 
 // The button went down on the selected text: a click puts the cursor there, a drag moves the text (Ctrl: copies it) to where the button goes up.
+{ A pointer above or below the view while a button is held scrolls by as many rows as it is away from the view (at most a page) and stands at the edge row. }
+procedure TTveView.DragScroll(var P: TPoint);
+var
+  N: Integer;
+begin
+  if P.Y < 0 then
+  begin
+    N := -P.Y;
+    P.Y := 0;
+  end
+  else if P.Y >= Size.Y then
+  begin
+    N := P.Y - Size.Y + 1;
+    P.Y := Size.Y - 1;
+  end
+  else
+    Exit;
+  if N > Size.Y then
+    N := Size.Y;
+  if P.Y = 0 then
+    ScrollLines(-N)
+  else
+    ScrollLines(N);
+end;
+
+procedure TTveView.ShowDrop(L: Int64; C: Integer);
+begin
+  if FDropShown and (FDropL = L) and (FDropC = C) then
+    Exit;
+  FDropShown := True;
+  FDropL := L;
+  FDropC := C;
+  DrawView;
+end;
+
+procedure TTveView.HideDrop;
+begin
+  if not FDropShown then
+    Exit;
+  FDropShown := False;
+  DrawView;
+end;
+
+{ The topmost visible view at a point of the screen, inside groups. }
+function ViewAtPoint(G: TGroup; const Where: TPoint): TView;
+var
+  V: TView;
+begin
+  Result := nil;
+  V := G.Last;
+  if V = nil then
+    Exit;
+  repeat
+    V := V.Next;
+    if ((V.State and sfVisible) <> 0) and V.MouseInView(Where) then
+    begin
+      Result := V;
+      if V is TGroup then
+      begin
+        V := ViewAtPoint(TGroup(V), Where);
+        if V <> nil then
+          Result := V;
+      end;
+      Exit;
+    end;
+  until V = G.Last;
+end;
+
+function TTveView.EditorAt(const Where: TPoint): TTveView;
+var
+  G: TGroup;
+  V: TView;
+begin
+  Result := nil;
+  G := Owner;
+  if G = nil then
+    Exit;
+  while G.Owner <> nil do
+    G := G.Owner;
+  V := ViewAtPoint(G, Where);
+  if (V <> Self) and (V is TTveView) then
+    Result := TTveView(V);
+end;
+
+{ The selected text goes to another view: into its document at the place under the pointer (moved, or copied with Ctrl). One undo step on each side. }
+procedure TTveView.DropInto(Target: TTveView; const Where: TPoint; Copying: Boolean);
+var
+  A, B, Ofs: Int64;
+  L: Int64;
+  C: Integer;
+  S: AnsiString;
+begin
+  if (FEditor.SelKind = skColumn) or not FEditor.SelectionRange(A, B) or (B <= A) then
+    Exit;
+  Target.Hit(Where, L, C);
+  if Target.Doc = Doc then
+  begin
+    { two views of one document: as a drag inside it }
+    DragBlock(FEditor, FEditor.LineCellToOffset(L, C), Copying);
+    Sync;
+    Target.Refresh;
+    Exit;
+  end;
+  S := Doc.Buffer.Copy(A, B - A);
+  Target.Editor.GotoLineCell(L, C);
+  Ofs := Target.Editor.Offset;
+  if not Target.Doc.Insert(Ofs, S) then
+    Exit;
+  Target.Editor.SetSelection(skStream, Ofs);
+  Target.Editor.GotoOffset(Ofs + Length(S));
+  if not Copying then
+    FEditor.DeleteSelection;
+  Sync;
+  { the window of the other editor comes to the front with it }
+  if Target.Owner <> nil then
+    Target.Owner.Focus;
+  Target.Select;
+  Target.Refresh;
+end;
+
 procedure TTveView.DragSelection(var Event: TEvent);
 var
   L: Int64;
@@ -1353,12 +1496,14 @@ var
   P: TPoint;
   OldL: Int64;
   OldC: Integer;
+  Target, Over: TTveView;
 begin
   Start := Event.Where;
   Moved := False;
   Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
   OldL := FEditor.Line;
   OldC := FEditor.Cell;
+  Target := nil;
   FEditor.FreezeSelection;        // the selection stays while the cursor shows where the text would go
   while MouseEvent(Event, evMouseMove or evMouseAuto) do
   begin
@@ -1367,18 +1512,47 @@ begin
     if not Moved then
       Continue;
     Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
+    { over another editor: that one shows where the text would go }
+    Over := nil;
+    if not MouseInView(Event.Where) then
+      Over := EditorAt(Event.Where);
+    if Over <> Target then
+    begin
+      if Target <> nil then
+        Target.HideDrop;
+      Target := Over;
+    end;
+    if Target <> nil then
+    begin
+      Target.Hit(Event.Where, L, C);
+      Target.ShowDrop(L, C);
+      HideDrop;
+      Continue;
+    end;
     P := MakeLocal(Event.Where);
-    if P.Y < 0 then
-      ScrollLines(-1)
-    else if P.Y >= Size.Y then
-      ScrollLines(1);
-    Hit(Event.Where, L, C);
+    DragScroll(P);
+    Hit(MakeGlobal(P), L, C);
     FEditor.GotoLineCell(L, C);
+    FDropShown := True;
+    FDropL := FEditor.Line;
+    FDropC := FEditor.Cell;
     Sync;
   end;
+  FDropShown := False;
   if (Event.ControlKeyState and kbCtrlShift) <> 0 then
     Copying := True;
-  Hit(Event.Where, L, C);
+  if Target <> nil then
+  begin
+    Target.HideDrop;
+    FEditor.GotoLineCell(OldL, OldC);
+    DropInto(Target, Event.Where, Copying);
+    Sync;
+    Exit;
+  end;
+  P := MakeLocal(Event.Where);
+  if P.Y < 0 then P.Y := 0;
+  if P.Y >= Size.Y then P.Y := Size.Y - 1;
+  Hit(MakeGlobal(P), L, C);
   if not Moved then
   begin
     FEditor.ClearSelection;
@@ -1394,6 +1568,7 @@ var
   L: Int64;
   C: Integer;
   Extend: Boolean;
+  P: TPoint;
 begin
   Extend := (Event.ControlKeyState and kbShift) <> 0;
   Hit(Event.Where, L, C);
@@ -1439,7 +1614,9 @@ begin
   Sync;
   while MouseEvent(Event, evMouseMove or evMouseAuto) do
   begin
-    Hit(Event.Where, L, C);
+    P := MakeLocal(Event.Where);
+    DragScroll(P);
+    Hit(MakeGlobal(P), L, C);
     FEditor.GotoLineCell(L, C);
     Sync;
   end;

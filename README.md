@@ -79,7 +79,9 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   a Pascal unit the routines come from the implementation part, so a routine is listed once. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program
   shows it in a list dialog (`TveListDialog`).
 * **Drag and drop**: a press on selected text and a drag moves it to where the button is released, Ctrl copies; one undo step (`DragBlock`, `View.DragDrop`).
-  Column selections are not dragged.
+  While dragging, the cell where the text would go is marked (`View.DropAttr`, the highlight colour by default). Released over another editor view, the text
+  goes into its document at that place (moved, or copied with Ctrl), is selected there, and that window gets the focus. A pointer above or below the view (while
+  dragging or selecting) scrolls it by as many rows as the pointer is away from it, at most a page per mouse event. Column selections are not dragged.
 
 ## What is not done
 
@@ -87,10 +89,9 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   their rules (no nesting).
 * The macro is one per view and has no conditions other than a failed step; a command that the host handles itself with a dialog other than find and replace
   (go to line, insert a character) is not recorded.
-* Drag and drop works inside one view; no dragging to another window and no auto-scroll speed control (one line per mouse event outside the view).
+* Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Colouring: no semantic colouring (a function name that is only known from its definition), no folding by grammar, the Markdown fences know fewer languages than there are grammars
   (no YAML, diff, INI, Makefile inside a fence), block scalars of YAML are coloured as plain text.
-* The hardware cursor shows the drop place during a drag; there is no separate drop marker.
 
 ## Audit
 

@@ -6,4 +6,5 @@ symbol 1 /^\s*function\s+([\w-]+)/
 symbol 1 /^\s*([A-Za-z_][\w-]*)\s*\(\s*\)/
 fold braces
 fold /\b(?:if|case|for|while|until|select)\b/ /\b(?:fi|esac|done)\b/
+semantic
 %include part-sh

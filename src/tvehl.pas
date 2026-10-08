@@ -25,6 +25,8 @@
 //                                  the implementation part of a Pascal unit, so a routine is not listed twice)
 //   fold braces | indent | outline   (the regions that can be folded, see TveFoldRegions: from a { to its }, the lines indented more than the line above
 //                                  them, an entry of the outline up to the next entry of its level or above)
+//   semantic [nocase]             (the names that the outline finds, types and routines, are coloured where the text uses them; see TveSemanticNames;
+//                                  nocase: a name in other letter case is the same name)
 //   fold /OPEN/ /CLOSE/           (a region from a word that opens it to the word that closes it, as begin and end; a / inside is written \/)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
 //   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
@@ -127,6 +129,7 @@ type
     FOutlineFromLevel: Integer;
     FOutlineFrom: TTveRegex;
     FFoldBraces, FFoldIndent, FFoldOutline: Boolean;
+    FSemantic, FSemanticNoCase: Boolean;
     FFoldOpen, FFoldClose: array of TTveRegex;
     FName: AnsiString;
     FMasks: AnsiString;
@@ -162,6 +165,10 @@ type
     property OutlineNest: Integer read FOutlineNest;
     property OutlineFromLevel: Integer read FOutlineFromLevel;
     property OutlineFrom: TTveRegex read FOutlineFrom;
+    property Semantic: Boolean read FSemantic;
+    property SemanticNoCase: Boolean read FSemanticNoCase;
+    // A byte can start (First) or continue an identifier.
+    function IsIdent(C: Char; First: Boolean): Boolean;
     // The "fold" directives.
     property FoldBraces: Boolean read FFoldBraces;
     property FoldIndent: Boolean read FFoldIndent;
@@ -179,7 +186,10 @@ type
     FDoc: TTveDoc;
     FStates: array of LongInt;       // the state at the start of line I (valid for I <= FValid)
     FValid: Int64;
+    FNames: TWordArr;                // sorted (lower case for a language whose names are not case sensitive)
+    FNameCls: array of Byte;
     function StateAt(L: Int64): LongInt;
+    procedure ColourNames(const Text: AnsiString; var Cls: TByteClasses);
     procedure DocChange(Doc: TTveDoc; Offset, Removed, Inserted: Int64);
   public
     constructor Create(ADoc: TTveDoc; ALang: TTveLanguage);
@@ -189,6 +199,9 @@ type
     procedure ClassifyLine(L: Int64; out Cls: TByteClasses);
     procedure Classify(const Text: AnsiString; StartState: LongInt; out Cls: TByteClasses; out EndState: LongInt);
     procedure Invalidate;
+    // Names with their classes: an identifier of the text that the grammar left normal and that is one of them gets its class (the names of the
+    // document that the outline found, see TveSemanticNames). An empty list turns it off.
+    procedure SetNames(const Names: TWordArr; const Classes: array of Byte);
   end;
 
 function HlClassByName(const Name: AnsiString): Integer;     // -1: unknown
@@ -268,6 +281,8 @@ begin
   FFoldBraces := False;
   FFoldIndent := False;
   FFoldOutline := False;
+  FSemantic := False;
+  FSemanticNoCase := False;
 end;
 
 function TTveLanguage.FoldPairCount: Integer;
@@ -700,6 +715,11 @@ begin
         end;
       end;
     end
+    else if Key = 'semantic' then
+    begin
+      FSemantic := True;
+      FSemanticNoCase := FIgnoreCase or SameText(Arg, 'nocase');
+    end
     else if Key = 'fold' then
     begin
       if SameText(Arg, 'braces') then
@@ -1011,6 +1031,14 @@ end;
 function IsIdChar(C: Char; const Extra: AnsiString): Boolean;
 begin
   Result := (C in ['a'..'z', 'A'..'Z', '0'..'9']) or (Byte(C) >= $80) or (Pos(C, Extra) > 0);
+end;
+
+function TTveLanguage.IsIdent(C: Char; First: Boolean): Boolean;
+begin
+  if First then
+    Result := IsIdStart(C, FIdent)
+  else
+    Result := IsIdChar(C, FIdent);
 end;
 
 function TTveLanguage.WordClass(const C: TContext; const Word_: AnsiString): Integer;
@@ -1328,8 +1356,87 @@ end;
 procedure TTveHighlighter.ClassifyLine(L: Int64; out Cls: TByteClasses);
 var
   Dummy: LongInt;
+  Text: AnsiString;
 begin
-  FLang.Classify(FDoc.Buffer.LineText(L), StateAt(L), Cls, Dummy);
+  Text := FDoc.Buffer.LineText(L);
+  FLang.Classify(Text, StateAt(L), Cls, Dummy);
+  if Length(FNames) > 0 then
+    ColourNames(Text, Cls);
+end;
+
+procedure TTveHighlighter.SetNames(const Names: TWordArr; const Classes: array of Byte);
+var
+  I, J: Integer;
+  W: AnsiString;
+  C: Byte;
+begin
+  SetLength(FNames, Length(Names));
+  SetLength(FNameCls, Length(Names));
+  for I := 0 to High(Names) do
+  begin
+    if FLang.SemanticNoCase then
+      W := LowerCase(Names[I])
+    else
+      W := Names[I];
+    C := Classes[I];
+    { insertion into the sorted list (the names of a document are few) }
+    J := I - 1;
+    while (J >= 0) and (FNames[J] > W) do
+    begin
+      FNames[J + 1] := FNames[J];
+      FNameCls[J + 1] := FNameCls[J];
+      Dec(J);
+    end;
+    FNames[J + 1] := W;
+    FNameCls[J + 1] := C;
+  end;
+end;
+
+procedure TTveHighlighter.ColourNames(const Text: AnsiString; var Cls: TByteClasses);
+var
+  I, J, K, Lo, Hi, Mid: Integer;
+  W: AnsiString;
+  Plain: Boolean;
+begin
+  I := 1;
+  while I <= Length(Text) do
+  begin
+    if not FLang.IsIdent(Text[I], True) or ((I > 1) and FLang.IsIdent(Text[I - 1], False)) then
+    begin
+      Inc(I);
+      Continue;
+    end;
+    J := I;
+    while (J <= Length(Text)) and FLang.IsIdent(Text[J], False) do
+      Inc(J);
+    Plain := J - 1 <= Length(Cls);
+    for K := I to J - 1 do
+      if Plain and (Cls[K - 1] <> hcNormal) then
+        Plain := False;
+    if Plain then
+    begin
+      W := Copy(Text, I, J - I);
+      if FLang.SemanticNoCase then
+        W := LowerCase(W);
+      Lo := 0;
+      Hi := High(FNames);
+      while Lo <= Hi do
+      begin
+        Mid := (Lo + Hi) div 2;
+        if FNames[Mid] = W then
+        begin
+          for K := I to J - 1 do
+            Cls[K - 1] := FNameCls[Mid];
+          Break;
+        end
+        else if FNames[Mid] < W then
+          Lo := Mid + 1
+        else
+          Hi := Mid - 1;
+      end;
+    end;
+    I := J;
+  end;
 end;
 
 end.

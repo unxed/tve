@@ -12,6 +12,7 @@ const
     'symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/' + #10 +
     'outline braces' + #10 +
     'fold braces' + #10 +
+    'semantic' + #10 +
     'context c' + #10 +
     '  match /^\s*#\s*include\b/ => preproc push c_include' + #10 +
     '  match /^\s*#.*/ => preproc' + #10 +
@@ -121,6 +122,7 @@ const
     'symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/' + #10 +
     'symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/' + #10 +
     'fold braces' + #10 +
+    'semantic' + #10 +
     'context go' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
     '  match ''/*'' => comment push go_comment' + #10 +
@@ -325,6 +327,7 @@ const
     'symbol 2 /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/' + #10 +
     'outline braces' + #10 +
     'fold braces' + #10 +
+    'semantic' + #10 +
     '# JavaScript (also the body of <script> and of the on... attributes)' + #10 +
     'context js' + #10 +
     '  match /\/\/.*/ => comment' + #10 +
@@ -1050,6 +1053,7 @@ const
     'symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
     'outline from 2 /(?i)^\s*implementation\b/' + #10 +
     'fold /(?i)\b(?:begin|case|try|asm|record)\b|=\s*(?:packed\s+)?(?:class|object|interface)\s*(?:\([^)]*\))?\s*(?:$|\/\/|\{)/ /(?i)\bend\b/' + #10 +
+    'semantic nocase' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
     '  match ''{'' => comment push pas_brace' + #10 +
@@ -1270,9 +1274,10 @@ const
     'start py' + #10 +
     'ident _' + #10 +
     'symbol 1 /^\s*class\s+(\w+)/' + #10 +
-    'symbol 1 /^\s*(?:async\s+)?def\s+(\w+)/' + #10 +
+    'symbol 2 /^\s*(?:async\s+)?def\s+(\w+)/' + #10 +
     'outline indent' + #10 +
     'fold indent' + #10 +
+    'semantic' + #10 +
     'context py' + #10 +
     '  match /#.*/ => comment' + #10 +
     '  match ''"""'' => string push py_tq_dq' + #10 +
@@ -1309,6 +1314,7 @@ const
     'symbol 1 /^\s*([A-Za-z_][\w-]*)\s*\(\s*\)/' + #10 +
     'fold braces' + #10 +
     'fold /\b(?:if|case|for|while|until|select)\b/ /\b(?:fi|esac|done)\b/' + #10 +
+    'semantic' + #10 +
     'context sh' + #10 +
     '  match /^#!.*/ => preproc' + #10 +
     '  match /#.*/ => comment' + #10 +

@@ -6,4 +6,5 @@ symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\
 symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/
 outline braces
 fold braces
+semantic
 %include part-c

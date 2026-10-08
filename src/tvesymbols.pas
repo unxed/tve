@@ -21,6 +21,7 @@ type
     Line: Int64;          { 0-based }
     Level: Integer;       { 1 is the top level }
     Title: AnsiString;
+    Kind: Integer;        { the LEVEL of the rule that found it (the level of nesting can differ) }
   end;
   TTveOutline = array of TTveOutlineItem;
   TTveFoldRegion = record
@@ -37,6 +38,11 @@ function TveOutlineLabel(const Item: TTveOutlineItem): AnsiString;
 { The regions of Doc that can be folded by the "fold" rules of Lang (see TveHl), sorted by the first line, the outer one first. A region of braces starts at the
   line above when the brace is alone on its line (under a heading); braces and words in comments and strings do not count. }
 function TveFoldRegions(Doc: TTveDoc; Lang: TTveLanguage): TTveFoldRegions;
+type
+  TTveByteArray = array of Byte;
+{ The names that the outline of Doc defines, for TTveHighlighter.SetNames: the entries of the rules of level 1 as types (hcType), the deeper ones as routines
+  (hcFunction); the last part of a qualified title (TFoo.Bar, P::run); a title that is no identifier is left out. Empty unless the grammar says "semantic". }
+procedure TveSemanticNames(Doc: TTveDoc; Lang: TTveLanguage; out Names: TWordArr; out Classes: TTveByteArray);
 
 implementation
 
@@ -179,6 +185,7 @@ begin
           SetLength(Result, Cnt * 2 + 16);
         Result[Cnt].Line := L;
         Result[Cnt].Title := Title;
+        Result[Cnt].Kind := Lang.SymbolLevel(I);
         if Nest = 0 then
           Result[Cnt].Level := Lang.SymbolLevel(I)
         else
@@ -217,6 +224,50 @@ begin
   Result := StringOfChar(' ', 2 * (Item.Level - 1)) + Item.Title;
 end;
 
+
+procedure TveSemanticNames(Doc: TTveDoc; Lang: TTveLanguage; out Names: TWordArr; out Classes: TTveByteArray);
+var
+  Items: TTveOutline;
+  I, J, K, N: Integer;
+  T: AnsiString;
+  Ok: Boolean;
+begin
+  Names := nil;
+  Classes := nil;
+  if (Lang = nil) or not Lang.Semantic then
+    Exit;
+  Items := TveOutline(Doc, Lang);
+  N := 0;
+  SetLength(Names, Length(Items));
+  SetLength(Classes, Length(Items));
+  for I := 0 to High(Items) do
+  begin
+    T := Items[I].Title;
+    for J := Length(T) downto 1 do
+      if T[J] in ['.', ':'] then
+      begin
+        T := Copy(T, J + 1, MaxInt);
+        Break;
+      end;
+    Ok := (T <> '') and Lang.IsIdent(T[1], True);
+    for J := 2 to Length(T) do
+      if Ok and not Lang.IsIdent(T[J], False) then
+        Ok := False;
+    for K := 0 to N - 1 do
+      if Ok and (Names[K] = T) then
+        Ok := False;
+    if not Ok then
+      Continue;
+    Names[N] := T;
+    if Items[I].Kind <= 1 then
+      Classes[N] := hcType
+    else
+      Classes[N] := hcFunction;
+    Inc(N);
+  end;
+  SetLength(Names, N);
+  SetLength(Classes, N);
+end;
 
 function Quoted(const Cls: TByteClasses; Idx: Integer): Boolean;
 begin

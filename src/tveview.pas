@@ -22,6 +22,7 @@ uses
 
 const
   cmTveStatus = $7A00;           { broadcast: the view changed its cursor or text }
+  TveSemanticAutoLimit = 128 * 1024;    { see TTveView.SemanticNames }
 
 type
   // The sender of a callback (a host that has a rule against the name of the root class can use this one).
@@ -70,6 +71,9 @@ type
     FMultiClick: Boolean;
     FDragDrop: Boolean;
     FHlA, FHlB: Int64;                // a highlighted range of the text (the match of a search), -1: none
+    FSemantic: Boolean;
+    FSemValid: Boolean;
+    FSemVersion: LongWord;
     FDropShown: Boolean;              // a drag of text is over the view: the cell where it would go is marked
     FDropL: Int64;
     FDropC: Integer;
@@ -78,6 +82,7 @@ type
     FWrap: Boolean;
     FWrapMap: TTveWrapMap;
     procedure SetWrap(V: Boolean);
+    procedure SetSemantic(V: Boolean);
     procedure EnsureWrap;
     function CursorRow: Int64;
     function RowPlace(Row: Int64; out L: Int64; out A, B: Integer; out Last: Boolean): Boolean;
@@ -146,6 +151,10 @@ type
     property DropLine: Int64 read FDropL;
     property DropCell: Integer read FDropC;
     property HighlightColumn: Boolean read FHighlightColumn write FHighlightColumn;
+    // The names of types and routines that the outline finds are coloured where the text uses them (a grammar with "semantic"). They are found again
+    // when the text changed, before drawing, for a text up to TveSemanticAutoLimit bytes; a longer one keeps the names until UpdateNames.
+    property SemanticNames: Boolean read FSemantic write SetSemantic;
+    procedure UpdateNames;
     // Soft wrap: a long line is shown as several rows (no horizontal scrolling); the text is not changed.
     property Wrap: Boolean read FWrap write SetWrap;
     // A message in the first or last row of the view, whichever is farther from the cursor (an error of the compiler); '' for none.
@@ -300,6 +309,35 @@ begin
   FreeAndNil(FHl);
   if ALang <> nil then
     FHl := TTveHighlighter.Create(FEditor.Doc, ALang);
+  FSemValid := False;
+  DrawView;
+end;
+
+procedure TTveView.SetSemantic(V: Boolean);
+var
+  None: TWordArr;
+begin
+  FSemantic := V;
+  FSemValid := False;
+  if not V and (FHl <> nil) then
+  begin
+    None := nil;
+    FHl.SetNames(None, []);
+  end;
+  DrawView;
+end;
+
+procedure TTveView.UpdateNames;
+var
+  Names: TWordArr;
+  Classes: TTveByteArray;
+begin
+  if FHl = nil then
+    Exit;
+  TveSemanticNames(FEditor.Doc, FHl.Language, Names, Classes);
+  FHl.SetNames(Names, Classes);
+  FSemValid := True;
+  FSemVersion := FEditor.Doc.Buffer.Version;
   DrawView;
 end;
 
@@ -636,6 +674,8 @@ var
   OccWord, OccText: AnsiString;
   OccNext, OccA, OccB: Integer;
   OccAttr: TColorAttr;
+  SemNames: TWordArr;
+  SemClasses: TTveByteArray;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -674,6 +714,14 @@ var
   end;
 
 begin
+  if FSemantic and (FHl <> nil) and (not FSemValid or ((FSemVersion <> FEditor.Doc.Buffer.Version) and
+    (FEditor.Doc.Buffer.Length <= TveSemanticAutoLimit))) then
+  begin
+    TveSemanticNames(FEditor.Doc, FHl.Language, SemNames, SemClasses);
+    FHl.SetNames(SemNames, SemClasses);
+    FSemValid := True;
+    FSemVersion := FEditor.Doc.Buffer.Version;
+  end;
   Normal := NormalAttr;
   SelAttr := SelectedAttr;
   HlAttr := HighlightAttr;

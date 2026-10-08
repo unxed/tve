@@ -29,6 +29,10 @@ Grammars (`langs/`) have contexts and a stack, so a language can live inside ano
 (Smarty, PHP, Jinja/Twig/Django) that is injected into every context of them, Markdown with fenced code. The format is in the header of `src/tvehl.pas`;
 `tests/data/appeals.tpl` is the test file (HTML, CSS, JavaScript and Smarty mixed in every place). `build/hldump FILE` prints the classes of the bytes.
 
+**Semantic colouring**: with `semantic` in the grammar (C/C++, Go, JavaScript, Pascal, Python, Shell), the names of the types and routines that the outline
+finds are coloured where the text uses them (`View.SemanticNames`; the program turns it on). The names are found again before drawing when the text changed, for a
+text up to `TveSemanticAutoLimit` (128 KB); a longer one keeps them until `View.UpdateNames`.
+
 YAML block scalars (`key: |`, `key: >-`) colour their lines as text up to the next line that is not indented more than the key. Markdown fences take
 `yaml`, `diff`, `toml`/`ini`, `make` as well as the languages of the programs.
 
@@ -98,7 +102,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   (go to line, insert a character) is not recorded.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar has no rules for HTML, XML, SQL and the template languages; the block words of Pascal count a `case` of a variant record as a block.
-* Colouring: no semantic colouring (a function name that is only known from its definition); the Markdown fences know all the grammars
+* Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); the Markdown fences know all the grammars
   but Smarty, PHP, Jinja and XML; a YAML block scalar is known by its key up to an indentation of 16 (a comment after `|` is coloured as its text).
 
 ## Audit

@@ -37,6 +37,10 @@ begin
   { words: begin .. end, a class declaration .. end; not a forward declaration }
   T := 'type'#10'  TA = class(TObject)'#10'    X: Integer;'#10'  end;'#10'  EB = class(Exception);'#10'procedure P;'#10'begin'#10'  if a then'#10'  begin'#10'    s := ''end'';'#10'  end;'#10'end;'#10;
   Check(Regions('Pascal', T) = '1-3 6-11 8-10 ', 'Pascal: ' + Regions('Pascal', T));
+  { the case of a variant record is no block, a case statement is one }
+  T := 'type'#10'  TR = record'#10'    case Tag: Integer of'#10'      0: (A: Integer);'#10'      1: (B: record C: Char; end);'#10'  end;'#10 +
+    'procedure P;'#10'begin'#10'  case X of'#10'    1: ;'#10'  end;'#10'end;'#10;
+  Check(Regions('Pascal', T) = '1-5 7-11 8-10 ', 'Pascal variant record: ' + Regions('Pascal', T));
   { shell: braces and the words of the blocks }
   T := 'f() {'#10'  if x; then'#10'    y'#10'  fi'#10'}'#10'for a in b; do'#10'  c'#10'done'#10;
   Check(Regions('Shell', T) = '0-4 1-3 5-7 ', 'Shell: ' + Regions('Shell', T));

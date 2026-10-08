@@ -46,7 +46,7 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   document). Commands `FoldToggle` (Ctrl+K Z), `FoldFromBlock` (a fold from the selected lines; B: Ctrl+K A), `FoldCollapse` / `FoldExpand` (B: Ctrl+Num- / Ctrl+Num+).
   `View.Folds` is the list; the vertical movement and the scroll bar skip hidden lines. The grammar of a language tells what can be folded (`fold braces`,
   `fold indent`, `fold outline`, `fold /OPEN/ /CLOSE/` for words such as `begin` and `end`; `TveFoldRegions`): C/C++, Go, JavaScript, CSS, JSON and PHP by braces,
-  Pascal by its block words, Shell by braces and `if`/`fi`, `case`/`esac`, the loops and `done`, Python and YAML by indentation, Markdown, INI/TOML, diff and
+  Pascal by its block words (the `case` of a variant record is no block: `fold skip /WORD/ in /OUTER/`), Shell by braces and `if`/`fi`, `case`/`esac`, the loops and `done`, Python and YAML by indentation, Markdown, INI/TOML, diff and
   Makefile by the outline, XML by its tags, HTML (and PHP, Smarty, Jinja) by its container elements and the blocks of the template language. `FoldToggle` and `FoldCollapse` on a line where no fold is take the innermost region of the grammar there (and put the cursor on
   its first line when it hides the cursor); `FoldAll` (Ctrl+K -; B also Ctrl+Shift+Num-) collapses every region, `UnfoldAll` (Ctrl+K +; B also Ctrl+Shift+Num+) expands every fold.
 * **Templates** (`src/tvetemplates.pas`): `View.Templates` holds templates loaded from a text (`[shortcut] description` starts one); command `Template` (Ctrl+J)
@@ -88,9 +88,14 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   (pass it as the override text of `TveNewKeymap`); the program: `tve --words=nav`. Word wrap is not taken into account (a jump stops at the end of the logical line).
 * **Outline**: `TveOutline(Doc, Lang)` (`src/tvesymbols.pas`) lists `(line, level, title)` of types, routines, headings and so on, by the `symbol LEVEL /REGEX/` lines of
   a grammar (Pascal, C/C++, Go, Python, JavaScript, PHP, Shell, Markdown, HTML/Smarty/Jinja, SQL, YAML, INI/TOML, Makefile, diff). Matches inside comments and strings
-  are skipped. `outline indent` (Python) and `outline braces` (C/C++, JavaScript) in a grammar nest the entries: the level is 1 + the number of entries that hold
-  it (by indentation, or by braces outside comments and strings). `outline from LEVEL /REGEX/` takes the deeper entries only after the first matching line: in
-  a Pascal unit the routines come from the implementation part, so a routine is listed once. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program
+  are skipped. `outline indent` (Python), `outline braces` (C/C++, JavaScript) and `outline regions` (Go, PHP, HTML, Smarty, Jinja, Pascal) in a grammar nest
+  the entries: the level is 1 + the number of entries that hold it (by indentation, by braces outside comments and strings, or by the largest fold region that
+  starts on the line of the entry or of its parameters; an entry without a region holds the entries of deeper rules up to the next one of its rule level, as a
+  heading does: an `h3` under an `h1` is on the second level). `outline body` (Pascal) holds the nested routines in a routine up to the end of its body; a
+  `forward` or `external` routine holds nothing, a method declared in a class is not listed. `outline from LEVEL /REGEX/` takes the deeper entries only after the
+  first matching line: in a Pascal unit the routines come from the implementation part, so a routine is listed once. `outline signature [/TAIL/]` (Pascal, C/C++,
+  Go, JavaScript/TypeScript, Python, PHP) gives a routine its signature (`Item.Signature`): the name, its parameters in brackets over as many lines as they take
+  (comments left out, blanks made one) and the result type; the list shows it, the title stays the name. Command `Outline` (Alt+O and Ctrl+Shift+O in both maps); the program
   shows it in a list dialog (`TveListDialog`).
 * **Drag and drop**: a press on selected text and a drag moves it to where the button is released, Ctrl copies; one undo step (`DragBlock`, `View.DragDrop`).
   While dragging, the cell where the text would go is marked (`View.DropAttr`, the highlight colour by default). Released over another editor view, the text
@@ -99,12 +104,12 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
 
 ## What is not done
 
-* Outline rules are line based regular expressions: multi-line signatures give the first line only; Pascal, Go, PHP and the markup languages use the fixed levels of
-  their rules (no nesting).
+* Outline rules are line based regular expressions: the first line of a declaration must match (a C return type on a line of its own is not found); XML has no
+  outline.
 * The macro is one per view and has no conditions other than a failed step; what a host does to the text by itself (not through the view) is not recorded.
 * Drag and drop works between the editor views of one program, not with other programs; the horizontal scrolling follows the cursor only.
 * Folding by the grammar has no rules for SQL; HTML folds only the elements that always have an end tag (not `p`, `li`, `td` ...); a tag that spans lines does
-  not count; the block words of Pascal count a `case` of a variant record as a block.
+  not count.
 * Colouring: the semantic names are only those of the outline of the same file (no names of other units or headers, no variables, no scopes); the Markdown fences know all the grammars
   but Smarty, PHP and Jinja; a YAML block scalar is known by its key up to an indentation of 16 (a comment after `|` is coloured as its text).
 

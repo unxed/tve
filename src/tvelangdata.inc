@@ -11,6 +11,7 @@ const
     'symbol 1 /^\s*(?:typedef\s+)?(?:class|struct|namespace|union|enum(?:\s+class)?)\s+([A-Za-z_]\w*)\s*(?::[^;{]*)?(?:\{.*)?$/' + #10 +
     'symbol 2 /^[A-Za-z_][\w:<>\s\*&~,]*?[\s\*&]([A-Za-z_~][\w:~]*)\s*\([^;]*$/' + #10 +
     'outline braces' + #10 +
+    'outline signature' + #10 +
     'fold braces' + #10 +
     'semantic' + #10 +
     'context c' + #10 +
@@ -119,8 +120,10 @@ const
     'masks *.go go.mod' + #10 +
     'start go' + #10 +
     'ident _' + #10 +
-    'symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/' + #10 +
+    'symbol 1 /^\s*type\s+([A-Za-z_]\w*)(?:\[[^\]]*\])?\s+(?:struct|interface)\b/' + #10 +
     'symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/' + #10 +
+    'outline regions' + #10 +
+    'outline signature /\s*[\w.*\[\]]+/' + #10 +
     'fold braces' + #10 +
     'semantic' + #10 +
     'context go' + #10 +
@@ -155,6 +158,7 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'outline regions' + #10 +
     'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
     'context html' + #10 +
@@ -327,6 +331,7 @@ const
     'symbol 2 /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/' + #10 +
     'symbol 2 /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/' + #10 +
     'outline braces' + #10 +
+    'outline signature /\s*:\s*[\w.$<>\[\]|]+/' + #10 +
     'fold braces' + #10 +
     'semantic' + #10 +
     '# JavaScript (also the body of <script> and of the on... attributes)' + #10 +
@@ -372,6 +377,7 @@ const
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 2 /^\s*\{%-?\s*(?:block|macro)\s+(\w+)/' + #10 +
+    'outline regions' + #10 +
     'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     'fold /\{%-?\s*(?:block|for|if|macro|with|filter|call|raw)\b/ /\{%-?\s*end(?:block|for|if|macro|with|filter|call|raw)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
@@ -1076,9 +1082,12 @@ const
     'start pascal' + #10 +
     'ident _' + #10 +
     'symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/' + #10 +
-    'symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
+    'symbol 2 /(?i)^\s*(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/' + #10 +
     'outline from 2 /(?i)^\s*implementation\b/' + #10 +
+    'outline body 2 /(?i)begin|asm/ /(?i)\b(?:forward|external)\b/' + #10 +
+    'outline signature /\s*:\s*[\w.]+(?:<[^>]*>)?/' + #10 +
     'fold /(?i)\b(?:begin|case|try|asm|record)\b|=\s*(?:packed\s+)?(?:class|object|interface)\s*(?:\([^)]*\))?\s*(?:$|\/\/|\{)/ /(?i)\bend\b/' + #10 +
+    'fold skip /(?i)case\b/ in /(?i)record\b/' + #10 +
     'semantic nocase' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
@@ -1127,6 +1136,8 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'outline regions' + #10 +
+    'outline signature /\s*:\s*\??[\w\\]+/' + #10 +
     'fold braces' + #10 +
     'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +
@@ -1303,6 +1314,7 @@ const
     'symbol 1 /^\s*class\s+(\w+)/' + #10 +
     'symbol 2 /^\s*(?:async\s+)?def\s+(\w+)/' + #10 +
     'outline indent' + #10 +
+    'outline signature /\s*->\s*[^:#]+/' + #10 +
     'fold indent' + #10 +
     'semantic' + #10 +
     'context py' + #10 +
@@ -1374,6 +1386,8 @@ const
     'symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/' + #10 +
     'symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/' + #10 +
+    'symbol 2 /^\s*\{(?:block|function)\s+(?:name\s*=\s*)?["'']?([\w-]+)/' + #10 +
+    'outline regions' + #10 +
     'fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/' + #10 +
     'fold /\{(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/ /\{\/(?:if|foreach|section|block|capture|function|literal|strip|for|while)\b/' + #10 +
     '# HTML; needs part-js and part-css' + #10 +

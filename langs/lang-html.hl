@@ -8,6 +8,7 @@ symbol 3 /(?i)^\s*<h3\b[^>]*>\s*([^<]+)/
 symbol 4 /(?i)^\s*<h4\b[^>]*>\s*([^<]+)/
 symbol 5 /(?i)^\s*<h5\b[^>]*>\s*([^<]+)/
 symbol 6 /(?i)^\s*<h6\b[^>]*>\s*([^<]+)/
+outline regions
 fold /(?i)<(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\b/ /(?i)<\/(?:html|head|body|div|section|article|nav|header|footer|main|aside|ul|ol|table|thead|tbody|tfoot|form|fieldset|select|script|style|pre|blockquote|dl|details|figure|template|svg|noscript|textarea)\s*>/
 %include part-html
 %include part-js

@@ -3,8 +3,11 @@ masks *.pas *.pp *.inc *.lpr *.dpr *.p
 start pascal
 ident _
 symbol 1 /(?i)^\s*(?:type\s+)?(?:generic\s+)?([A-Za-z_]\w*)(?:<[^>]*>)?\s*=\s*(?:packed\s+)?(?:class|record|object|interface|dispinterface)\s*(?:\(.*)?(?:$|//|\{|\(\*)/
-symbol 2 /(?i)^(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/
+symbol 2 /(?i)^\s*(?:class\s+)?(?:function|procedure|constructor|destructor)\s+([A-Za-z_][\w.]*)/
 outline from 2 /(?i)^\s*implementation\b/
+outline body 2 /(?i)begin|asm/ /(?i)\b(?:forward|external)\b/
+outline signature /\s*:\s*[\w.]+(?:<[^>]*>)?/
 fold /(?i)\b(?:begin|case|try|asm|record)\b|=\s*(?:packed\s+)?(?:class|object|interface)\s*(?:\([^)]*\))?\s*(?:$|\/\/|\{)/ /(?i)\bend\b/
+fold skip /(?i)case\b/ in /(?i)record\b/
 semantic nocase
 %include part-pascal

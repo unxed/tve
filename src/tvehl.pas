@@ -21,6 +21,13 @@
 //                                  match, LEVEL is 1 for the top level, 2 and more are nested; the first symbol rule that matches a line wins)
 //   outline indent | braces       (the level of an entry is 1 + the number of entries that hold it: those above it with less indentation, or whose braces
 //                                  are still open; the LEVEL of the rules is not used then)
+//   outline regions               (the same by the regions of the fold rules: an entry holds the entries inside the largest region that starts on its line; an
+//                                  entry without one holds the entries of deeper rules up to the next entry of its LEVEL or above, as headings do)
+//   outline body LEVEL /BODY/ /NOBODY/  (with regions: an entry of a rule of LEVEL or deeper holds the entries up to the end of its body, the first region at
+//                                  its depth whose open word BODY matches (begin); NOBODY on its line: it has none (forward); an entry of LEVEL or deeper
+//                                  inside a region that is no body (a class) is not listed)
+//   outline signature [/TAIL/]    (the title of an entry of a routine goes on with its parameters in brackets, over several lines, and TAIL when it matches
+//                                  right after them (a return type); the title of the entry stays the name, see TTveOutlineItem.Signature)
 //   outline from LEVEL /REGEX/    (the entries of LEVEL and deeper are taken only after the first line that the expression matches, when the text has one:
 //                                  the implementation part of a Pascal unit, so a routine is not listed twice)
 //   fold braces | indent | outline   (the regions that can be folded, see TveFoldRegions: from a { to its }, the lines indented more than the line above
@@ -28,6 +35,8 @@
 //   semantic [nocase]             (the names that the outline finds, types and routines, are coloured where the text uses them; see TveSemanticNames;
 //                                  nocase: a name in other letter case is the same name)
 //   fold /OPEN/ /CLOSE/           (a region from a word that opens it to the word that closes it, as begin and end; a / inside is written \/)
+//   fold skip /WORD/ in /OUTER/   (an open word that WORD matches opens nothing when the innermost open region of its pair began with one that OUTER
+//                                  matches: the case of a Pascal variant record)
 //   ident CHARS                   (besides letters, digits and the bytes of non-ASCII characters, what an identifier is made of)
 //   context NAME [noinject] [default CLASS] [eolpop] [nocase|case]
 //     include CONTEXT             (the rules, words and so on of another context, here)
@@ -128,9 +137,14 @@ type
     FOutlineNest: Integer;
     FOutlineFromLevel: Integer;
     FOutlineFrom: TTveRegex;
+    FOutlineBodyLevel: Integer;
+    FOutlineBody, FOutlineNoBody: TTveRegex;
+    FSignature: Boolean;
+    FSignatureTail: TTveRegex;
     FFoldBraces, FFoldIndent, FFoldOutline: Boolean;
     FSemantic, FSemanticNoCase: Boolean;
     FFoldOpen, FFoldClose: array of TTveRegex;
+    FFoldSkip, FFoldSkipIn: TTveRegex;
     FName: AnsiString;
     FMasks: AnsiString;
     FIgnoreCase: Boolean;
@@ -161,8 +175,14 @@ type
     function SymbolCount: Integer;
     function SymbolLevel(I: Integer): Integer;
     function SymbolRegex(I: Integer): TTveRegex;
-    // "outline": 0 the levels of the rules, 1 nested by indentation, 2 nested by braces; the "outline from" rule (nil: none).
+    // "outline": 0 the levels of the rules, 1 nested by indentation, 2 nested by braces, 3 by the fold regions; the "outline from" rule (nil: none).
     property OutlineNest: Integer read FOutlineNest;
+    // "outline body" (OutlineBody nil: none) and "outline signature" (SignatureTail nil: no tail).
+    property OutlineBodyLevel: Integer read FOutlineBodyLevel;
+    property OutlineBody: TTveRegex read FOutlineBody;
+    property OutlineNoBody: TTveRegex read FOutlineNoBody;
+    property Signature: Boolean read FSignature;
+    property SignatureTail: TTveRegex read FSignatureTail;
     property OutlineFromLevel: Integer read FOutlineFromLevel;
     property OutlineFrom: TTveRegex read FOutlineFrom;
     property Semantic: Boolean read FSemantic;
@@ -176,6 +196,8 @@ type
     function FoldPairCount: Integer;
     function FoldOpen(I: Integer): TTveRegex;
     function FoldClose(I: Integer): TTveRegex;
+    property FoldSkip: TTveRegex read FFoldSkip;
+    property FoldSkipIn: TTveRegex read FFoldSkipIn;
     property Name: AnsiString read FName;
     property Masks: AnsiString read FMasks;
   end;
@@ -271,6 +293,11 @@ begin
   FreeAndNil(FOutlineFrom);
   FOutlineNest := 0;
   FOutlineFromLevel := 0;
+  FreeAndNil(FOutlineBody);
+  FreeAndNil(FOutlineNoBody);
+  FreeAndNil(FSignatureTail);
+  FOutlineBodyLevel := 0;
+  FSignature := False;
   for I := 0 to High(FFoldOpen) do
   begin
     FFoldOpen[I].Free;
@@ -278,6 +305,8 @@ begin
   end;
   FFoldOpen := nil;
   FFoldClose := nil;
+  FreeAndNil(FFoldSkip);
+  FreeAndNil(FFoldSkipIn);
   FFoldBraces := False;
   FFoldIndent := False;
   FFoldOutline := False;
@@ -688,6 +717,51 @@ begin
         FOutlineNest := 1
       else if SameText(Arg, 'braces') then
         FOutlineNest := 2
+      else if SameText(Arg, 'regions') then
+        FOutlineNest := 3
+      else if SameText(Copy(Arg, 1, 10), 'signature') or SameText(Copy(Arg, 1, 10), 'signature ') then
+      begin
+        FSignature := True;
+        Arg := Trim(Copy(Arg, 10, MaxInt));
+        FreeAndNil(FSignatureTail);
+        if Arg <> '' then
+        begin
+          if not CutSlashed(Arg, OpenRe) or (Arg <> '') then
+          begin
+            Err := 'line ' + IntToStr(LineNo) + ': outline signature [/TAIL/]';
+            Exit;
+          end;
+          FSignatureTail := TTveRegex.Create(OpenRe);
+          if FSignatureTail.Error <> '' then
+          begin
+            Err := 'line ' + IntToStr(LineNo) + ': ' + FSignatureTail.Error;
+            Exit;
+          end;
+        end;
+      end
+      else if SameText(Copy(Arg, 1, 5), 'body ') then
+      begin
+        Arg := TrimLeft(Copy(Arg, 6, MaxInt));
+        Sp := Pos(' ', Arg);
+        I := StrToIntDef(Copy(Arg, 1, Sp - 1), 0);
+        Arg := Trim(Copy(Arg, Sp + 1, MaxInt));
+        if (I < 1) or not CutSlashed(Arg, OpenRe) or not CutSlashed(Arg, CloseRe) or (Arg <> '') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': outline body LEVEL /BODY/ /NOBODY/';
+          Exit;
+        end;
+        FOutlineNest := 3;
+        FOutlineBodyLevel := I;
+        FreeAndNil(FOutlineBody);
+        FreeAndNil(FOutlineNoBody);
+        FOutlineBody := TTveRegex.Create(OpenRe);
+        FOutlineNoBody := TTveRegex.Create(CloseRe);
+        if (FOutlineBody.Error <> '') or (FOutlineNoBody.Error <> '') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': ' + FOutlineBody.Error + FOutlineNoBody.Error;
+          Exit;
+        end;
+      end
       else
       begin
         Sp := Pos(' ', Arg);
@@ -702,7 +776,7 @@ begin
           I := 0;
         if (I < 1) or (Length(Arg) < 2) or (Arg[1] <> '/') or (Arg[Length(Arg)] <> '/') then
         begin
-          Err := 'line ' + IntToStr(LineNo) + ': outline indent | braces | from LEVEL /REGEX/';
+          Err := 'line ' + IntToStr(LineNo) + ': outline indent | braces | regions | body LEVEL /BODY/ /NOBODY/ | signature [/TAIL/] | from LEVEL /REGEX/';
           Exit;
         end;
         FreeAndNil(FOutlineFrom);
@@ -728,6 +802,30 @@ begin
         FFoldIndent := True
       else if SameText(Arg, 'outline') then
         FFoldOutline := True
+      else if SameText(Copy(Arg, 1, 5), 'skip ') then
+      begin
+        Arg := TrimLeft(Copy(Arg, 6, MaxInt));
+        if not CutSlashed(Arg, OpenRe) or not SameText(Copy(Arg, 1, 3), 'in ') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': fold skip /WORD/ in /OUTER/';
+          Exit;
+        end;
+        Arg := TrimLeft(Copy(Arg, 4, MaxInt));
+        if not CutSlashed(Arg, CloseRe) or (Arg <> '') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': fold skip /WORD/ in /OUTER/';
+          Exit;
+        end;
+        FreeAndNil(FFoldSkip);
+        FreeAndNil(FFoldSkipIn);
+        FFoldSkip := TTveRegex.Create(OpenRe);
+        FFoldSkipIn := TTveRegex.Create(CloseRe);
+        if (FFoldSkip.Error <> '') or (FFoldSkipIn.Error <> '') then
+        begin
+          Err := 'line ' + IntToStr(LineNo) + ': ' + FFoldSkip.Error + FFoldSkipIn.Error;
+          Exit;
+        end;
+      end
       else if CutSlashed(Arg, OpenRe) and CutSlashed(Arg, CloseRe) and (Arg = '') then
       begin
         SetLength(FFoldOpen, Length(FFoldOpen) + 1);

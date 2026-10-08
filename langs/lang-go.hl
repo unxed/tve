@@ -2,8 +2,10 @@ language Go
 masks *.go go.mod
 start go
 ident _
-symbol 1 /^type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b/
+symbol 1 /^\s*type\s+([A-Za-z_]\w*)(?:\[[^\]]*\])?\s+(?:struct|interface)\b/
 symbol 2 /^func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/
+outline regions
+outline signature /\s*[\w.*\[\]]+/
 fold braces
 semantic
 %include part-go

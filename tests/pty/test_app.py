@@ -6,6 +6,14 @@ import sys
 
 sys.path.insert(0, os.environ.get('PTY_TOOLS', os.path.join(os.path.dirname(__file__), '..', '..', 'tools')))
 from pty_screen import PtyTerm
+import tempfile
+
+# the files of the user go to temp directories (the programs inherit this environment)
+home = tempfile.TemporaryDirectory(prefix='tve-home-')
+os.environ['HOME'] = home.name
+for var, sub in (('XDG_CONFIG_HOME', '.config'), ('XDG_STATE_HOME', '.local/state'), ('XDG_DATA_HOME', '.local/share'),
+                 ('XDG_CACHE_HOME', '.cache')):
+    os.environ[var] = os.path.join(home.name, sub)
 
 fails = 0
 count = 0
@@ -35,6 +43,11 @@ for name, key in (('F9', b'\x1b[20~'), ('F10', b'\x1b[21~')):
     t.send(b'\x1b')
     t.send(b'\x1b[B')
     check('Save macro' not in t.text(), name + ': the second Esc leaves the bar', t.text())
+t.send(b'\x1b[21~')
+t.send(b'\x1b[B')
+t.send(b'm', settle=0.5)
+check(os.path.isfile(os.path.join(os.environ['XDG_CONFIG_HOME'], 'tve', 'tve.macro')),
+      'File > Save macro writes tve.macro into $XDG_CONFIG_HOME/tve', t.text())
 t.send(b'\x1bx', settle=0.5)
 check(t.close() == 0, 'Alt-X ends the program')
 
@@ -72,8 +85,7 @@ def cursor_after(args, keys):
     return pos
 
 
-# --state: the cursor of a file is remembered when the program quits and restored when it opens the file again
-import tempfile
+# the state: the cursor of a file is remembered when the program quits and restored when it opens the file again
 with tempfile.TemporaryDirectory(prefix='tve-state-') as d:
     f = os.path.join(d, 'a.txt')
     with open(f, 'w') as h:
@@ -82,7 +94,16 @@ with tempfile.TemporaryDirectory(prefix='tve-state-') as d:
     first = cursor_after(st, [b'\x1b[B'] * 5 + [b'\x1b[C'] * 3)
     again = cursor_after(st, [])
     check(again == first and first[1] > 2, '--state: the cursor is where it was', '%r %r' % (first, again))
-    check(cursor_after([f], []) != first, 'without --state the file opens at its start')
+    check(cursor_after([f], []) != first, 'a file of --state is not the default state: the file opens at its start')
+    moved = cursor_after([f], [b'\x1b[B'] * 4)
+    check(cursor_after([f], []) == moved and moved[1] > 2, 'without --state the cursor is remembered too', '%r' % (moved,))
+    check(os.path.isfile(os.path.join(os.environ['XDG_STATE_HOME'], 'tve', 'state.ini')),
+          'the default state file is $XDG_STATE_HOME/tve/state.ini')
+    g = os.path.join(d, 'b.txt')
+    with open(g, 'w') as h:
+        h.write(''.join('line %d\n' % i for i in range(20)))
+    moved = cursor_after(['--state=', g], [b'\x1b[B'] * 4)
+    check(cursor_after([g], []) != moved, '--state= keeps nothing')
 
 print('ALL OK (%d checks)' % count if not fails else '%d of %d checks FAILED' % (fails, count))
 sys.exit(1 if fails else 0)

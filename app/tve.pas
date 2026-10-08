@@ -2,12 +2,14 @@ program tve;
 { tve: the editor as a program (and the test bench of the editor view).
   Usage: tve [--keys=a|b] [--words=nav] [--keymap=FILE] [--macro=FILE] [--state=FILE] [file]. F2 saves, Alt-X quits.
   --words=nav binds Ctrl+Left / Ctrl+Right (and with Shift) to the word movement of the guidelines (the default is the word definition of the editor);
-  --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro;
-  --state remembers the cursor, the bookmarks and the folds of the file in an INI file (TveState) when the program quits and restores them when it opens the file. MIT. }
+  --keymap applies a user key map file over the chosen one; --macro loads a macro (text form); the File menu saves and loads the macro as tve.macro
+  in the configuration directory of the program (TvAppDir);
+  the cursor, the bookmarks and the folds of the file are kept in an INI file (TveState) when the program quits and restored when it opens the file:
+  state.ini in the state directory of the program, or the file of --state (--state= with no file keeps nothing). MIT. }
 {$I tvdefs.inc}
 {$H+}
 uses SysUtils, TvGeom, TvColors, TvEvents, TvKeys, TvViews, TvWindow, TvMenus, TvActions, TvApp, TvUnix,
-  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState, TvUStr, TvPath;
+  TveDoc, TveFile, TveView, TveCmds, TveHl, TveLang, TveSearch, TveDialogs, TveComplete, TveExtras, TveSymbols, TvIni, TveState, TvUStr, TvPath, TvAppDir;
 
 const
   cmSaveFile = 200;
@@ -59,6 +61,18 @@ begin
       { the menu bar by the navigation guidelines (F9) and by Turbo Vision (F10) }
       NewStatusKey('', kbF9, cmMenu,
       NewStatusKey('', kbF10, cmMenu, nil)))), nil));
+end;
+
+{ The file of the macro commands of the File menu: tve.macro in the configuration directory (the current one when there is none). }
+function MacroPath: AnsiString;
+var
+  D: AnsiString;
+begin
+  D := ConfigDir('tve');
+  if D = '' then
+    Result := 'tve.macro'
+  else
+    Result := PathJoin(D, 'tve.macro');
 end;
 
 procedure TTveApp.OpenFile(const FileName: AnsiString; MapB: Boolean; const KeymapFile: AnsiString);
@@ -202,13 +216,13 @@ begin
   else if (Event.What = evCommand) and (Event.Command = cmSaveMacro) then
   begin
     if View <> nil then
-      View.SaveMacroFile('tve.macro');
+      View.SaveMacroFile(MacroPath);
     ClearEvent(Event);
   end
   else if (Event.What = evCommand) and (Event.Command = cmLoadMacro) then
   begin
     if View <> nil then
-      View.LoadMacroFile('tve.macro', Err);
+      View.LoadMacroFile(MacroPath, Err);
     ClearEvent(Event);
   end;
 end;
@@ -219,6 +233,7 @@ var
   F: AnsiString;
   MapB: Boolean;
   KeyFile, MacroFile, StateFile: AnsiString;
+  StateGiven: Boolean;
   State: TIniFile;
 begin
   { the commands of the program are declared once (TvActions): the menu, the status line and the keys read this table }
@@ -230,6 +245,7 @@ begin
   KeyFile := '';
   MacroFile := '';
   StateFile := '';
+  StateGiven := False;
   MapB := False;
   for I := 1 to ParamCount do
     if ParamStr(I) = '--keys=b' then
@@ -243,7 +259,10 @@ begin
     else if Copy(ParamStr(I), 1, 8) = '--macro=' then
       MacroFile := Copy(ParamStr(I), 9, MaxInt)
     else if Copy(ParamStr(I), 1, 8) = '--state=' then
-      StateFile := Copy(ParamStr(I), 9, MaxInt)
+    begin
+      StateFile := Copy(ParamStr(I), 9, MaxInt);
+      StateGiven := True;
+    end
     else
       F := ParamStr(I);
   if not UnixInit then
@@ -254,6 +273,12 @@ begin
   App := TTveApp.Create;
   App.OpenFile(F, MapB, KeyFile);
   State := nil;
+  if not StateGiven and (App.Name <> '') then
+  begin
+    StateFile := StateDir('tve');
+    if StateFile <> '' then
+      StateFile := PathJoin(StateFile, 'state.ini');
+  end;
   if (StateFile <> '') and (App.Name <> '') then
   begin
     State := TIniFile.Create(StateFile);

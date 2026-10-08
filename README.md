@@ -61,8 +61,9 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   gives it those of the language, then the words of the text); pressing it again cycles through the candidates and back to the typed fragment.
 * **Macros**: see below.
 * **State of a file** (`src/tvestate.pas`): `TveStateSave` / `TveStateLoad` keep the cursor, the first visible line, the selection, the bookmarks, the folds and the
-  insert mode of a file in a section of an INI file; at most `TveStateMaxFiles` (200) files are kept, the one saved longest ago is dropped first. The program:
-  `tve --state=FILE`.
+  insert mode of a file in a section of an INI file; at most `TveStateMaxFiles` (200) files are kept, the one saved longest ago is dropped first. The program
+  keeps them in `state.ini` of its state directory (`TvAppDir` of tv3: `$XDG_STATE_HOME/tve`, `~/Library/Application Support/tve`, `%LOCALAPPDATA%\tve`);
+  `tve --state=FILE` names another file, `--state=` keeps nothing.
 * **Hex search** (`src/tvesearch.pas`): the option `Hex` searches bytes written in hexadecimal (`DE AD be ef`); `AllCodePages` searches a plain text in every
   single-byte code page as well. The find dialog (`TveFindDialog`) has both; the commands `HexSearch` (Alt+Shift+F7) and `FindInAllCodePages` are for the host (the program opens
   the find dialog with the option set).
@@ -88,7 +89,8 @@ Keys below are those of the shipped maps (A: `TveKeymapA`, B: `TveKeymapB`); eve
   `at "x"` (the text at the cursor), `match "re"` (the line). **Named macros**: `View.Macros` (`TTveMacroList`) holds any number of them; `View.SelectMacro(Name)`
   makes one the current macro (the one that `MacroRecord` records and `MacroPlay` plays, `View.MacroName`), `View.PlayMacroNamed(Name, N)` plays another one,
   and the step `play "name"` plays one inside a macro. `View.SaveMacroFile` / `LoadMacroFile` keep all of them in one file (`macro NAME` starts one; the lines
-  before the first are the macro without a name, so a file of one macro is as before). The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro`).
+  before the first are the macro without a name, so a file of one macro is as before). The program: `--macro=FILE`, File menu "Save macro" / "Load macro" (file `tve.macro` in the
+  configuration directory of the program: `$XDG_CONFIG_HOME/tve`, `~/Library/Application Support/tve`, `%APPDATA%\tve`).
 * **Navigation guidelines of vtui**: the dialogs and the menu bar of the program are tv3's, which follow them (`docs/UX-CONFORMANCE.md` of tv3 has the table, tve's
   place in it and the two places where the editor keeps its own rules: the word definition and `Ctrl+C`). The program opens the menu bar with `F9` and `F10`;
   its commands are declared once with `TvActions` and the menu and the status line read them. `tests/pty/test_app.py` checks the menu keys and the word keys in a pty (`tools/pty_screen.py`).

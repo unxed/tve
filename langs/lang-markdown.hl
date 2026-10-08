@@ -19,3 +19,7 @@ symbol 6 /^######\s+(.+?)\s*#*\s*$/
 %include part-python
 %include part-json
 %include part-sql
+%include part-yaml
+%include part-diff
+%include part-ini
+%include part-make

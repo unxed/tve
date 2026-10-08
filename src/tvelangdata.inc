@@ -585,6 +585,10 @@ const
     '  match /^(```|~~~)\s*(?:py|python)\s*$/i => delimiter push md_py' + #10 +
     '  match /^(```|~~~)\s*json\s*$/i => delimiter push md_json' + #10 +
     '  match /^(```|~~~)\s*sql\s*$/i => delimiter push md_sql' + #10 +
+    '  match /^(```|~~~)\s*(?:yaml|yml)\s*$/i => delimiter push md_yaml' + #10 +
+    '  match /^(```|~~~)\s*(?:diff|patch)\s*$/i => delimiter push md_diff' + #10 +
+    '  match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini' + #10 +
+    '  match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make' + #10 +
     '  match /^(```|~~~).*$/ => delimiter push md_code' + #10 +
     '  match /`[^`]+`/ => string' + #10 +
     '  match /\*\*[^*]+\*\*/ => special' + #10 +
@@ -624,6 +628,18 @@ const
     'context md_sql' + #10 +
     '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
     '  include sql' + #10 +
+    'context md_yaml' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include yaml' + #10 +
+    'context md_diff' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include diff' + #10 +
+    'context md_ini' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include ini' + #10 +
+    'context md_make' + #10 +
+    '  match /^(```|~~~)\s*$/ => delimiter pop' + #10 +
+    '  include make' + #10 +
     '' + #10 +
     'context pascal nocase' + #10 +
     '  match ''{$'' => preproc push pas_directive' + #10 +
@@ -904,6 +920,115 @@ const
     '  match ''"'' => property pop' + #10 +
     'context sql_bt default property eolpop' + #10 +
     '  match ''`'' => property pop' + #10 +
+    '' + #10 +
+    'context yaml' + #10 +
+    '  match /(?:^|\s)#.*/ => comment' + #10 +
+    '  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text' + #10 +
+    '  match /^([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => property delimiter operator push yaml_block0' + #10 +
+    '  match /^([ -]{1})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block1' + #10 +
+    '  match /^([ -]{2})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block2' + #10 +
+    '  match /^([ -]{3})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block3' + #10 +
+    '  match /^([ -]{4})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block4' + #10 +
+    '  match /^([ -]{5})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block5' + #10 +
+    '  match /^([ -]{6})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block6' + #10 +
+    '  match /^([ -]{7})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block7' + #10 +
+    '  match /^([ -]{8})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block8' + #10 +
+    '  match /^([ -]{9})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block9' + #10 +
+    '  match /^([ -]{10})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block10' + #10 +
+    '  match /^([ -]{11})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block11' + #10 +
+    '  match /^([ -]{12})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block12' + #10 +
+    '  match /^([ -]{13})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block13' + #10 +
+    '  match /^([ -]{14})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block14' + #10 +
+    '  match /^([ -]{15})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block15' + #10 +
+    '  match /^([ -]{16})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block16' + #10 +
+    '  match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter' + #10 +
+    '  match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|''[^'']*'')(\s*:)(?=\s|$)/ => delimiter string delimiter' + #10 +
+    '  match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter' + #10 +
+    '  match /^\s*-(?=\s|$)/ => delimiter' + #10 +
+    '  match ''"'' => string push yaml_dq' + #10 +
+    '  match "''" => string push yaml_sq' + #10 +
+    '  match /[&*][A-Za-z_][\w-]*/ => variable' + #10 +
+    '  match /![\w!<>:\/.-]*/ => type' + #10 +
+    '  match /[|>][+-]?(?=\s*$)/ => operator' + #10 +
+    '  words keyword true false null True False TRUE FALSE Null NULL yes no on off Yes No' + #10 +
+    '  number c' + #10 +
+    '  ops :,[]{}' + #10 +
+    'context yaml_dq default string' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match ''"'' => string pop' + #10 +
+    'context yaml_sq default string' + #10 +
+    '  match "''''" => escape' + #10 +
+    '  match "''" => string pop' + #10 +
+    'context yaml_block0 default string' + #10 +
+    '  match /^(?=\S)/ => normal pop' + #10 +
+    'context yaml_block1 default string' + #10 +
+    '  match /^(?= {0,1}\S)/ => normal pop' + #10 +
+    'context yaml_block2 default string' + #10 +
+    '  match /^(?= {0,2}\S)/ => normal pop' + #10 +
+    'context yaml_block3 default string' + #10 +
+    '  match /^(?= {0,3}\S)/ => normal pop' + #10 +
+    'context yaml_block4 default string' + #10 +
+    '  match /^(?= {0,4}\S)/ => normal pop' + #10 +
+    'context yaml_block5 default string' + #10 +
+    '  match /^(?= {0,5}\S)/ => normal pop' + #10 +
+    'context yaml_block6 default string' + #10 +
+    '  match /^(?= {0,6}\S)/ => normal pop' + #10 +
+    'context yaml_block7 default string' + #10 +
+    '  match /^(?= {0,7}\S)/ => normal pop' + #10 +
+    'context yaml_block8 default string' + #10 +
+    '  match /^(?= {0,8}\S)/ => normal pop' + #10 +
+    'context yaml_block9 default string' + #10 +
+    '  match /^(?= {0,9}\S)/ => normal pop' + #10 +
+    'context yaml_block10 default string' + #10 +
+    '  match /^(?= {0,10}\S)/ => normal pop' + #10 +
+    'context yaml_block11 default string' + #10 +
+    '  match /^(?= {0,11}\S)/ => normal pop' + #10 +
+    'context yaml_block12 default string' + #10 +
+    '  match /^(?= {0,12}\S)/ => normal pop' + #10 +
+    'context yaml_block13 default string' + #10 +
+    '  match /^(?= {0,13}\S)/ => normal pop' + #10 +
+    'context yaml_block14 default string' + #10 +
+    '  match /^(?= {0,14}\S)/ => normal pop' + #10 +
+    'context yaml_block15 default string' + #10 +
+    '  match /^(?= {0,15}\S)/ => normal pop' + #10 +
+    'context yaml_block16 default string' + #10 +
+    '  match /^(?= {0,16}\S)/ => normal pop' + #10 +
+    '' + #10 +
+    'context diff' + #10 +
+    '  match /^(?:diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files).*/ => keyword' + #10 +
+    '  match /^@@[^@]*@@/ => special' + #10 +
+    '  match /^\+.*/ => type' + #10 +
+    '  match /^-.*/ => preproc' + #10 +
+    '  match /^\\.*/ => comment' + #10 +
+    '' + #10 +
+    'context ini' + #10 +
+    '  match /^\s*[;#].*/ => comment' + #10 +
+    '  match /^\s*\[\[?[^\]\n]*\]\]?/ => tag' + #10 +
+    '  match /^(\s*[A-Za-z_][\w.\- ]*?)(\s*=)/ => property operator' + #10 +
+    '  match ''"'' => string push ini_dq' + #10 +
+    '  match /''[^''\n]*''/ => string' + #10 +
+    '  words keyword true false yes no on off' + #10 +
+    '  number c' + #10 +
+    '  ops =,[]{}' + #10 +
+    'context ini_dq default string eolpop' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match ''"'' => string pop' + #10 +
+    '' + #10 +
+    'context make' + #10 +
+    '  match /#.*/ => comment' + #10 +
+    '  match /^\.[A-Z_]+(?=\s*:)/ => preproc' + #10 +
+    '  match /^(-?include|ifeq|ifneq|ifdef|ifndef|else|endif|define|endef|export|override|vpath)(?=\s|$)/ => keyword' + #10 +
+    '  match /^([A-Za-z_][\w.]*)(\s*(?:\?|\+|::|:)?=)/ => variable operator' + #10 +
+    '  match /^([A-Za-z_.%][\w.\-\/% ]*?)(\s*:)(?=[^=]|$)/ => function delimiter' + #10 +
+    '  match /\$[(\{][^)\}]*[)\}]|\$[@<^?*%+]/ => variable' + #10 +
+    '  match ''"'' => string push make_dq' + #10 +
+    '  match "''" => string push make_sq' + #10 +
+    '  ops |&;<>=' + #10 +
+    'context make_dq default string eolpop' + #10 +
+    '  match /\\./ => escape' + #10 +
+    '  match ''"'' => string pop' + #10 +
+    'context make_sq default string eolpop' + #10 +
+    '  match "''" => string pop' + #10 +
     '' + #10 +
     '';
 
@@ -1439,6 +1564,24 @@ const
     'symbol 2 /^  ([A-Za-z_][\w.\/-]*)\s*:(?:\s|$)/' + #10 +
     'context yaml' + #10 +
     '  match /(?:^|\s)#.*/ => comment' + #10 +
+    '  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text' + #10 +
+    '  match /^([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => property delimiter operator push yaml_block0' + #10 +
+    '  match /^([ -]{1})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block1' + #10 +
+    '  match /^([ -]{2})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block2' + #10 +
+    '  match /^([ -]{3})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block3' + #10 +
+    '  match /^([ -]{4})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block4' + #10 +
+    '  match /^([ -]{5})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block5' + #10 +
+    '  match /^([ -]{6})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block6' + #10 +
+    '  match /^([ -]{7})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block7' + #10 +
+    '  match /^([ -]{8})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block8' + #10 +
+    '  match /^([ -]{9})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block9' + #10 +
+    '  match /^([ -]{10})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block10' + #10 +
+    '  match /^([ -]{11})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block11' + #10 +
+    '  match /^([ -]{12})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block12' + #10 +
+    '  match /^([ -]{13})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block13' + #10 +
+    '  match /^([ -]{14})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block14' + #10 +
+    '  match /^([ -]{15})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block15' + #10 +
+    '  match /^([ -]{16})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block16' + #10 +
     '  match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|''[^'']*'')(\s*:)(?=\s|$)/ => delimiter string delimiter' + #10 +
     '  match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter' + #10 +
@@ -1457,6 +1600,40 @@ const
     'context yaml_sq default string' + #10 +
     '  match "''''" => escape' + #10 +
     '  match "''" => string pop' + #10 +
+    'context yaml_block0 default string' + #10 +
+    '  match /^(?=\S)/ => normal pop' + #10 +
+    'context yaml_block1 default string' + #10 +
+    '  match /^(?= {0,1}\S)/ => normal pop' + #10 +
+    'context yaml_block2 default string' + #10 +
+    '  match /^(?= {0,2}\S)/ => normal pop' + #10 +
+    'context yaml_block3 default string' + #10 +
+    '  match /^(?= {0,3}\S)/ => normal pop' + #10 +
+    'context yaml_block4 default string' + #10 +
+    '  match /^(?= {0,4}\S)/ => normal pop' + #10 +
+    'context yaml_block5 default string' + #10 +
+    '  match /^(?= {0,5}\S)/ => normal pop' + #10 +
+    'context yaml_block6 default string' + #10 +
+    '  match /^(?= {0,6}\S)/ => normal pop' + #10 +
+    'context yaml_block7 default string' + #10 +
+    '  match /^(?= {0,7}\S)/ => normal pop' + #10 +
+    'context yaml_block8 default string' + #10 +
+    '  match /^(?= {0,8}\S)/ => normal pop' + #10 +
+    'context yaml_block9 default string' + #10 +
+    '  match /^(?= {0,9}\S)/ => normal pop' + #10 +
+    'context yaml_block10 default string' + #10 +
+    '  match /^(?= {0,10}\S)/ => normal pop' + #10 +
+    'context yaml_block11 default string' + #10 +
+    '  match /^(?= {0,11}\S)/ => normal pop' + #10 +
+    'context yaml_block12 default string' + #10 +
+    '  match /^(?= {0,12}\S)/ => normal pop' + #10 +
+    'context yaml_block13 default string' + #10 +
+    '  match /^(?= {0,13}\S)/ => normal pop' + #10 +
+    'context yaml_block14 default string' + #10 +
+    '  match /^(?= {0,14}\S)/ => normal pop' + #10 +
+    'context yaml_block15 default string' + #10 +
+    '  match /^(?= {0,15}\S)/ => normal pop' + #10 +
+    'context yaml_block16 default string' + #10 +
+    '  match /^(?= {0,16}\S)/ => normal pop' + #10 +
     '' + #10 +
     '';
 

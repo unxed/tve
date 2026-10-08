@@ -1,5 +1,23 @@
 context yaml
   match /(?:^|\s)#.*/ => comment
+  # a block scalar (key: | or key: >): the lines after it that are indented more than the key are text
+  match /^([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => property delimiter operator push yaml_block0
+  match /^([ -]{1})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block1
+  match /^([ -]{2})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block2
+  match /^([ -]{3})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block3
+  match /^([ -]{4})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block4
+  match /^([ -]{5})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block5
+  match /^([ -]{6})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block6
+  match /^([ -]{7})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block7
+  match /^([ -]{8})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block8
+  match /^([ -]{9})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block9
+  match /^([ -]{10})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block10
+  match /^([ -]{11})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block11
+  match /^([ -]{12})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block12
+  match /^([ -]{13})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block13
+  match /^([ -]{14})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block14
+  match /^([ -]{15})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block15
+  match /^([ -]{16})([A-Za-z_][\w.\/ -]*?)(\s*:\s*)([|>][+-]?\d*)(?=\s*(?:#.*)?$)/ => delimiter property delimiter operator push yaml_block16
   match /^(?:---|\.\.\.)(?=\s|$)/ => delimiter
   match /^(\s*(?:-\s+)*)("(?:[^"\\]|\\.)*"|'[^']*')(\s*:)(?=\s|$)/ => delimiter string delimiter
   match /^(\s*(?:-\s+)*)([A-Za-z_][\w.\/ -]*?)(\s*:)(?=\s|$)/ => delimiter property delimiter
@@ -18,3 +36,37 @@ context yaml_dq default string
 context yaml_sq default string
   match "''" => escape
   match "'" => string pop
+context yaml_block0 default string
+  match /^(?=\S)/ => normal pop
+context yaml_block1 default string
+  match /^(?= {0,1}\S)/ => normal pop
+context yaml_block2 default string
+  match /^(?= {0,2}\S)/ => normal pop
+context yaml_block3 default string
+  match /^(?= {0,3}\S)/ => normal pop
+context yaml_block4 default string
+  match /^(?= {0,4}\S)/ => normal pop
+context yaml_block5 default string
+  match /^(?= {0,5}\S)/ => normal pop
+context yaml_block6 default string
+  match /^(?= {0,6}\S)/ => normal pop
+context yaml_block7 default string
+  match /^(?= {0,7}\S)/ => normal pop
+context yaml_block8 default string
+  match /^(?= {0,8}\S)/ => normal pop
+context yaml_block9 default string
+  match /^(?= {0,9}\S)/ => normal pop
+context yaml_block10 default string
+  match /^(?= {0,10}\S)/ => normal pop
+context yaml_block11 default string
+  match /^(?= {0,11}\S)/ => normal pop
+context yaml_block12 default string
+  match /^(?= {0,12}\S)/ => normal pop
+context yaml_block13 default string
+  match /^(?= {0,13}\S)/ => normal pop
+context yaml_block14 default string
+  match /^(?= {0,14}\S)/ => normal pop
+context yaml_block15 default string
+  match /^(?= {0,15}\S)/ => normal pop
+context yaml_block16 default string
+  match /^(?= {0,16}\S)/ => normal pop

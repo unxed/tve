@@ -11,6 +11,10 @@ context md
   match /^(```|~~~)\s*(?:py|python)\s*$/i => delimiter push md_py
   match /^(```|~~~)\s*json\s*$/i => delimiter push md_json
   match /^(```|~~~)\s*sql\s*$/i => delimiter push md_sql
+  match /^(```|~~~)\s*(?:yaml|yml)\s*$/i => delimiter push md_yaml
+  match /^(```|~~~)\s*(?:diff|patch)\s*$/i => delimiter push md_diff
+  match /^(```|~~~)\s*(?:ini|toml|cfg|conf)\s*$/i => delimiter push md_ini
+  match /^(```|~~~)\s*(?:make|makefile|mk)\s*$/i => delimiter push md_make
   match /^(```|~~~).*$/ => delimiter push md_code
   match /`[^`]+`/ => string
   match /\*\*[^*]+\*\*/ => special
@@ -50,3 +54,15 @@ context md_json
 context md_sql
   match /^(```|~~~)\s*$/ => delimiter pop
   include sql
+context md_yaml
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include yaml
+context md_diff
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include diff
+context md_ini
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include ini
+context md_make
+  match /^(```|~~~)\s*$/ => delimiter pop
+  include make

@@ -124,6 +124,25 @@ begin
   Check((Cl(2)[3] = 'P') and (Cl(2)[4] = 'd') and (Cl(2)[6] = 's') and (Cl(2)[11] = 'c'), 'yaml quoted value and a comment ' + Cl(2));
   Check((Cl(3)[3] = 'd') and (Cl(3)[5] = 'P') and (Cl(3)[8] = '0'), 'yaml list item with a key ' + Cl(3));
   Check((Cl(4)[5] = 'v') and (Cl(4)[9] = 'k'), 'yaml anchor and word ' + Cl(4));
+  { block scalars: the lines indented more than the key are text, up to a line that is not }
+  D.LoadText('run: |'#10'  echo: 1 # x'#10#10'  - b'#10'next: 2'#10'jobs:'#10'  - step: >-'#10'      a: b'#10'    name: x'#10'  k: |2'#10'   t'#10'z: 1');
+  Check(Cl(0) = 'PPPddo', 'block key ' + Cl(0));
+  Check(Cl(1) = 'sssssssssssss', 'block text ' + Cl(1));
+  Check(Cl(3) = 'sssss', 'after an empty line ' + Cl(3));
+  Check((Cl(4)[1] = 'P') and (Cl(4)[7] = '0'), 'the block ends at a key as indented ' + Cl(4));
+  Check(Cl(6)[5] = 'P', 'a key in a list item ' + Cl(6));
+  Check(Cl(7) = 'ssssssssss', 'its text ' + Cl(7));
+  Check(Cl(8)[5] = 'P', 'ends at the next key of the item ' + Cl(8));
+  Check(Cl(10) = 'ssss', 'indicator with an indentation ' + Cl(10));
+  Check(Cl(11)[1] = 'P', 'and the end ' + Cl(11));
+  H.Free;
+  L.Free;
+  { Markdown fences of these languages }
+  L := TveLangForFile('r.md');
+  H := TTveHighlighter.Create(D, L);
+  D.LoadText('```yaml'#10'a: 1'#10'```'#10'```diff'#10'+x'#10'```'#10'```toml'#10'[s]'#10'```'#10'```make'#10'all: x'#10'```'#10'text');
+  Check((Cl(1)[1] = 'P') and (Cl(4)[1] = 't') and (Cl(7) = 'TTT') and (Cl(10)[1] = 'f'), 'fences: yaml, diff, toml, make');
+  Check((Cl(2) = 'ddd') and (Cl(11) = 'ddd') and (Cl(12)[1] = '.'), 'the fences close');
   H.Free;
   L.Free;
   L := TveLangForFile('x.toml');

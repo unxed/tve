@@ -39,6 +39,11 @@ function LayoutSlice(const S: AnsiString; From, To_, TabSize: Integer): AnsiStri
 { Word characters: letters, digits, underscore and everything above U+007F that is not a space or a punctuation of the common blocks. }
 function IsWordCp(CP: LongWord): Boolean;
 
+{ The word that holds the character at the byte index Idx, or ends right before it: S[A .. B - 1]. False when there is none. }
+function TveWordAt(const S: AnsiString; Idx: Integer; out A, B: Integer): Boolean;
+{ The byte index of the next whole-word occurrence of Word in S at or after From (0 when there is none). }
+function TveFindWord(const S, Word: AnsiString; From: Integer): Integer;
+
 implementation
 
 uses
@@ -59,6 +64,91 @@ begin
   Result := CP <> $D7;
   if CP = $F7 then
     Result := False;
+end;
+
+function CpAtIdx(const S: AnsiString; I: Integer; out Len: Integer): LongWord;
+begin
+  Result := Byte(S[I]);
+  Len := 1;
+  if (Result >= $80) and Utf8Decode(@S[I], Length(S) - I + 1, Result, Len) then
+    Exit;
+  if Result >= $80 then
+  begin
+    Result := Byte(S[I]);
+    Len := 1;
+  end;
+end;
+
+function StartBefore(const S: AnsiString; I: Integer): Integer;
+begin
+  { the start of the character that ends right before I }
+  Result := I - 1;
+  while (Result > 1) and ((Byte(S[Result]) and $C0) = $80) and (I - Result < 4) do
+    Dec(Result);
+end;
+
+function TveWordAt(const S: AnsiString; Idx: Integer; out A, B: Integer): Boolean;
+var
+  L, P: Integer;
+begin
+  Result := False;
+  A := 0;
+  B := 0;
+  if (Idx < 1) or (Idx > Length(S) + 1) then
+    Exit;
+  if (Idx <= Length(S)) and IsWordCp(CpAtIdx(S, Idx, L)) then
+    P := Idx
+  else if Idx > 1 then
+  begin
+    P := StartBefore(S, Idx);
+    if not IsWordCp(CpAtIdx(S, P, L)) then
+      Exit;
+  end
+  else
+    Exit;
+  A := P;
+  while A > 1 do
+  begin
+    L := StartBefore(S, A);
+    if not IsWordCp(CpAtIdx(S, L, P)) then
+      Break;
+    A := L;
+  end;
+  B := A;
+  while B <= Length(S) do
+  begin
+    if not IsWordCp(CpAtIdx(S, B, L)) then
+      Break;
+    Inc(B, L);
+  end;
+  Result := B > A;
+end;
+
+function TveFindWord(const S, Word: AnsiString; From: Integer): Integer;
+var
+  I, L: Integer;
+  Ok: Boolean;
+begin
+  Result := 0;
+  if Word = '' then
+    Exit;
+  I := From;
+  if I < 1 then
+    I := 1;
+  while I <= Length(S) - Length(Word) + 1 do
+  begin
+    if (S[I] = Word[1]) and (Copy(S, I, Length(Word)) = Word) then
+    begin
+      Ok := True;
+      if I > 1 then
+        Ok := not IsWordCp(CpAtIdx(S, StartBefore(S, I), L));
+      if Ok and (I + Length(Word) <= Length(S)) then
+        Ok := not IsWordCp(CpAtIdx(S, I + Length(Word), L));
+      if Ok then
+        Exit(I);
+    end;
+    Inc(I);
+  end;
 end;
 
 procedure LayoutChar(const S: AnsiString; Index, CellStart, TabSize: Integer; out Info: TTveCharInfo);

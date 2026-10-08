@@ -45,6 +45,7 @@ type
     FOnLineAttr: TTveLineAttr;
     FGutter: Boolean;
     FShowCurrentLine: Boolean;
+    FMarkWord: Boolean;
     FRecording: Boolean;
     FMacro: array of Integer;
     FHistory: array of Int64;
@@ -99,6 +100,8 @@ type
     function SelectedAttr: TColorAttr; virtual;
     function MessageAttr: TColorAttr; virtual;
     function HighlightAttr: TColorAttr; virtual;
+    { the other occurrences of the word under the cursor }
+    function OccurrenceAttr: TColorAttr; virtual;
   public
     constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False);
     // From a stream (the scroll bars and the scrolling of TScroller); the document is the host's.
@@ -130,6 +133,8 @@ type
     property OnLineAttr: TTveLineAttr read FOnLineAttr write FOnLineAttr;
     property Gutter: Boolean read FGutter write FGutter;
     property ShowCurrentLine: Boolean read FShowCurrentLine write FShowCurrentLine;
+    { shade every whole-word occurrence of the word under the cursor (when nothing is selected) }
+    property MarkOccurrences: Boolean read FMarkWord write FMarkWord;
     property WheelStep: Integer read FWheelStep write FWheelStep;
     property SearchOptions: TTveSearchOptions read FSearch write FSearch;
     property Recording: Boolean read FRecording;
@@ -490,6 +495,12 @@ begin
   Result := AttrReversed(SelectedAttr);
 end;
 
+function TTveView.OccurrenceAttr: TColorAttr;
+begin
+  Result := NormalAttr;
+  AttrSetBg(Result, AttrBg(SelectedAttr));
+end;
+
 procedure TTveView.SetHighlightRange(A, B: Int64);
 begin
   if B <= A then
@@ -575,6 +586,9 @@ var
   CL: Int64;
   IsLast, InText: Boolean;
   TX0: Integer;
+  OccWord, OccText: AnsiString;
+  OccNext, OccA, OccB: Integer;
+  OccAttr: TColorAttr;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -635,6 +649,14 @@ begin
     else if not FEditor.SelectionRange(SelLo, SelHi) then
       HasSel := False;
   end;
+  OccWord := '';
+  if FMarkWord and not HasSel and (FEditor.Line < FEditor.Doc.Buffer.LineCount) then
+  begin
+    OccText := FEditor.Doc.Buffer.LineText(FEditor.Line);
+    if TveWordAt(OccText, LayoutCellToIndex(OccText, FEditor.Cell, FEditor.Opt.TabSize), OccA, OccB) then
+      OccWord := Copy(OccText, OccA, OccB - OccA);
+  end;
+  OccAttr := OccurrenceAttr;
   MsgRow := -1;
   if FMessage <> '' then
   begin
@@ -694,6 +716,9 @@ begin
           if not Mark then
             B.PutChar(0, Ord(' '));
         end;
+        OccNext := 0;
+        if OccWord <> '' then
+          OccNext := TveFindWord(Text, OccWord, 1);
         { the text, character by character, from the first one that is visible }
         Idx := LayoutCellToIndex(Text, X0, FEditor.Opt.TabSize);
         if Idx > 1 then
@@ -718,6 +743,14 @@ begin
           if (Idx - 1 <= High(Cls)) and (Cls <> nil) and (Cls[Idx - 1] <> hcNormal) then
           begin
             Attr := ClassAttr(Cls[Idx - 1]);
+            if Custom or CursorLine then
+              AttrSetBg(Attr, AttrBg(LineAttr));
+          end;
+          while (OccNext > 0) and (Idx >= OccNext + Length(OccWord)) do
+            OccNext := TveFindWord(Text, OccWord, OccNext + Length(OccWord));
+          if (OccNext > 0) and (Idx >= OccNext) then
+          begin
+            Attr := OccAttr;
             if Custom or CursorLine then
               AttrSetBg(Attr, AttrBg(LineAttr));
           end;

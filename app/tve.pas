@@ -69,6 +69,7 @@ begin
   if MapB then
     View.Keymap := TveKeymapB;
   View.Gutter := True;
+  View.MarkOccurrences := True;
   View.OnHostCommand := @Host;
   Lang := TveLangForFile(FileName);
   View.SetLanguage(Lang);

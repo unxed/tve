@@ -10,6 +10,7 @@ const
 
 var
   C: TTveCharInfo;
+  A, B: Integer;
 
 begin
   Utf8Enabled := True;
@@ -49,6 +50,14 @@ begin
 
   Check(IsWordCp(Ord('a')) and IsWordCp(Ord('_')) and IsWordCp(Ord('7')) and not IsWordCp(Ord(' ')) and not IsWordCp(Ord('-')), 'word characters: ASCII');
   Check(IsWordCp($43F) and IsWordCp($E9) and not IsWordCp($A0) and not IsWordCp($2014) and not IsWordCp($D7), 'word characters: letters above 127, not signs');
+  { the word at a position, the occurrences of a word }
+  Check(TveWordAt('foo bar_1 baz', 6, A, B) and (A = 5) and (B = 10), 'word at: inside the word');
+  Check(TveWordAt('foo bar', 4, A, B) and (A = 1) and (B = 4), 'word at: right after a word it ends');
+  Check(not TveWordAt('foo  bar', 5, A, B), 'word at: between blanks');
+  Check(TveWordAt(Privet, 3, A, B) and (A = 1) and (B = Length(Privet) + 1), 'word at: UTF-8 letters');
+  Check(TveFindWord('a foo foobar xfoo foo', 'foo', 1) = 3, 'find word: the first');
+  Check(TveFindWord('a foo foobar xfoo foo', 'foo', 4) = 19, 'find word: whole words only');
+  Check(TveFindWord('a foo', 'foo', 4) = 0, 'find word: none');
   Utf8Enabled := False;
   Check(LayoutCells(Privet, 8) = 4, 'no UTF-8: a byte is a cell');
   Utf8Enabled := True;

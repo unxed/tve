@@ -919,7 +919,8 @@ end;
 
 function TTveEditor.SelectionText(out Column: Boolean): AnsiString;
 var
-  A, B, L1, L2, L: Int64;
+  A, B, L1, L2: Int64;
+  L: LongInt;
   C1, C2: Integer;
   S: AnsiString;
   I1, I2: Integer;
@@ -992,7 +993,8 @@ end;
 
 function TTveEditor.DeleteSelection: Boolean;
 var
-  A, B, L1, L2, L: Int64;
+  A, B, L1, L2: Int64;
+  L: LongInt;
   C1, C2: Integer;
   S: AnsiString;
   I1, I2: Integer;

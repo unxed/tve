@@ -138,9 +138,9 @@ type
     { the other occurrences of the word under the cursor }
     function OccurrenceAttr: TColorAttr; virtual;
   public
-    constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False);
-    // From a stream (the scroll bars and the scrolling of TScroller); the document is the host's.
-    constructor LoadWith(S: TStream; ADoc: TTveDoc; OwnDoc: Boolean = False);
+    constructor Create(const Bounds: TRect; AHScrollBar, AVScrollBar: TScrollBar; ADoc: TTveDoc; OwnDoc: Boolean = False); overload;
+    { an empty view for the Build of a streamable descendant; its Read fills it }
+    constructor Create(AInit: TStreamableInit; ADoc: TTveDoc; OwnDoc: Boolean = False); overload;
     destructor Destroy; override;
     property Editor: TTveEditor read FEditor;
     property Doc: TTveDoc read GetDoc;
@@ -258,9 +258,9 @@ begin
   Setup(ADoc, OwnDoc);
 end;
 
-constructor TTveView.LoadWith(S: TStream; ADoc: TTveDoc; OwnDoc: Boolean);
+constructor TTveView.Create(AInit: TStreamableInit; ADoc: TTveDoc; OwnDoc: Boolean);
 begin
-  inherited Load(S);
+  inherited Create(AInit);
   Setup(ADoc, OwnDoc);
 end;
 

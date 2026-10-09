@@ -39,13 +39,13 @@ var
 begin
   R := GetExtent;
   R.B.Y := R.A.Y + 1;
-  MenuBar := TMenuBar.Create(R, NewMenu(
-    NewSubMenu('~F~ile', hcNoContext, NewMenu(
-      NewActionItem('file.save',
-      NewActionItem('file.saveMacro',
-      NewActionItem('file.loadMacro',
-      NewLine(
-      NewActionItem('file.exit', nil)))))), nil)));
+  MenuBar := TMenuBar.Create(R, TMenu.Create(
+    TSubMenu.Create('~F~ile', kbNoKey) +
+      NewActionItem('file.save', nil) +
+      NewActionItem('file.saveMacro', nil) +
+      NewActionItem('file.loadMacro', nil) +
+      NewLine +
+      NewActionItem('file.exit', nil)));
 end;
 
 procedure TTveApp.InitStatusLine;
@@ -55,12 +55,12 @@ begin
   R := GetExtent;
   R.A.Y := R.B.Y - 1;
   StatusLine := TStatusLine.Create(R,
-    NewStatusDef(0, $FFFF,
-      NewActionStatusKey('~F2~ Save', 'file.save',
-      NewActionStatusKey('~Alt-X~ Exit', 'file.exit',
+    TStatusDef.Create(0, $FFFF) +
+      NewActionStatusKey('~F2~ Save', 'file.save', nil) +
+      NewActionStatusKey('~Alt-X~ Exit', 'file.exit', nil) +
       { the menu bar by the navigation guidelines (F9) and by Turbo Vision (F10) }
-      NewStatusKey('', kbF9, cmMenu,
-      NewStatusKey('', kbF10, cmMenu, nil)))), nil));
+      TStatusItem.Create('', kbF9, cmMenu) +
+      TStatusItem.Create('', kbF10, cmMenu));
 end;
 
 { The file of the macro commands of the File menu: tve.macro in the configuration directory (the current one when there is none). }

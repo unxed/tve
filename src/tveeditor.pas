@@ -68,6 +68,7 @@ type
     procedure BeforeEdit;
     procedure AfterEdit;
     procedure BeginMove(Extend: Boolean);
+    procedure LeaveSelection;
     function IndentOf(const S: AnsiString): AnsiString;
     procedure WrapAtCursor;
     function FillCells(FromCell, ToCell: Integer): AnsiString;
@@ -529,8 +530,22 @@ begin
         StartSelection(skStream);
     end;
   end
-  else if not Opt.PersistentBlocks then
-    ClearSelection;
+  else
+    LeaveSelection;
+end;
+
+{ a move without Shift or a typed character: the selection ends. A persistent block stays where it is (its far end no longer follows the cursor);
+  a column block cannot be held by marks: it is dropped }
+procedure TTveEditor.LeaveSelection;
+begin
+  if not Opt.PersistentBlocks then
+    ClearSelection
+  else if not IsFrozen then
+  begin
+    FreezeSelection;
+    if not IsFrozen then
+      ClearSelection;
+  end;
 end;
 
 procedure TTveEditor.MoveLeft(Extend: Boolean);
@@ -1227,8 +1242,8 @@ begin
   try
     if Grouped then
       DeleteSelection
-    else if not Opt.PersistentBlocks then
-      ClearSelection;
+    else
+      LeaveSelection;
     BeforeEdit;
     LineS := GetLineText(FLine);
     { a closing bracket that is already there is skipped }

@@ -308,6 +308,15 @@ begin
   E.MoveRight(True);
   E.MoveLeft;
   Check(E.HasSelection, 'with persistent blocks it stays');
+  Setup('abcdefgh');
+  E.Opt.PersistentBlocks := True;
+  E.MoveRight(True); E.MoveRight(True); E.MoveRight(True);
+  E.MoveRight; E.MoveRight; E.MoveDown;
+  E.CopyBlock;
+  Check(E.HasSelection and (Clip.Text = 'abc'), 'with persistent blocks the moves without Shift do not extend it: ' + Clip.Text);
+  E.TypeText('Z');
+  E.CopyBlock;
+  Check(Clip.Text = 'abc', 'nor does typing: ' + Clip.Text);
   E.Opt.PersistentBlocks := False;
 
   Setup('abc def ghi');

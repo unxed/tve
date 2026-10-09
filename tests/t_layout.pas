@@ -59,7 +59,7 @@ begin
   Check(TveFindWord('a foo foobar xfoo foo', 'foo', 4) = 19, 'find word: whole words only');
   Check(TveFindWord('a foo', 'foo', 4) = 0, 'find word: none');
   Utf8Enabled := False;
-  Check(LayoutCells(Privet, 8) = 4, 'no UTF-8: a byte is a cell');
+  Check(LayoutCells(Privet, 8) = 2, 'no UTF-8 in the program: the text is UTF-8 still');
   Utf8Enabled := True;
   Finish;
 end.

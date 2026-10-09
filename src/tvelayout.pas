@@ -36,6 +36,10 @@ function LayoutCellToIndex(const S: AnsiString; Cell, TabSize: Integer): Integer
 { The text of the line from the cell From to the cell To (exclusive), with the tabs and the cut characters shown as blanks: what the screen shows. }
 function LayoutSlice(const S: AnsiString; From, To_, TabSize: Integer): AnsiString;
 
+{ S with its letters in capitals (Up) or in small letters; the text is UTF-8, a stray byte stays as it is. }
+function TveUpper(const S: AnsiString): AnsiString;
+function TveLower(const S: AnsiString): AnsiString;
+
 { Word characters: letters, digits, underscore and everything above U+007F that is not a space or a punctuation of the common blocks. }
 function IsWordCp(CP: LongWord): Boolean;
 
@@ -47,7 +51,47 @@ function TveFindWord(const S, Word: AnsiString; From: Integer): Integer;
 implementation
 
 uses
-  TvUtf8;
+  TvUtf8, TvUStr;
+
+function ChangeCase(const S: AnsiString; Up: Boolean): AnsiString;
+var
+  I, N, Used: Integer;
+  CP, M: LongWord;
+begin
+  Result := '';
+  I := 1;
+  N := Length(S);
+  while I <= N do
+  begin
+    Used := 1;
+    CP := Byte(S[I]);
+    if (CP >= $80) and not (Utf8Decode(@S[I], N - I + 1, CP, Used) and (Used > 1)) then
+    begin
+      Result := Result + S[I];
+      Inc(I);
+      Continue;
+    end;
+    if Up then
+      M := CpUpper(CP)
+    else
+      M := CpLower(CP);
+    if M = CP then
+      Result := Result + Copy(S, I, Used)
+    else
+      Result := Result + U8Encode(M);
+    Inc(I, Used);
+  end;
+end;
+
+function TveUpper(const S: AnsiString): AnsiString;
+begin
+  Result := ChangeCase(S, True);
+end;
+
+function TveLower(const S: AnsiString): AnsiString;
+begin
+  Result := ChangeCase(S, False);
+end;
 
 function IsWordCp(CP: LongWord): Boolean;
 begin
@@ -177,7 +221,7 @@ begin
     Info.Cells := 1;
     Exit;
   end;
-  if Utf8Enabled and Utf8Decode(@S[Index], Length(S) + 1 - Index, CP, Used) and (Used >= 2) then
+  if Utf8Decode(@S[Index], Length(S) + 1 - Index, CP, Used) and (Used >= 2) then
   begin
     Info.Bytes := Used;
     W := CharWidth(CP);

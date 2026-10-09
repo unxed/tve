@@ -247,7 +247,7 @@ type
 implementation
 
 uses
-  SysUtils, TvUtf8, TveLayout, TveBlocks, TveExtras, TveRegex;
+  SysUtils, TvUtf8, TvText, TveLayout, TveBlocks, TveExtras, TveRegex;
 
 const
   CursorHistoryMax = 64;
@@ -962,7 +962,7 @@ begin
             else if (Byte(Text[Idx]) < 32) then
               B.MoveChar(ScreenX, Ord('.'), Attr, 1)
             else
-              B.MoveStr(ScreenX, @Text[Idx], Grp, Attr, Size.X - ScreenX);
+              TextDrawStrUtf8(B.Data, Size.X, ScreenX, @Text[Idx], Grp, 0, @Attr);
           end
           else if (GrpCells > 0) and (ScreenX + GrpCells > GutterWidth) then
             B.MoveChar(GutterWidth, Ord(' '), Attr, ScreenX + GrpCells - GutterWidth);

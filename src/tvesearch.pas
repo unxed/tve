@@ -197,11 +197,10 @@ begin
   if A > 1 then
   begin
     K := 1;
-    if Utf8Enabled then
-      while (K < 4) and (A - K > 1) and ((Byte(S[A - K]) and $C0) = $80) do
-        Inc(K);
+    while (K < 4) and (A - K > 1) and ((Byte(S[A - K]) and $C0) = $80) do
+      Inc(K);
     CP := Byte(S[A - 1]);
-    if (Byte(S[A - 1]) >= $80) and Utf8Enabled and Utf8Decode(@S[A - K], K, CP, K) then
+    if (Byte(S[A - 1]) >= $80) and Utf8Decode(@S[A - K], K, CP, K) then
       ;
     if IsWordCp(CP) then
       Exit(False);
@@ -209,7 +208,7 @@ begin
   if B <= Length(S) then
   begin
     CP := Byte(S[B]);
-    if (CP >= $80) and Utf8Enabled and Utf8Decode(@S[B], Length(S) - B + 1, CP, K) then
+    if (CP >= $80) and Utf8Decode(@S[B], Length(S) - B + 1, CP, K) then
       ;
     if IsWordCp(CP) then
       Exit(False);
@@ -237,7 +236,7 @@ begin
       Exit(True);
     I := MS + 1;
     if I <= Length(S) then
-      while (I <= Length(S)) and ((Byte(S[I]) and $C0) = $80) and Utf8Enabled do
+      while (I <= Length(S)) and ((Byte(S[I]) and $C0) = $80) do
         Inc(I);
   end;
 end;

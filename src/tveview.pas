@@ -2060,7 +2060,7 @@ begin
     evKeyDown:
       if FKeysEnabled then
       begin
-        K := KeyMake(Event.KeyDown.KeyCode, Event.KeyDown.ControlKeyState);
+        K := TKey.Create(Event.KeyDown.KeyCode, Event.KeyDown.ControlKeyState);
         if FHavePrefix then
         begin
           FHavePrefix := False;
@@ -2072,13 +2072,13 @@ begin
           Cmd := FKeymap.LookupChord(FPrefix, K);
           if (Cmd <= 0) and ((K.Code and $FF) > 32) and ((K.Code and $FF) < 127) and ((K.Code <> (K.Code and $FF)) or ((K.Mods and kbShift) <> 0)) then
             { a second key of a chord that is a character: also without Shift and from the keypad (Ctrl+K + is Ctrl+K Shift+= on many keyboards) }
-            Cmd := FKeymap.LookupChord(FPrefix, KeyMake(K.Code and $FF, K.Mods and not kbShift));
+            Cmd := FKeymap.LookupChord(FPrefix, TKey.Create(K.Code and $FF, K.Mods and not kbShift));
           if Cmd <= 0 then
           begin
             { the second key typed in another layout: the Latin key of the same place }
             E2 := Event;
             if XlatPlain(E2) then
-              Cmd := FKeymap.LookupChord(FPrefix, KeyMake(E2.KeyDown.KeyCode, E2.KeyDown.ControlKeyState));
+              Cmd := FKeymap.LookupChord(FPrefix, TKey.Create(E2.KeyDown.KeyCode, E2.KeyDown.ControlKeyState));
           end;
           if Cmd > 0 then
           begin

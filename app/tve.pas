@@ -207,19 +207,19 @@ var
   Lost: Integer;
 begin
   inherited HandleEvent(Event);
-  if (Event.What = evCommand) and (Event.Command = cmSaveFile) then
+  if (Event.What = evCommand) and (Event.Message.Command = cmSaveFile) then
   begin
     if (Name <> '') and (View <> nil) then
       TveSaveDoc(View.Doc, Name, TveDefaultOptions, Lost, Err);
     ClearEvent(Event);
   end
-  else if (Event.What = evCommand) and (Event.Command = cmSaveMacro) then
+  else if (Event.What = evCommand) and (Event.Message.Command = cmSaveMacro) then
   begin
     if View <> nil then
       View.SaveMacroFile(MacroPath);
     ClearEvent(Event);
   end
-  else if (Event.What = evCommand) and (Event.Command = cmLoadMacro) then
+  else if (Event.What = evCommand) and (Event.Message.Command = cmLoadMacro) then
   begin
     if View <> nil then
       View.LoadMacroFile(MacroPath, Err);

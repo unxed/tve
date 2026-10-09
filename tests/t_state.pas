@@ -16,7 +16,7 @@ begin
     T := T + 'line ' + IntToStr(I) + #10;
   D := TTveDoc.Create;
   D.LoadText(T);
-  R.Assign(0, 0, 40, 10);
+  R := TRect.Create(0, 0, 40, 10);
   V := TTveView.Create(R, nil, nil, D);
   V.Editor.GotoLineCell(7, 3);
   V.Editor.SetBookmark(2);

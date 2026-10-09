@@ -88,7 +88,7 @@ begin
   { the view: FoldToggle on a line where a region starts makes it a fold and collapses it; again expands it }
   D := TTveDoc.Create;
   D.LoadText('void f()'#10'{'#10'  a();'#10'  if (x) {'#10'    b();'#10'  }'#10'}'#10'int y;'#10);
-  Rc.Assign(0, 0, 40, 10);
+  Rc := TRect.Create(0, 0, 40, 10);
   V := TTveView.Create(Rc, nil, nil, D);
   V.SetLanguage(TveLangByName('C/C++'));
   V.Editor.GotoLineCell(0, 0);

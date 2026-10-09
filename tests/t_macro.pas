@@ -31,9 +31,9 @@ var
 begin
   E := Default(TEvent);
   E.What := evKeyDown;
-  E.KeyCode := Ord(C);
-  E.TextLength := 1;
-  E.Text[0] := C;
+  E.KeyDown.KeyCode := Ord(C);
+  E.KeyDown.TextLength := 1;
+  E.KeyDown.Text[0] := C;
   V.HandleEvent(E);
 end;
 
@@ -106,7 +106,7 @@ begin
   { --- recording and playing in a view --- }
   D := TTveDoc.Create;
   D.LoadText('one'#10'two'#10'three'#10);
-  R.Assign(0, 0, 40, 10);
+  R := TRect.Create(0, 0, 40, 10);
   V := TTveView.Create(R, nil, nil, D);
   V.Execute(tcMacroRecord);
   Check(V.Recording, 'recording');

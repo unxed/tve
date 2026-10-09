@@ -31,8 +31,8 @@ var
 begin
   E := Default(TEvent);
   E.What := evKeyDown;
-  E.KeyCode := Code;
-  E.ControlKeyState := Shift;
+  E.KeyDown.KeyCode := Code;
+  E.KeyDown.ControlKeyState := Shift;
   V.HandleEvent(E);
 end;
 
@@ -160,7 +160,7 @@ begin
   { in a view: the second key of a chord typed with Shift (+ is Shift+= on many keyboards) or on the keypad }
   H := THost.Create;
   D := TTveDoc.Create;
-  R.Assign(0, 0, 40, 10);
+  R := TRect.Create(0, 0, 40, 10);
   V := TTveView.Create(R, nil, nil, D);
   V.OnHostCommand := @H.Run;
   for I := 0 to 2 do

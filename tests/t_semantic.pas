@@ -59,7 +59,7 @@ begin
   H.Free;
   { the view finds the names before drawing when the text changed }
   D.LoadText('def go():'#10'    pass'#10'go()'#10);
-  Rc.Assign(0, 0, 40, 10);
+  Rc := TRect.Create(0, 0, 40, 10);
   V := TTveView.Create(Rc, nil, nil, D);
   V.SetLanguage(TveLangByName('Python'));
   V.SemanticNames := True;

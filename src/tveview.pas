@@ -862,7 +862,7 @@ begin
       begin
         B.MoveChar(0, Ord(' '), MessageAttr, Size.X);
         B.MoveStr(0, @FMessage[1], Length(FMessage), MessageAttr, Size.X);
-        WriteLineD(0, Y, Size.X, 1, B);
+        WriteLine(0, Y, Size.X, 1, B);
         Continue;
       end;
       if FWrap then
@@ -999,7 +999,7 @@ begin
           (GutterWidth + FDropC - X0 < Size.X) then
           B.PutAttribute(GutterWidth + FDropC - X0, DropAttr);
       end;
-      WriteLineD(0, Y, Size.X, 1, B);
+      WriteLine(0, Y, Size.X, 1, B);
     end;
   finally
     B.Free;
@@ -1906,24 +1906,24 @@ var
   OldC: Integer;
   Target, Over: TTveView;
 begin
-  Start := Event.Where;
+  Start := Event.Mouse.Where;
   Moved := False;
-  Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
+  Copying := (Event.KeyDown.ControlKeyState and kbCtrlShift) <> 0;
   OldL := FEditor.Line;
   OldC := FEditor.Cell;
   Target := nil;
   FEditor.FreezeSelection;        // the selection stays while the cursor shows where the text would go
   while MouseEvent(Event, evMouseMove or evMouseAuto) do
   begin
-    if (Event.Where.X <> Start.X) or (Event.Where.Y <> Start.Y) then
+    if (Event.Mouse.Where.X <> Start.X) or (Event.Mouse.Where.Y <> Start.Y) then
       Moved := True;
     if not Moved then
       Continue;
-    Copying := (Event.ControlKeyState and kbCtrlShift) <> 0;
+    Copying := (Event.KeyDown.ControlKeyState and kbCtrlShift) <> 0;
     { over another editor: that one shows where the text would go }
     Over := nil;
-    if not MouseInView(Event.Where) then
-      Over := EditorAt(Event.Where);
+    if not MouseInView(Event.Mouse.Where) then
+      Over := EditorAt(Event.Mouse.Where);
     if Over <> Target then
     begin
       if Target <> nil then
@@ -1932,12 +1932,12 @@ begin
     end;
     if Target <> nil then
     begin
-      Target.Hit(Event.Where, L, C);
+      Target.Hit(Event.Mouse.Where, L, C);
       Target.ShowDrop(L, C);
       HideDrop;
       Continue;
     end;
-    P := MakeLocal(Event.Where);
+    P := MakeLocal(Event.Mouse.Where);
     DragScroll(P);
     Hit(MakeGlobal(P), L, C);
     FEditor.GotoLineCell(L, C);
@@ -1947,17 +1947,17 @@ begin
     Sync;
   end;
   FDropShown := False;
-  if (Event.ControlKeyState and kbCtrlShift) <> 0 then
+  if (Event.KeyDown.ControlKeyState and kbCtrlShift) <> 0 then
     Copying := True;
   if Target <> nil then
   begin
     Target.HideDrop;
     FEditor.GotoLineCell(OldL, OldC);
-    DropInto(Target, Event.Where, Copying);
+    DropInto(Target, Event.Mouse.Where, Copying);
     Sync;
     Exit;
   end;
-  P := MakeLocal(Event.Where);
+  P := MakeLocal(Event.Mouse.Where);
   if P.Y < 0 then P.Y := 0;
   if P.Y >= Size.Y then P.Y := Size.Y - 1;
   Hit(MakeGlobal(P), L, C);
@@ -1978,16 +1978,16 @@ var
   Extend: Boolean;
   P: TPoint;
 begin
-  Extend := (Event.ControlKeyState and kbShift) <> 0;
-  Hit(Event.Where, L, C);
-  if FMultiClick and ((Event.EventFlags and meTripleClick) <> 0) then
+  Extend := (Event.KeyDown.ControlKeyState and kbShift) <> 0;
+  Hit(Event.Mouse.Where, L, C);
+  if FMultiClick and ((Event.Mouse.EventFlags and meTripleClick) <> 0) then
   begin
     FEditor.GotoLineCell(L, C);
     FEditor.SelectLine;
     Sync;
     Exit;
   end;
-  if FMultiClick and ((Event.EventFlags and meDoubleClick) <> 0) then
+  if FMultiClick and ((Event.Mouse.EventFlags and meDoubleClick) <> 0) then
   begin
     FEditor.GotoLineCell(L, C);
     FEditor.SelectWord;
@@ -2003,7 +2003,7 @@ begin
   begin
     FEditor.ClearSelection;
     FEditor.GotoLineCell(L, C);
-    if ((Event.ControlKeyState and kbAltShift) <> 0) or FEditor.Opt.ColumnBlocks then
+    if ((Event.KeyDown.ControlKeyState and kbAltShift) <> 0) or FEditor.Opt.ColumnBlocks then
       FEditor.StartSelection(skColumn)
     else
       FEditor.StartSelection(skStream);
@@ -2022,7 +2022,7 @@ begin
   Sync;
   while MouseEvent(Event, evMouseMove or evMouseAuto) do
   begin
-    P := MakeLocal(Event.Where);
+    P := MakeLocal(Event.Mouse.Where);
     DragScroll(P);
     Hit(MakeGlobal(P), L, C);
     FEditor.GotoLineCell(L, C);
@@ -2041,7 +2041,7 @@ begin
   inherited HandleEvent(Event);
   case Event.What of
     evMouseDown:
-      if (Event.Buttons and mbLeftButton) <> 0 then
+      if (Event.Mouse.Buttons and mbLeftButton) <> 0 then
       begin
         if (State and sfFocused) = 0 then
           Select;
@@ -2050,20 +2050,20 @@ begin
       end;
     evMouseWheel:
       begin
-        if Event.Wheel = mwUp then
+        if Event.Mouse.Wheel = mwUp then
           ScrollLines(-FWheelStep)
-        else if Event.Wheel = mwDown then
+        else if Event.Mouse.Wheel = mwDown then
           ScrollLines(FWheelStep);
         ClearEvent(Event);
       end;
     evKeyDown:
       if FKeysEnabled then
       begin
-        K := KeyMake(Event.KeyCode, Event.ControlKeyState);
+        K := KeyMake(Event.KeyDown.KeyCode, Event.KeyDown.ControlKeyState);
         if FHavePrefix then
         begin
           FHavePrefix := False;
-          if Event.KeyCode = kbEsc then
+          if Event.KeyDown.KeyCode = kbEsc then
           begin
             ClearEvent(Event);
             Exit;
@@ -2077,7 +2077,7 @@ begin
             { the second key typed in another layout: the Latin key of the same place }
             E2 := Event;
             if XlatPlain(E2) then
-              Cmd := FKeymap.LookupChord(FPrefix, KeyMake(E2.KeyCode, E2.ControlKeyState));
+              Cmd := FKeymap.LookupChord(FPrefix, KeyMake(E2.KeyDown.KeyCode, E2.KeyDown.ControlKeyState));
           end;
           if Cmd > 0 then
           begin
@@ -2097,11 +2097,11 @@ begin
         end
         else if (Cmd > 0) and Execute(Cmd) then
           ClearEvent(Event)
-        else if (Event.TextLength > 0) and ((Event.ControlKeyState and (kbCtrlShift or kbAltShift)) = 0) and (Byte(Event.Text[0]) >= 32) then
+        else if (Event.KeyDown.TextLength > 0) and ((Event.KeyDown.ControlKeyState and (kbCtrlShift or kbAltShift)) = 0) and (Byte(Event.KeyDown.Text[0]) >= 32) then
         begin
-          SetLength(T, Event.TextLength);
-          for I := 0 to Event.TextLength - 1 do
-            T[I + 1] := Event.Text[I];
+          SetLength(T, Event.KeyDown.TextLength);
+          for I := 0 to Event.KeyDown.TextLength - 1 do
+            T[I + 1] := Event.KeyDown.Text[I];
           if FEditor.TypeText(T) then
           begin
             if FRecording then

@@ -28,7 +28,7 @@ end;
 
 function R(A, B, C, D: Integer): TRect;
 begin
-  Result.Assign(A, B, C, D);
+  Result := TRect.Create(A, B, C, D);
 end;
 
 function Lines(N: Integer): AnsiString;
@@ -69,10 +69,10 @@ var
 begin
   ClearEvent(E);
   E.What := What;
-  E.Where := P;
-  E.Buttons := mbLeftButton;
+  E.Mouse.Where := P;
+  E.Mouse.Buttons := mbLeftButton;
   if Ctrl then
-    E.ControlKeyState := kbCtrlShift;
+    E.KeyDown.ControlKeyState := kbCtrlShift;
   MemEvent(E);
 end;
 

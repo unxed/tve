@@ -63,7 +63,7 @@ function MakeBoxes(D: TDialog; X, Y: Integer; Three: Boolean): TView;
 var
   R: TRect;
 begin
-  R.Assign(X, Y, X + 36, Y + 6);
+  R := TRect.Create(X, Y, X + 36, Y + 6);
   Result := TCheckBoxes.Create(R,
     NewSItem('~C~ase sensitive',
     NewSItem('~W~hole words only',
@@ -102,20 +102,20 @@ var
   I: TInputLine;
   Rec: TFindRec;
 begin
-  R.Assign(0, 0, 52, 15);
+  R := TRect.Create(0, 0, 52, 15);
   D := TDialog.Create(R, 'Find');
   D.Options := D.Options or ofCentered;
-  R.Assign(3, 3, 46, 4);
+  R := TRect.Create(3, 3, 46, 4);
   I := TInputLine.Create(R, 80);
   D.Insert(I);
-  R.Assign(2, 2, 20, 3);
+  R := TRect.Create(2, 2, 20, 3);
   D.Insert(TLabel.Create(R, '~T~ext to find', I));
-  R.Assign(46, 3, 49, 4);
+  R := TRect.Create(46, 3, 49, 4);
   D.Insert(THistory.Create(R, I, HistFind));
   MakeBoxes(D, 3, 5, False);
-  R.Assign(14, 12, 24, 14);
+  R := TRect.Create(14, 12, 24, 14);
   D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
-  R.Assign(26, 12, 36, 14);
+  R := TRect.Create(26, 12, 36, 14);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Pattern := Copy(Opt.Pattern, 1, 80);
@@ -140,29 +140,29 @@ var
   Boxes: TView;
   K: Word;
 begin
-  R.Assign(0, 0, 52, 18);
+  R := TRect.Create(0, 0, 52, 18);
   D := TDialog.Create(R, 'Replace');
   D.Options := D.Options or ofCentered;
-  R.Assign(3, 3, 46, 4);
+  R := TRect.Create(3, 3, 46, 4);
   I := TInputLine.Create(R, 80);
   D.Insert(I);
-  R.Assign(2, 2, 20, 3);
+  R := TRect.Create(2, 2, 20, 3);
   D.Insert(TLabel.Create(R, '~T~ext to find', I));
-  R.Assign(46, 3, 49, 4);
+  R := TRect.Create(46, 3, 49, 4);
   D.Insert(THistory.Create(R, I, HistFind));
-  R.Assign(3, 6, 46, 7);
+  R := TRect.Create(3, 6, 46, 7);
   J := TInputLine.Create(R, 80);
   D.Insert(J);
-  R.Assign(2, 5, 20, 6);
+  R := TRect.Create(2, 5, 20, 6);
   D.Insert(TLabel.Create(R, '~N~ew text', J));
-  R.Assign(46, 6, 49, 7);
+  R := TRect.Create(46, 6, 49, 7);
   D.Insert(THistory.Create(R, J, HistRepl));
   Boxes := MakeBoxes(D, 3, 8, False);
-  R.Assign(4, 15, 20, 17);
+  R := TRect.Create(4, 15, 20, 17);
   D.Insert(TButton.Create(R, '~R~eplace', cmOK, bfDefault));
-  R.Assign(21, 15, 35, 17);
+  R := TRect.Create(21, 15, 35, 17);
   D.Insert(TButton.Create(R, 'Replace ~a~ll', cmYes, bfNormal));
-  R.Assign(36, 15, 48, 17);
+  R := TRect.Create(36, 15, 48, 17);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Pattern := Copy(Opt.Pattern, 1, 80);
@@ -189,19 +189,19 @@ var
   I: TInputLine;
   Rec: TGotoRec;
 begin
-  R.Assign(0, 0, 44, 8);
+  R := TRect.Create(0, 0, 44, 8);
   D := TDialog.Create(R, 'Insert character');
   D.Options := D.Options or ofCentered;
-  R.Assign(3, 3, 37, 4);
+  R := TRect.Create(3, 3, 37, 4);
   I := TInputLine.Create(R, 40);
   D.Insert(I);
-  R.Assign(2, 2, 40, 3);
+  R := TRect.Create(2, 2, 40, 3);
   D.Insert(TLabel.Create(R, '~C~ode point (U+263A, 263A or #9786)', I));
-  R.Assign(37, 3, 40, 4);
+  R := TRect.Create(37, 3, 40, 4);
   D.Insert(THistory.Create(R, I, HistCode));
-  R.Assign(10, 5, 20, 7);
+  R := TRect.Create(10, 5, 20, 7);
   D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
-  R.Assign(22, 5, 32, 7);
+  R := TRect.Create(22, 5, 32, 7);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Text := Copy(Text, 1, 40);
@@ -222,19 +222,19 @@ var
   I: TInputLine;
   Rec: TGotoRec;
 begin
-  R.Assign(0, 0, 44, 8);
+  R := TRect.Create(0, 0, 44, 8);
   D := TDialog.Create(R, 'Go to');
   D.Options := D.Options or ofCentered;
-  R.Assign(3, 3, 37, 4);
+  R := TRect.Create(3, 3, 37, 4);
   I := TInputLine.Create(R, 40);
   D.Insert(I);
-  R.Assign(2, 2, 40, 3);
+  R := TRect.Create(2, 2, 40, 3);
   D.Insert(TLabel.Create(R, '~L~ine, line:column or +offset', I));
-  R.Assign(37, 3, 40, 4);
+  R := TRect.Create(37, 3, 40, 4);
   D.Insert(THistory.Create(R, I, HistGoto));
-  R.Assign(10, 5, 20, 7);
+  R := TRect.Create(10, 5, 20, 7);
   D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
-  R.Assign(22, 5, 32, 7);
+  R := TRect.Create(22, 5, 32, 7);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   D.SelectNext(False);
   Rec.Text := Copy(Text, 1, 40);
@@ -278,20 +278,20 @@ begin
   Result := False;
   if Length(Items) = 0 then
     Exit;
-  R.Assign(0, 0, 60, 20);
+  R := TRect.Create(0, 0, 60, 20);
   D := TDialog.Create(R, Title);
   D.Options := D.Options or ofCentered;
-  R.Assign(57, 2, 58, 15);
+  R := TRect.Create(57, 2, 58, 15);
   Bar := TScrollBar.Create(R);
   D.Insert(Bar);
-  R.Assign(2, 2, 57, 15);
+  R := TRect.Create(2, 2, 57, 15);
   V := TStrListViewer.Create(R, 1, nil, Bar);
   V.Items := Items;
   V.SetRange(Length(Items));
   D.Insert(V);
-  R.Assign(14, 16, 24, 18);
+  R := TRect.Create(14, 16, 24, 18);
   D.Insert(TButton.Create(R, 'O~K~', cmOK, bfDefault));
-  R.Assign(34, 16, 44, 18);
+  R := TRect.Create(34, 16, 44, 18);
   D.Insert(TButton.Create(R, 'Cancel', cmCancel, bfNormal));
   if (Index >= 0) and (Index < Length(Items)) then
     V.FocusItem(Index);

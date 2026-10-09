@@ -6,7 +6,7 @@ uses SysUtils, TvGeom, TvCodePg, TvEvents, TvKeys, TvViews, TvMem, TvApp, TvWind
 
 function R(A, B, C, D: Integer): TRect;
 begin
-  Result.Assign(A, B, C, D);
+  Result := TRect.Create(A, B, C, D);
 end;
 
 function Lines(N: Integer): AnsiString;
@@ -41,8 +41,8 @@ var
 begin
   ClearEvent(E);
   E.What := evMouseWheel;
-  E.Where := V.MakeGlobal(Point(X, Y));
-  E.Wheel := Dir;
+  E.Mouse.Where := V.MakeGlobal(Point(X, Y));
+  E.Mouse.Wheel := Dir;
   TProgram.Application.HandleEvent(E);
 end;
 

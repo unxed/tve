@@ -65,12 +65,12 @@ var
 begin
   R := TRect.Create(X, Y, X + 36, Y + 6);
   Result := TCheckBoxes.Create(R,
-    NewSItem('~C~ase sensitive',
-    NewSItem('~W~hole words only',
-    NewSItem('~R~egular expression',
-    NewSItem('~B~ackward',
-    NewSItem('He~x~ bytes',
-    NewSItem('~A~ll code pages', nil)))))));
+    TSItem.Create('~C~ase sensitive',
+    TSItem.Create('~W~hole words only',
+    TSItem.Create('~R~egular expression',
+    TSItem.Create('~B~ackward',
+    TSItem.Create('He~x~ bytes',
+    TSItem.Create('~A~ll code pages', nil)))))));
   D.Insert(Result);
 end;
 

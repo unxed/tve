@@ -234,8 +234,8 @@ var
   Piece: AnsiString;
 begin
   case Mode of
-    caseUpper: Exit(U8Upper(S));
-    caseLower: Exit(U8Lower(S));
+    caseUpper: Exit(TveUpper(S));
+    caseLower: Exit(TveLower(S));
   end;
   Result := '';
   I := 1;
@@ -245,7 +245,7 @@ begin
   begin
     Used := 1;
     CP := Byte(S[I]);
-    if (CP >= $80) and Utf8Enabled then
+    if CP >= $80 then
       if not (Utf8Decode(@S[I], N - I + 1, CP, Used) and (Used > 1)) then
       begin
         CP := Byte(S[I]);
@@ -257,9 +257,9 @@ begin
       if IsWordCp(CP) then
       begin
         if StartOfWord then
-          Piece := U8Upper(Piece)
+          Piece := TveUpper(Piece)
         else
-          Piece := U8Lower(Piece);
+          Piece := TveLower(Piece);
         StartOfWord := False;
       end
       else
@@ -269,9 +269,9 @@ begin
     begin
       { toggle: a capital becomes lower, a small letter capital }
       if CpLower(CP) <> CP then
-        Piece := U8Lower(Piece)
+        Piece := TveLower(Piece)
       else if CpUpper(CP) <> CP then
-        Piece := U8Upper(Piece);
+        Piece := TveUpper(Piece);
     end;
     Result := Result + Piece;
     Inc(I, Used);
@@ -399,7 +399,7 @@ var
     if CaseSensitive then
       Cmp := CompareStr(Keys[A], Keys[B])
     else
-      Cmp := CompareStr(U8Lower(Keys[A]), U8Lower(Keys[B]));
+      Cmp := CompareStr(TveLower(Keys[A]), TveLower(Keys[B]));
     if Descending then
       Cmp := -Cmp;
     if Cmp = 0 then
@@ -874,7 +874,7 @@ begin
   Result := '';
   Total := 0;
   for I := First to Last do
-    Inc(Total, U8Cols(W[I]));
+    Inc(Total, LayoutCells(W[I], 1));
   Gaps := Last - First;
   case Align of
     alFull:
@@ -907,7 +907,7 @@ begin
         if I > First then Result := Result + ' ';
         Result := Result + W[I];
       end;
-      Total := U8Cols(Result);
+      Total := LayoutCells(Result, 1);
       if Align = alRight then
         Result := StringOfChar(' ', Width - Total) + Result
       else if Align = alCenter then
@@ -962,11 +962,11 @@ begin
     Width := RightMargin - Lead;
     if Width < 1 then Width := 1;
     I := First;
-    Cols := U8Cols(W[I]);
-    while (I < High(W)) and (Cols + 1 + U8Cols(W[I + 1]) <= Width) do
+    Cols := LayoutCells(W[I], 1);
+    while (I < High(W)) and (Cols + 1 + LayoutCells(W[I + 1], 1) <= Width) do
     begin
       Inc(I);
-      Inc(Cols, 1 + U8Cols(W[I]));
+      Inc(Cols, 1 + LayoutCells(W[I], 1));
     end;
     SetLength(Out_, N + 1);
     Out_[N] := StringOfChar(' ', Lead) + SetLine(W, First, I, Width, Align, I = High(W));

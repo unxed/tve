@@ -32,7 +32,7 @@ function TveParseGoto(const Text: AnsiString; out Line: Int64; out Cell: Integer
 implementation
 
 uses
-  SysUtils, TvGeom, TvViews, TvApp, TvDialog, TvInput, TvCluster, TvHist, TvEvents, TvList, TvWindow;
+  SysUtils, TvGeom, TvViews, TvApp, TvDialog, TvInput, TvCluster, TvHist, TvEvents, TvList, TvWindow, TvColors, TvDrawBuf, TvText;
 
 const
   HistFind = 61;
@@ -253,6 +253,7 @@ type
     Items: TTveStringArray;
     function GetText(Item, MaxLen: Integer): ShortString; override;
     procedure SelectItem(Item: Integer); override;
+    procedure Draw; override;
   end;
 
 function TStrListViewer.GetText(Item, MaxLen: Integer): ShortString;
@@ -261,6 +262,39 @@ begin
     Result := Copy(Items[Item], 1, MaxLen)
   else
     Result := '';
+end;
+
+{ the items are UTF-8 also in a program with a code page: each row is drawn with TText.DrawStrUtf8 }
+procedure TStrListViewer.Draw;
+var
+  B: TDrawBuffer;
+  Row, Item: Integer;
+  Base, Attr: TColorAttr;
+begin
+  if (State and (sfSelected or sfActive)) = (sfSelected or sfActive) then
+    Base := GetColor(1)[0]
+  else
+    Base := GetColor(2)[0];
+  B := TDrawBuffer.Create(Size.X);
+  try
+    for Row := 0 to Size.Y - 1 do
+    begin
+      Item := TopItem + Row;
+      Attr := Base;
+      if (Item = Focused) and (Range > 0) and GetState(sfFocused) then
+        Attr := GetColor(3)[0]
+      else if (Item < Range) and IsSelected(Item) then
+        Attr := GetColor(4)[0];
+      B.MoveChar(0, Ord(' '), Attr, Size.X);
+      if (Item >= 0) and (Item < Length(Items)) and (Items[Item] <> '') and (Size.X > 1) then
+        TText.DrawStrUtf8(B.Data, Size.X, 1, PByte(@Items[Item][1]), Length(Items[Item]), 0, @Attr);
+      WriteLine(0, Row, Size.X, 1, B);
+    end;
+  finally
+    B.Free;
+  end;
+  if (Focused >= TopItem) and (Focused < TopItem + Size.Y) then
+    SetCursor(1, Focused - TopItem);
 end;
 
 procedure TStrListViewer.SelectItem(Item: Integer);

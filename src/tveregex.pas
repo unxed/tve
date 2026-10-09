@@ -135,7 +135,7 @@ begin
     CP := 0;
     Exit(0);
   end;
-  if (Byte(S[Idx]) < $80) or not Utf8Enabled then
+  if Byte(S[Idx]) < $80 then
   begin
     CP := Byte(S[Idx]);
     Exit(1);
@@ -156,9 +156,8 @@ begin
     Exit(0);
   end;
   K := 1;
-  if Utf8Enabled then
-    while (K < 4) and (Idx - K > 1) and ((Byte(S[Idx - K]) and $C0) = $80) do
-      Inc(K);
+  while (K < 4) and (Idx - K > 1) and ((Byte(S[Idx - K]) and $C0) = $80) do
+    Inc(K);
   if NextCp(S, Idx - K, CP) = K then
     Result := K
   else
@@ -1005,7 +1004,7 @@ begin
             if Pos + Used - 1 > Length(S) then
               Ok := False
             else if FIgnoreCase then
-              Ok := U8Lower(Copy(S, K, Used)) = U8Lower(Copy(S, Pos, Used))
+              Ok := TveLower(Copy(S, K, Used)) = TveLower(Copy(S, Pos, Used))
             else
               Ok := Copy(S, K, Used) = Copy(S, Pos, Used);
             if Ok then

@@ -247,7 +247,7 @@ type
 implementation
 
 uses
-  SysUtils, TvUtf8, TveLayout, TveBlocks, TveExtras, TveRegex;
+  SysUtils, TvUtf8, TvText, TveLayout, TveBlocks, TveExtras, TveRegex;
 
 const
   CursorHistoryMax = 64;
@@ -772,7 +772,7 @@ var
   TX0: Integer;
   OccWord, OccText: AnsiString;
   OccNext, OccA, OccB: Integer;
-  OccAttr: TColorAttr;
+  OccAttr, MsgAttr: TColorAttr;
 
   procedure LineSelection(Line: Int64; out A, Bc: Integer);
   var
@@ -861,7 +861,8 @@ begin
       if Y = MsgRow then
       begin
         B.MoveChar(0, Ord(' '), MessageAttr, Size.X);
-        B.MoveStr(0, @FMessage[1], Length(FMessage), MessageAttr, Size.X);
+        MsgAttr := MessageAttr;
+        TText.DrawStrUtf8(B.Data, Size.X, 0, PByte(@FMessage[1]), Length(FMessage), 0, @MsgAttr);
         WriteLine(0, Y, Size.X, 1, B);
         Continue;
       end;
@@ -962,7 +963,7 @@ begin
             else if (Byte(Text[Idx]) < 32) then
               B.MoveChar(ScreenX, Ord('.'), Attr, 1)
             else
-              B.MoveStr(ScreenX, @Text[Idx], Grp, Attr, Size.X - ScreenX);
+              TText.DrawStrUtf8(B.Data, Size.X, ScreenX, @Text[Idx], Grp, 0, @Attr);
           end
           else if (GrpCells > 0) and (ScreenX + GrpCells > GutterWidth) then
             B.MoveChar(GutterWidth, Ord(' '), Attr, ScreenX + GrpCells - GutterWidth);

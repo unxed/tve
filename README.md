@@ -7,7 +7,8 @@
 * The text is a **piece table**: the file as it was read, a buffer of everything typed, and a list of pieces that tells
   which parts of them make the text now. An edit changes the list, never the bytes; undo and redo put an old piece list back.
 * A **line index** (the offsets of the line ends of both buffers) answers "where does line N start" without scanning.
-* Text is UTF-8 inside (`TvUStr` of tv3 gives columns and cells); the code page of a file is converted when it is read and written.
+* Text is UTF-8 inside, also in a program with a code page (`TvUtf8.Utf8Enabled` False): the editor decodes it and draws it with
+  `TextDrawStrUtf8` of tv3; the code page of a file is converted when it is read and written.
 * The view is a `TView` of tv3: it draws cells, takes events, and uses the tv3 units for the clipboard, history, file names (also on DOS
   with UTF-8 names), masks, key names, INI files.
 

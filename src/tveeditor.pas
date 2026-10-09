@@ -655,7 +655,7 @@ var
     while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
       Inc(K);
     Buf := FDoc.Buffer.Copy(O - K, K);
-    if Utf8Enabled and (K >= 1) and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) then
+    if (K >= 1) and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) then
       Result := CP
     else
       Result := FDoc.Buffer.ByteAt(O - 1);
@@ -666,9 +666,8 @@ var
     K: Integer;
   begin
     K := 1;
-    if Utf8Enabled then
-      while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
-        Inc(K);
+    while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
+      Inc(K);
     Result := K;
   end;
 
@@ -702,7 +701,7 @@ var
   begin
     Buf := FDoc.Buffer.Copy(O, 4);
     if Buf = '' then Exit(0);
-    if Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+    if (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
       Result := CP
     else
       Result := Byte(Buf[1]);
@@ -711,7 +710,7 @@ var
   function SizeAt(O: Int64): Integer;
   begin
     Buf := FDoc.Buffer.Copy(O, 4);
-    if (Buf <> '') and Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+    if (Buf <> '') and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
       Result := Used
     else
       Result := 1;
@@ -737,19 +736,18 @@ begin
   PlaceAtOffset(Off);
 end;
 
-{ The code point that ends at the byte offset O (and its size), and the one that starts at O: the text is UTF-8 when Utf8Enabled }
+{ The code point that ends at the byte offset O (and its size), and the one that starts at O (the text is UTF-8) }
 procedure TTveEditor.FarCpBefore(O: Int64; out CP: LongWord; out Size: Integer);
 var
   K, Used: Integer;
   Buf: AnsiString;
 begin
   K := 1;
-  if Utf8Enabled then
-    while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
-      Inc(K);
+  while (K <= 4) and (O - K >= 0) and ((FDoc.Buffer.ByteAt(O - K) and $C0) = $80) do
+    Inc(K);
   Size := K;
   Buf := FDoc.Buffer.Copy(O - K, K);
-  if Utf8Enabled and (K >= 1) and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) then
+  if (K >= 1) and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) then
     Exit;
   CP := FDoc.Buffer.ByteAt(O - 1);
   Size := 1;
@@ -766,7 +764,7 @@ begin
   if Buf = '' then
     Exit;
   CP := Byte(Buf[1]);
-  if Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+  if (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
     Size := Used
   else
     CP := Byte(Buf[1]);
@@ -1021,7 +1019,7 @@ var
   begin
     Buf := FDoc.Buffer.Copy(O, 4);
     if Buf = '' then Exit(0);
-    if Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+    if (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
       Result := CP
     else
       Result := Byte(Buf[1]);
@@ -1030,15 +1028,14 @@ var
   function PrevStart(O: Int64): Int64;
   begin
     Result := O - 1;
-    if Utf8Enabled then
-      while (Result > 0) and ((FDoc.Buffer.ByteAt(Result) and $C0) = $80) do
-        Dec(Result);
+    while (Result > 0) and ((FDoc.Buffer.ByteAt(Result) and $C0) = $80) do
+      Dec(Result);
   end;
 
   function NextEnd(O: Int64): Int64;
   begin
     Buf := FDoc.Buffer.Copy(O, 4);
-    if (Buf <> '') and Utf8Enabled and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
+    if (Buf <> '') and (Byte(Buf[1]) >= $80) and Utf8Decode(@Buf[1], Length(Buf), CP, Used) and (Used > 1) then
       Result := O + Used
     else
       Result := O + 1;

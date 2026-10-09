@@ -82,9 +82,9 @@ var
 begin
   while MemPending > 0 do
   begin
-    Application.GetEvent(E);
+    TProgram.Application.GetEvent(E);
     if E.What <> evNothing then
-      Application.HandleEvent(E);
+      TProgram.Application.HandleEvent(E);
   end;
 end;
 
@@ -166,7 +166,7 @@ begin
   Check(V2.Doc.Buffer.AsString = 'abc'#10'dworldef'#10, 'dropped into the other document: ' + V2.Doc.Buffer.AsString);
   Check(V1.Doc.Buffer.LineText(0) = 'hello ', 'moved out of the first: ' + V1.Doc.Buffer.LineText(0));
   Check(V2.Editor.HasSelection, 'the dropped text is selected');
-  Check(DeskTop.Current = W2, 'the other window has the focus');
+  Check(TProgram.DeskTop.Current = W2, 'the other window has the focus');
 
   { with Ctrl: copied }
   W1.Focus;

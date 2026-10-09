@@ -43,7 +43,7 @@ begin
   E.What := evMouseWheel;
   E.Where := V.MakeGlobal(Point(X, Y));
   E.Wheel := Dir;
-  Application.HandleEvent(E);
+  TProgram.Application.HandleEvent(E);
 end;
 
 procedure Press(Code, Mods: Word);
@@ -51,7 +51,7 @@ var
   E: TEvent;
 begin
   MakeKeyEvent(E, Code, Mods);
-  Application.HandleEvent(E);
+  TProgram.Application.HandleEvent(E);
 end;
 
 var
@@ -70,11 +70,11 @@ begin
   App.InsertWindow(W2);
   V1.Refresh;
   V2.Refresh;
-  Check(DeskTop.Current = W2, 'the second window has the focus');
+  Check(TProgram.DeskTop.Current = W2, 'the second window has the focus');
   Wheel(V1, 5, 3, mwDown);
   Check(V1.Delta.Y = V1.WheelStep, 'the wheel over the editor of the unfocused window scrolls it');
   Check(V2.Delta.Y = 0, '... and not the focused one');
-  Check(DeskTop.Current = W2, '... the focus stays');
+  Check(TProgram.DeskTop.Current = W2, '... the focus stays');
   Wheel(V2, 5, 3, mwDown);
   Wheel(V2, 5, 3, mwDown);
   Check((V2.Delta.Y = 2 * V2.WheelStep) and (V1.Delta.Y = V1.WheelStep), 'over the focused one it scrolls the focused one');

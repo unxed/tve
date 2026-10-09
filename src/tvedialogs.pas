@@ -56,7 +56,7 @@ type
 
 function Run(D: TDialog): Boolean;
 begin
-  Result := DeskTop.ExecView(D) = cmOK;
+  Result := TProgram.DeskTop.ExecView(D) = cmOK;
 end;
 
 function MakeBoxes(D: TDialog; X, Y: Integer; Three: Boolean): TView;
@@ -169,7 +169,7 @@ begin
   Rec.Repl := Copy(Repl, 1, 80);
   Rec.Flags := FlagsOf(Opt);
   D.SetData(Rec);
-  K := DeskTop.ExecView(D);
+  K := TProgram.DeskTop.ExecView(D);
   All := K = cmYes;
   Result := (K = cmOK) or (K = cmYes);
   if Result then

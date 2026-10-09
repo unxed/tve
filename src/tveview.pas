@@ -459,30 +459,30 @@ begin
   if FClassSet[C] then
     Exit(FClassAttr[C]);
   case C of
-    hcComment: Fg := ColorBIOS($08);
-    hcString: Fg := ColorBIOS($0B);
-    hcNumber: Fg := ColorBIOS($0D);
-    hcKeyword: Fg := ColorBIOS($0F);
-    hcType: Fg := ColorBIOS($0A);
-    hcBuiltin: Fg := ColorBIOS($0E);
-    hcPreproc: Fg := ColorBIOS($0C);
-    hcOperator: Fg := ColorBIOS($07);
-    hcEscape: Fg := ColorBIOS($0D);
-    hcTag: Fg := ColorBIOS($0A);
-    hcAttr: Fg := ColorBIOS($0E);
-    hcEntity: Fg := ColorBIOS($0D);
-    hcVariable: Fg := ColorBIOS($0B);
-    hcDelimiter: Fg := ColorBIOS($0F);
-    hcFunction: Fg := ColorBIOS($0E);
-    hcProperty: Fg := ColorBIOS($0B);
-    hcSelector: Fg := ColorBIOS($0A);
-    hcValue: Fg := ColorBIOS($0B);
-    hcAsm: Fg := ColorBIOS($0C);
-    hcSpecial: Fg := ColorBIOS($0D);
+    hcComment: Fg := TColor(TColorBIOS($08));
+    hcString: Fg := TColor(TColorBIOS($0B));
+    hcNumber: Fg := TColor(TColorBIOS($0D));
+    hcKeyword: Fg := TColor(TColorBIOS($0F));
+    hcType: Fg := TColor(TColorBIOS($0A));
+    hcBuiltin: Fg := TColor(TColorBIOS($0E));
+    hcPreproc: Fg := TColor(TColorBIOS($0C));
+    hcOperator: Fg := TColor(TColorBIOS($07));
+    hcEscape: Fg := TColor(TColorBIOS($0D));
+    hcTag: Fg := TColor(TColorBIOS($0A));
+    hcAttr: Fg := TColor(TColorBIOS($0E));
+    hcEntity: Fg := TColor(TColorBIOS($0D));
+    hcVariable: Fg := TColor(TColorBIOS($0B));
+    hcDelimiter: Fg := TColor(TColorBIOS($0F));
+    hcFunction: Fg := TColor(TColorBIOS($0E));
+    hcProperty: Fg := TColor(TColorBIOS($0B));
+    hcSelector: Fg := TColor(TColorBIOS($0A));
+    hcValue: Fg := TColor(TColorBIOS($0B));
+    hcAsm: Fg := TColor(TColorBIOS($0C));
+    hcSpecial: Fg := TColor(TColorBIOS($0D));
   else
-    Fg := AttrFg(Result);
+    Fg := Result.GetForeground;
   end;
-  AttrSetFg(Result, Fg);
+  Result.SetForeground(Fg);
 end;
 
 procedure TTveView.SetWrap(V: Boolean);
@@ -656,22 +656,22 @@ end;
 
 function TTveView.NormalAttr: TColorAttr;
 begin
-  Result := GetColor(1).Lo;
+  Result := GetColor(1)[0];
 end;
 
 function TTveView.SelectedAttr: TColorAttr;
 begin
-  Result := GetColor(2).Lo;
+  Result := GetColor(2)[0];
 end;
 
 function TTveView.MessageAttr: TColorAttr;
 begin
-  Result := AttrReversed(NormalAttr);
+  Result := NormalAttr.Reversed;
 end;
 
 function TTveView.HighlightAttr: TColorAttr;
 begin
-  Result := AttrReversed(SelectedAttr);
+  Result := SelectedAttr.Reversed;
 end;
 
 function TTveView.DropAttr: TColorAttr;
@@ -682,7 +682,7 @@ end;
 function TTveView.OccurrenceAttr: TColorAttr;
 begin
   Result := NormalAttr;
-  AttrSetBg(Result, AttrBg(SelectedAttr));
+  Result.SetBackground(SelectedAttr.GetBackground);
 end;
 
 procedure TTveView.SetHighlightRange(A, B: Int64);
@@ -884,7 +884,7 @@ begin
         if Custom or CursorLine then
         begin
           if CursorLine and not Custom then
-            AttrSetBg(LineAttr, AttrFg(SelAttr));
+            LineAttr.SetBackground(SelAttr.GetForeground);
           B.MoveChar(0, Ord(' '), LineAttr, Size.X);
         end;
         Cls := nil;
@@ -933,7 +933,7 @@ begin
           begin
             Attr := ClassAttr(Cls[Idx - 1]);
             if Custom or CursorLine then
-              AttrSetBg(Attr, AttrBg(LineAttr));
+              Attr.SetBackground(LineAttr.GetBackground);
           end;
           while (OccNext > 0) and (Idx >= OccNext + Length(OccWord)) do
             OccNext := TveFindWord(Text, OccWord, OccNext + Length(OccWord));
@@ -941,7 +941,7 @@ begin
           begin
             Attr := OccAttr;
             if Custom or CursorLine then
-              AttrSetBg(Attr, AttrBg(LineAttr));
+              Attr.SetBackground(LineAttr.GetBackground);
           end;
           Selected := HasSel and (Cell >= SelA) and (Cell < SelB);
           if Selected then
@@ -953,7 +953,7 @@ begin
               Attr := HlAttr;
           end
           else if FHighlightColumn and (Cell = FEditor.Cell) then
-            AttrSetBg(Attr, AttrBg(SelAttr));
+            Attr.SetBackground(SelAttr.GetBackground);
           ScreenX := GutterWidth + Cell - X0;
           if (GrpCells > 0) and (ScreenX >= GutterWidth) then
           begin

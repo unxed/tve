@@ -22,7 +22,7 @@ begin
     SawDrop := True;
     { the marked cell on the screen has the drop colour }
     P := MakeGlobal(Point(DropCell - Delta.X, LineToView(DropLine) - Delta.Y));
-    DropOk := MemAttr(P.X, P.Y) = AttrAsBIOSByte(DropAttr);
+    DropOk := MemAttr(P.X, P.Y) = Byte(DropAttr);
   end;
 end;
 

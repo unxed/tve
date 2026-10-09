@@ -96,9 +96,8 @@ end;
 
 var
   Hook: THook;
-  I, J, N, Edits: Integer;
+  I, N, Edits: Integer;
   Ok: Boolean;
-  E: TTveEdit;
   Log: array of TTveEdit;
   Models: array of AnsiString;
   Off, Cnt: Int64;
@@ -210,5 +209,6 @@ begin
   B.Delete(B.LineStart(50), B.LineStart(60) - B.LineStart(50));
   Check((B.LineText(50) = 'line 61') and (B.LineCount = 19993), 'a big text: lines after a delete of ten lines');
   B.Free;
+  Hook.Free;
   Finish;
 end.

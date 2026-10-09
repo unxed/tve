@@ -170,7 +170,7 @@ var
   L: LongInt;
   Pin: Integer;
   S: AnsiString;
-  Size, I, Cells, Remove, Idx: Integer;
+  Size, Cells, Remove, Idx: Integer;
   Cant: Boolean;
   Changed: Boolean;
 begin
@@ -283,13 +283,9 @@ var
   A, B: Int64;
   Old, New_: AnsiString;
   Pin: Integer;
-  Col: Boolean;
   L1, L2: Int64;
   L: LongInt;
   C1, C2: Integer;
-  S, T: AnsiString;
-  OffA: Int64;
-  Pad: Integer;
 begin
   Result := False;
   if ReadOnlyNow(E) then
@@ -321,7 +317,6 @@ begin
     E.ColumnRect(L1, L2, C1, C2);
     for L := L1 to L2 do
     begin
-      S := E.Doc.Buffer.LineText(L);
       A := E.LineCellToOffset(L, C1);
       B := E.LineCellToOffset(L, C2);
       if B > A then
@@ -381,7 +376,7 @@ end;
 
 function SortLines(E: TTveEditor; Descending: Boolean; CaseSensitive: Boolean): Boolean;
 var
-  L1, L2, L: Int64;
+  L1, L2: Int64;
   N, I, J, C1, C2, K1, K2: Integer;
   Lines, Keys: array of AnsiString;
   Idx: array of Integer;
@@ -548,7 +543,6 @@ end;
 function BreakLineStay(E: TTveEditor): Boolean;
 var
   Off: Int64;
-  Pad: Integer;
 begin
   Result := False;
   if ReadOnlyNow(E) then
@@ -925,7 +919,6 @@ var
   Out_: array of AnsiString;
   First, I, Cols, Width, Lead, N: Integer;
   Pin: Integer;
-  Cnt: Integer;
   FirstLine: Boolean;
 begin
   Result := False;

@@ -509,6 +509,9 @@ begin
   O := Opt;
   O.Backward := False;
   Result := 0;
+  Starts := nil;
+  Stops := nil;
+  Texts := nil;
   if Doc.ReadOnly then
     Exit;
   P := 0;

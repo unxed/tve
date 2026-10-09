@@ -769,7 +769,6 @@ var
   SegEnd: Integer;
   CL: Int64;
   IsLast, InText: Boolean;
-  TX0: Integer;
   OccWord, OccText: AnsiString;
   OccNext, OccA, OccB: Integer;
   OccAttr, MsgAttr: TColorAttr;
@@ -820,7 +819,6 @@ begin
   SelAttr := SelectedAttr;
   HlAttr := HighlightAttr;
   TX := TextWidth;
-  TX0 := TX;
   X0 := Delta.X;
   IsLast := True;
   if FWrap then

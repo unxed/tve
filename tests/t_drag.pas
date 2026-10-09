@@ -99,7 +99,6 @@ var
   App: TApplication;
   W1, W2: TWindow;
   V1, V2: TProbe;
-  P: TPoint;
   Top: Int64;
 begin
   CpSelect(866);

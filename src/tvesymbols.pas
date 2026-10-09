@@ -492,6 +492,7 @@ var
 
 begin
   Result := nil;
+  TitleEnd := nil;
   if (Doc = nil) or (Lang = nil) or (Lang.SymbolCount = 0) then
     Exit;
   Hl := TTveHighlighter.Create(Doc, Lang);
@@ -735,11 +736,9 @@ var
   Hl: TTveHighlighter;
   Cnt: Integer;
   N, L: Int64;
-  LI, I, J, K, P, Ind, Last: Integer;
+  LI, I, J, P, Ind, Last: Integer;
   Text: AnsiString;
   Cls: TByteClasses;
-  HaveCls: Boolean;
-  Caps: TCaps;
   Braces: array of Int64;
   BraceCount: Integer;
   Bs: TBlockScan;
@@ -789,6 +788,9 @@ begin
       Braces := nil;
       BraceCount := 0;
       IndCount := 0;
+      IndLine := nil;
+      IndDepth := nil;
+      IndBody := nil;
       LastText := -1;
       for LI := 0 to Integer(N) - 1 do        { a LongInt counter: a 32-bit target has no Int64 loops }
       begin

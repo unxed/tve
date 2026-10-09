@@ -58,7 +58,6 @@ var
   App: TApplication;
   W1, W2: TWindow;
   V1, V2: TTveView;
-  Map: TTveKeymap;
   Err: AnsiString;
 begin
   CpSelect(866);

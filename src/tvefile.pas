@@ -87,7 +87,7 @@ begin
   Cur := Name;
   for N := 1 to 16 do
   begin
-    if (fpLStat(PChar(Cur), St) <> 0) or not fpS_ISLNK(St.st_mode) then
+    if (fpLStat(Cur, St) <> 0) or not fpS_ISLNK(St.st_mode) then
       Exit(Cur);
     Target := fpReadLink(Cur);
     if Target = '' then

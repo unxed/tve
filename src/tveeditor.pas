@@ -31,7 +31,7 @@ type
     PersistentBlocks: Boolean;
     OverwriteBlocks: Boolean;       { typing replaces the selection }
     AutoBrackets: Boolean;
-    BracketPairs: AnsiString;       { opening and closing characters in pairs: '()[]{}' }
+    BracketPairs: AnsiString;       (* opening and closing characters in pairs: '()[]{}' *)
     SmartHome: Boolean;             { Home goes to the first non-blank first }
     UnlimitedUnindent: Boolean;     { unindent the lines that can, even when some cannot }
     ColumnBlocks: Boolean;          { a selection made by Shift and the arrows or by the mouse is a column block }
@@ -640,11 +640,9 @@ end;
 procedure TTveEditor.MoveWordLeft(Extend: Boolean);
 var
   Off, A: Int64;
-  S: AnsiString;
   Used: Integer;
   CP: LongWord;
   Buf: AnsiString;
-  I: Integer;
 
   function CpBefore(O: Int64): LongWord;
   var
@@ -1063,7 +1061,6 @@ var
   L: LongInt;
   C1, C2: Integer;
   S: AnsiString;
-  I1, I2: Integer;
 begin
   Result := '';
   Column := False;
@@ -1076,8 +1073,6 @@ begin
     for L := L1 to L2 do
     begin
       S := GetLineText(L);
-      I1 := LayoutCellToIndex(S, C1, Opt.TabSize);
-      I2 := LayoutCellToIndex(S, C2, Opt.TabSize);
       S := LayoutSlice(S, C1, C2, Opt.TabSize);
       Result := Result + S;
       if L < L2 then
@@ -1360,7 +1355,7 @@ var
   Stop, Target, Cells: Integer;
   Off: Int64;
   Pad: Integer;
-  LineS, Above: AnsiString;
+  Above: AnsiString;
   K: Int64;
   C: TTveCharInfo;
   I: Integer;
@@ -1408,7 +1403,6 @@ begin
     if Grouped then
       DeleteSelection;
     BeforeEdit;
-    LineS := GetLineText(FLine);
     Off := OffsetAt(FLine, FCell, Pad);
     if (Target = Stop) and Opt.UseTabChars and (Pad = 0) then
       Ins := #9
@@ -1432,7 +1426,6 @@ end;
 function TTveEditor.Backspace: Boolean;
 var
   Off: Int64;
-  Pad: Integer;
   LineS: AnsiString;
   Info: TTveCharInfo;
   Target, I: Integer;
@@ -1595,12 +1588,10 @@ end;
 function TTveEditor.DeleteWordRight: Boolean;
 var
   A, B: Int64;
-  SaveSel: TTveSelKind;
 begin
   Result := False;
   if FDoc.ReadOnly then
     Exit;
-  SaveSel := FSelKind;
   ClearSelection;
   A := CursorOffset;
   MoveWordRight;
@@ -1691,8 +1682,6 @@ var
   N, I, P, Start: Integer;
   L: Int64;
   C: Integer;
-  S: AnsiString;
-  W: Integer;
 begin
   Result := False;
   if FDoc.ReadOnly or (Text = '') then
@@ -1730,8 +1719,6 @@ begin
       begin
         if L + I >= FDoc.Buffer.LineCount then
           FDoc.Insert(FDoc.Buffer.Length, #10);
-        S := GetLineText(L + I);
-        W := LayoutCells(S, Opt.TabSize);
         Off := OffsetAt(L + I, C, Pad);
         Ins := Lines[I];
         if Pad > 0 then

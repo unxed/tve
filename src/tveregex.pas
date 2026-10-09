@@ -862,7 +862,7 @@ var
   Stack: array of TFrame;
   SP: Integer;
   PC, Pos, I, K, L: Integer;
-  CP, CP2: LongWord;
+  CP: LongWord;
   Marks: array of Integer;
   Inst: TInst;
   Ok: Boolean;
@@ -1032,7 +1032,6 @@ begin
       if not Backtrack then
         Exit(False);
   end;
-  if CP2 = 0 then ;
 end;
 
 function TTveRegex.Exec(const S: AnsiString; StartIdx: Integer; out Caps: TCaps): Boolean;
@@ -1075,7 +1074,6 @@ var
   Nullable: Boolean;
   CP: LongWord;
   Nd: TNode;
-  Buf: array[0..3] of Byte;
 begin
   { returns True when the node can match the empty text }
   Nd := FNodes[N];

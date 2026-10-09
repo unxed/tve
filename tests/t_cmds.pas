@@ -76,7 +76,6 @@ var
   R: TRect;
   M: TTveKeymap;
   Err, T: AnsiString;
-  Z: TKey;
   I, Bad: Integer;
   OkA: Boolean;
 begin
@@ -105,7 +104,6 @@ begin
       Inc(Bad);
   Check(Bad = 0, 'names are unique and round-trip');
   M := TTveKeymap.Create;
-  Z.Code := 0; Z.Mods := 0;
   Check(M.LoadText('Ctrl+K B = BlockBegin' + #10 + '; comment' + #10 + 'F7 = Find' + #10, Err), 'load ' + Err);
   Check(M.Lookup(K('F7')) = tcFind, 'single key');
   Check(M.Lookup(K('Ctrl+K')) = -2, 'prefix');

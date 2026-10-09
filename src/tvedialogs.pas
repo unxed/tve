@@ -137,7 +137,6 @@ var
   R: TRect;
   I, J: TInputLine;
   Rec: TReplRec;
-  Boxes: TView;
   K: Word;
 begin
   R := TRect.Create(0, 0, 52, 18);
@@ -157,7 +156,7 @@ begin
   D.Insert(TLabel.Create(R, '~N~ew text', J));
   R := TRect.Create(46, 6, 49, 7);
   D.Insert(THistory.Create(R, J, HistRepl));
-  Boxes := MakeBoxes(D, 3, 8, False);
+  MakeBoxes(D, 3, 8, False);
   R := TRect.Create(4, 15, 20, 17);
   D.Insert(TButton.Create(R, '~R~eplace', cmOK, bfDefault));
   R := TRect.Create(21, 15, 35, 17);
